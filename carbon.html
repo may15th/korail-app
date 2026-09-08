@@ -17,21 +17,23 @@
   --dimmer:#5d6679;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;}
 body{
-  background:#000;
+  position:fixed;inset:0;
+  background:var(--bg);
   font-family:Pretendard,-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
   color:var(--text);
-  display:flex;justify-content:center;
-  padding:20px 0;
 }
 .phone{
-  width:390px;max-width:100%;
+  position:absolute;left:50%;top:0;
+  width:var(--vw,384px);height:var(--vh,100dvh);
+  transform:translateX(-50%) scale(var(--s,1));
+  transform-origin:top center;
   background:var(--bg);
-  border-radius:0;
-  overflow:hidden;
-  position:relative;
-  min-height:844px;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
 }
+.phone::-webkit-scrollbar{display:none}
 
 /* ── 상태바/앱바 ── */
 .statusbar{display:flex;justify-content:space-between;padding:10px 18px 4px;font-size:12px;color:var(--dim)}
@@ -151,12 +153,11 @@ body{
 
 .note{padding:0 20px 26px;font-size:11px;color:var(--dimmer);line-height:1.7;text-align:center}
 </style>
+<script src="fit.js"></script>
 </head>
 <body>
 
 <div class="phone">
-
-  <div class="statusbar"><span>11:29</span><span>📶 96</span></div>
 
   <div class="appbar">
     <a href="mypage.html" class="back" style="text-decoration:none;color:inherit;">‹</a>
@@ -271,9 +272,6 @@ body{
 
   <div class="note">본 화면은 제안용 시안이며 수치는 예시입니다.</div>
 
-  <!-- 하단 탭바 -->
-  <div class="tabbar">
-    <div class="tb"><span class="i">🚄</span>홈</div>
     <div class="tb"><span class="i">🚗</span>이동·편의</div>
     <div class="tb"><span class="i">🧳</span>여행</div>
     <div class="tb"><span class="i">🎫</span>나의 티켓</div>

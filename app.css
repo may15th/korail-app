@@ -3,10 +3,10 @@
    기준 측정: 1080x2340 / density 450 / 배율 2.8125 / 논리 384dp
    고정값(여백·높이·글꼴)은 dp 그대로, 가변값(카드폭·그리드칸)은 비율
    ================================================================ */
-@font-face{font-family:'PGov';src:url('fonts/pretendard_gov_regular.ttf')format('truetype');font-weight:400;font-display:swap;}
-@font-face{font-family:'PGov';src:url('fonts/pretendard_gov_medium.ttf')format('truetype');font-weight:500;font-display:swap;}
-@font-face{font-family:'PGov';src:url('fonts/pretendard_gov_semi_bold.ttf')format('truetype');font-weight:600;font-display:swap;}
-@font-face{font-family:'PGov';src:url('fonts/pretendard_gov_bold.ttf')format('truetype');font-weight:700;font-display:swap;}
+@font-face{font-family:'PGov';src:url('fonts/pgov-regular.woff2')format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'PGov';src:url('fonts/pgov-medium.woff2')format('woff2');font-weight:500;font-display:swap;}
+@font-face{font-family:'PGov';src:url('fonts/pgov-semi_bold.woff2')format('woff2');font-weight:600;font-display:swap;}
+@font-face{font-family:'PGov';src:url('fonts/pgov-bold.woff2')format('woff2');font-weight:700;font-display:swap;}
 
 :root{
   /* 고정 — 화면 크기와 무관 */
@@ -30,15 +30,20 @@
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;}
+html,body{height:100%;overflow:hidden;}
+body{position:fixed;inset:0;}
 body{background:#0A0C12;color:var(--txt);font-family:'PGov',sans-serif;
      -webkit-font-smoothing:antialiased;word-break:keep-all;}
 img{display:block;}
 a{text-decoration:none;color:inherit;}
 
 /* ── 앱 프레임: 폭에 따라 늘어나되 데스크톱에선 폰 크기 유지 ── */
-.app{position:relative;width:100%;max-width:520px;margin:0 auto;
-     height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+/* 기준 384dp 레이아웃을 통째로 배율 조정 → 모든 기기에서 동일 비율 */
+.app{position:absolute;left:50%;top:0;
+     width:var(--vw,384px);height:var(--vh,100dvh);
+     transform:translateX(-50%) scale(var(--s,1));
+     transform-origin:top center;
+     display:flex;flex-direction:column;overflow:hidden;
      background:var(--bg);}
 .app.home{background:var(--bg) url('img/bg_home.png') no-repeat top center;
           background-size:100% auto;}
@@ -162,9 +167,6 @@ body[data-demo="on"] .carbon::before{
   box-shadow:0 0 0 1.5px #2ECC71,0 0 18px rgba(46,204,113,.45);
   background:rgba(46,204,113,.08);animation:pulse 1.8s ease-in-out infinite;}
 
-/* ════════ 화면 비율 고정 (데스크톱에서 폰 형태 유지) ════════ */
-.app{width:min(100%, calc(100dvh * 0.4615));}
-@media (max-aspect-ratio: 384/832){ .app{width:100%;} }
 
 /* ════════ 전체메뉴 ════════ */
 .appbar.am h1{font-size:19.91px;line-height:24.18px;font-weight:700;}
@@ -233,4 +235,4 @@ body[data-demo="on"] .cue-row::after{
   animation:pulse 1.8s ease-in-out infinite;}
 body[data-demo="on"] .tab.cue::after{left:2px;right:2px;top:4px;bottom:4px;}
 body[data-demo="on"] .cue-row{position:relative;}
-body[data-demo="on"] .cue-row::after{left:-14px;right:-10px;top:-10px;bottom:-10px;}
+body[data-demo="on"] .cue-row::after{left:8px;right:8px;top:2px;bottom:2px;}

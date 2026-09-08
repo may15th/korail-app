@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>레일런 — 코레일 미니게임 프로토타입</title>
+<style>
+  :root{
+    --navy:#0b1226;
+    --korail-blue:#2f6bff;
+    --signal-green:#22c55e;
+    --signal-yellow:#facc15;
+    --signal-red:#ef4444;
+    --text:#eef2ff;
+    --dim:#93a1c9;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:var(--navy)}
+  body{
+    font-family:Pretendard,-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    color:var(--text);touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+  }
+  canvas{display:block;width:100%;height:100%;position:fixed;inset:0}
+
+  #hud{position:fixed;top:0;left:0;right:0;padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:5}
+  .km{font-size:46px;font-weight:800;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums;transition:transform .08s}
+  .km.pop{transform:scale(1.12)}
+  .km small{font-size:16px;font-weight:600;color:var(--dim);margin-left:4px}
+  .next{margin-top:6px;font-size:13px;color:var(--dim)}
+  .next b{color:var(--text)}
+  #scene{margin-top:5px;font-size:12px;color:var(--dim);text-shadow:0 1px 3px rgba(0,0,0,.7)}
+  #combo{margin-top:8px;font-size:15px;font-weight:800;color:var(--signal-yellow);opacity:0;transition:opacity .2s}
+  #combo.show{opacity:1}
+
+  #signal{display:flex;flex-direction:column;align-items:center;gap:6px}
+  #mast{width:34px;padding:7px 0;border-radius:17px;background:#1c2547;border:1px solid #2c3766;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .lamp{width:20px;height:20px;border-radius:50%;background:#22294a;transition:background .12s,box-shadow .12s}
+  .lamp.on-g{background:var(--signal-green);box-shadow:0 0 14px var(--signal-green)}
+  .lamp.on-y{background:var(--signal-yellow);box-shadow:0 0 14px var(--signal-yellow)}
+  .lamp.on-r{background:var(--signal-red);box-shadow:0 0 14px var(--signal-red)}
+  #signal .lbl{font-size:10px;color:var(--dim);letter-spacing:2px}
+  #gaugebar{position:fixed;top:0;left:0;height:4px;width:100%;transform-origin:left;background:var(--signal-green);z-index:6}
+
+  #sound{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:auto;
+    background:rgba(28,37,71,.7);border:1px solid #2c3766;color:var(--dim);border-radius:20px;
+    padding:7px 14px;font-size:12px;font-family:inherit;cursor:pointer}
+  #sound:active{transform:translateX(-50%) scale(.96)}
+
+  #controls{position:fixed;bottom:0;left:0;right:0;height:34%;display:flex;pointer-events:none;z-index:4}
+  .zone{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:30px;opacity:.45}
+  .zone span{font-size:13px;color:var(--dim);border:1px solid #2c3766;border-radius:20px;padding:8px 18px;background:rgba(11,18,38,.6)}
+
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(7,11,24,.85);backdrop-filter:blur(6px);text-align:center;padding:24px;transition:opacity .25s;z-index:10}
+  .overlay.hidden{opacity:0;pointer-events:none}
+  .brand{font-size:13px;letter-spacing:4px;color:var(--korail-blue);font-weight:700}
+  h1{font-size:44px;font-weight:800;letter-spacing:-1.5px}
+  h1 em{font-style:normal;color:var(--korail-blue)}
+  .sub{font-size:14px;color:var(--dim);line-height:1.75;max-width:310px}
+  .btn{pointer-events:auto;margin-top:8px;background:var(--korail-blue);color:#fff;border:none;border-radius:14px;padding:16px 46px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer}
+  .btn:active{transform:scale(.97)}
+  .btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  .stats{display:flex;flex-direction:column;gap:10px;background:#141c3d;border:1px solid #2c3766;border-radius:16px;padding:18px 26px;min-width:280px}
+  .stats .row{display:flex;justify-content:space-between;gap:30px;font-size:14px}
+  .stats .row .k{color:var(--dim)}
+  .stats .row .v{font-weight:700;font-variant-numeric:tabular-nums}
+  .stats .row.eco .v{color:var(--signal-green)}
+  .foot{font-size:11px;color:#5a6690;margin-top:2px;line-height:1.6}
+  #nearMiss{display:none;font-size:14px;font-weight:700;color:var(--signal-yellow)}
+
+  #banner{position:fixed;top:20%;left:50%;transform:translate(-50%,0) scale(.85);opacity:0;background:var(--korail-blue);color:#fff;font-weight:800;font-size:21px;padding:13px 30px;border-radius:30px;pointer-events:none;transition:all .28s cubic-bezier(.2,1.4,.4,1);box-shadow:0 8px 34px rgba(47,107,255,.5);z-index:8}
+  #banner.show{opacity:1;transform:translate(-50%,0) scale(1)}
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+<div id="gaugebar"></div>
+<button id="sound">🔊 소리 켜짐</button>
+
+<div id="hud">
+  <div>
+    <div class="km" id="kmWrap"><span id="km">0.0</span><small>km</small></div>
+    <div class="next">다음 역 <b id="nextSt">광명</b> <span id="nextDist"></span></div>
+    <div id="combo"></div>
+  </div>
+  <div id="signal" aria-hidden="true">
+    <div id="mast">
+      <div class="lamp" id="lampR"></div>
+      <div class="lamp" id="lampY"></div>
+      <div class="lamp" id="lampG"></div>
+    </div>
+    <div class="lbl">신호</div>
+  </div>
+</div>
+
+<div id="banner"></div>
+
+<div id="controls">
+  <div class="zone"><span>◀ 왼쪽</span></div>
+  <div class="zone"><span>오른쪽 ▶</span></div>
+</div>
+
+<div class="overlay" id="startOv">
+  <div class="brand">KORAIL MINI</div>
+  <h1>레일<em>런</em></h1>
+  <p class="sub">선로가 꺾이는 방향으로<br>화면 왼쪽·오른쪽을 탭하세요.<br>빠르게 연타할수록 속도가 붙습니다.</p>
+  <button class="btn" id="startBtn">운행 시작</button>
+  <p class="foot">경부고속선 실제 역 거리 기준 · 프로토타입 v0.2</p>
+</div>
+
+<div class="overlay hidden" id="overOv">
+  <div class="brand">운행 종료</div>
+  <h1 id="overTitle">탈선!</h1>
+  <div class="stats">
+    <div class="row"><span class="k">운행 거리</span><span class="v" id="finalKm">0 km</span></div>
+    <div class="row"><span class="k">최종 도달</span><span class="v" id="finalSt">서울</span></div>
+    <div class="row"><span class="k">최고 속도</span><span class="v" id="finalSpd">0 km/h</span></div>
+    <div class="row"><span class="k">최고 기록</span><span class="v" id="bestKm">0 km</span></div>
+    <div class="row eco"><span class="k">자가용 대비 탄소절감</span><span class="v" id="ecoKg">0 kg</span></div>
+  </div>
+  <div id="nearMiss"></div>
+  <button class="btn" id="retryBtn">다시 운행</button>
+  <p class="foot">탄소절감량 = 거리 × 183g/km<br>(승용차 210g − KTX 27g, gCO₂/인·km)</p>
+</div>
+
+<script>
+(() => {
+/* ══════════ 사운드 (WebAudio, 파일 없이 합성) ══════════ */
+const Snd = (() => {
+  let ac = null, on = true, master = null;
+  function init(){
+    if (ac) return;
+    try{
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain();
+      master.gain.value = .55;
+      master.connect(ac.destination);
+    }catch(e){ ac = null; on = false; }
+  }
+  function ready(){ try{ if(ac && ac.state === 'suspended') ac.resume(); }catch(e){} }
+  function tone({freq=440, dur=.09, type='square', vol=.3, slide=0, delay=0}){
+    if(!on || !ac) return;
+    const t0 = ac.currentTime + delay;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), t0+dur);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0+.008);
+    g.gain.exponentialRampToValueAtTime(.0001, t0+dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0+dur+.02);
+  }
+  function noise({dur=.18, vol=.3, lp=1400, delay=0}){
+    if(!on || !ac) return;
+    const t0 = ac.currentTime + delay;
+    const len = Math.floor(ac.sampleRate * dur);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const f = ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value = lp;
+    const g = ac.createGain(); g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(.0001, t0+dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t0);
+  }
+  return {
+    init, ready,
+    toggle(){ on = !on; return on; },
+    isOn(){ return on; },
+    /* 레일 이음매 통과: 짧은 클랙 + 톤 (콤보 오를수록 음이 높아짐) */
+    step(combo){
+      const p = Math.min(combo, 24);
+      tone({freq: 300 + p*16, dur:.055, type:'square', vol:.16, slide:-70});
+      noise({dur:.05, vol:.12, lp:2600});
+    },
+    /* 역 통과 팡파레 */
+    station(){
+      [0,.09,.18].forEach((d,i)=>tone({freq:[523,659,880][i], dur:.22, type:'triangle', vol:.26, delay:d}));
+    },
+    /* 신호 경고 삑 */
+    warn(){ tone({freq:880, dur:.1, type:'sine', vol:.2}); },
+    /* 탈선: 금속 마찰 + 저음 충돌 */
+    crash(){
+      noise({dur:.55, vol:.5, lp:900});
+      tone({freq:180, dur:.5, type:'sawtooth', vol:.3, slide:-140});
+      tone({freq:90, dur:.6, type:'square', vol:.25, slide:-50, delay:.05});
+    },
+    start(){ [262,392,523].forEach((f,i)=>tone({freq:f,dur:.16,type:'triangle',vol:.24,delay:i*.08})); }
+  };
+})();
+
+/* ══════════ 설정 ══════════ */
+const KM_PER_STEP = 2.0;
+const STATIONS = [["서울",0],["광명",22],["천안아산",96],["오송",128],["대전",166],
+  ["김천구미",240],["동대구",293],["신경주",349],["울산",383],["부산",417]];
+const TILE = 46;
+
+/* ══════════ 상태 ══════════ */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let W,H,DPR;
+let steps=[], pos=0, gauge=100, playing=false, best=0;
+let camX=0, camY=0, trainX=0, trainY=0, crashT=-1;
+let lastMilestone=0, tPrev=0;
+let shake=0, tilt=0, speed=0, maxSpeed=0, combo=0, lastTapT=0;
+let sparks=[], rings=[], lastWarnT=0;
+const $ = id=>document.getElementById(id);
+
+const kmNow = ()=> pos*KM_PER_STEP;
+function stationAt(km){ let n=STATIONS[0][0]; for(const [a,d] of STATIONS) if(km>=d) n=a; return n; }
+function nextStation(km){ for(const [a,d] of STATIONS) if(d>km) return [a,d]; return null; }
+
+function resize(){
+  DPR = Math.min(devicePixelRatio||1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize', resize); resize();
+
+/* ══════════ 선로 ══════════ */
+function genSteps(){
+  steps=[{x:0,y:0,dir:Math.random()<.5?-1:1}];
+  for(let i=0;i<60;i++) pushStep();
+}
+function pushStep(){
+  const p = steps[steps.length-1];
+  let dir = p.dir, run = 0;
+  for(let i=steps.length-1;i>=0 && steps[i].dir===p.dir;i--) run++;
+  if(run>=4 || Math.random()<.4) dir = -p.dir;
+  steps.push({x:p.x+p.dir, y:p.y+1, dir});
+}
+
+/* ══════════ 입력 ══════════ */
+function tap(dir){
+  if(!playing) return;
+  Snd.ready();
+  if(dir === steps[pos].dir){
+    pos++;
+    if(steps.length-pos < 40) pushStep();
+    const now = performance.now();
+    combo = (now - lastTapT < 620) ? combo+1 : 1;
+    lastTapT = now;
+    gauge = Math.min(100, gauge + 9 + Math.min(7, combo*0.5));   // 콤보 보너스 회복
+    speed = Math.min(320, speed + 26);
+    maxSpeed = Math.max(maxSpeed, speed);
+
+    tilt = -steps[pos-1].dir * 0.22;
+    shake = Math.min(9, 3 + combo*.18);
+    spawnSparks();
+    Snd.step(combo);
+    checkMilestone(); updateHUD();
+  } else {
+    derail();
+  }
+}
+addEventListener('pointerdown', e=>{
+  Snd.init(); Snd.ready();
+  if(playing) tap(e.clientX < W/2 ? -1 : 1);
+});
+addEventListener('keydown', e=>{
+  Snd.init();
+  if(e.key==='ArrowLeft') tap(-1);
+  if(e.key==='ArrowRight') tap(1);
+});
+$('sound').addEventListener('click', e=>{
+  e.stopPropagation(); Snd.init();
+  const on = Snd.toggle();
+  $('sound').textContent = on ? '🔊 소리 켜짐' : '🔇 소리 꺼짐';
+});
+
+/* ══════════ 파티클 ══════════ */
+function spawnSparks(){
+  for(let i=0;i<7;i++){
+    sparks.push({
+      x:trainX, y:trainY-6,
+      vx:(Math.random()-.5)*3.4,
+      vy:Math.random()*2.2+.6,
+      life:1, r:Math.random()*2+1,
+      c: Math.random()<.35 ? '#ffd166' : '#8fa3c8'
+    });
+  }
+}
+function spawnRing(){ rings.push({r:20, life:1}); }
+
+/* ══════════ 진행/종료 ══════════ */
+let bannerTO;
+function checkMilestone(){
+  const km = kmNow();
+  for(const [n,d] of STATIONS){
+    if(d>0 && lastMilestone<d && km>=d){
+      lastMilestone = d;
+      showBanner(`${n}역 통과!`);
+      Snd.station(); spawnRing(); shake = 12;
+    }
+  }
+  if(km>=417 && km-lastMilestone>=100){
+    lastMilestone = km;
+    showBanner(`누적 ${Math.floor(km)}km 돌파!`);
+    Snd.station(); spawnRing();
+  }
+}
+function showBanner(t){
+  const b=$('banner'); b.textContent=t; b.classList.add('show');
+  clearTimeout(bannerTO); bannerTO=setTimeout(()=>b.classList.remove('show'),1400);
+}
+function derail(){ playing=false; crashT=0; shake=26; Snd.crash(); }
+function finishOver(){
+  const km = kmNow();
+  const prevBest = best;
+  best = Math.max(best, km);
+  $('finalKm').textContent = km.toFixed(1)+' km';
+  $('finalSt').textContent = stationAt(km) + (km>=417?' (완주+)':'');
+  $('finalSpd').textContent = Math.round(maxSpeed)+' km/h';
+  $('bestKm').textContent = best.toFixed(1)+' km';
+  // 아차상: 신기록에 근접했으면 안타까움 표시
+  const gap = prevBest - km;
+  const nm = $('nearMiss');
+  if(prevBest>0 && gap>0 && gap<=10){
+    nm.textContent = `${gap.toFixed(1)}km만 더 갔으면 신기록!`;
+    nm.style.display='block';
+  } else if(km>prevBest && prevBest>0){
+    nm.textContent = '신기록 달성!';
+    nm.style.display='block';
+  } else nm.style.display='none';
+  $('ecoKg').textContent = (km*0.183).toFixed(1)+' kg';
+  $('overTitle').textContent = gauge<=0 ? '신호 정지!' : '탈선!';
+  $('overOv').classList.remove('hidden');
+}
+function start(){
+  Snd.init(); Snd.ready(); Snd.start();
+  genSteps();
+  pos=0; gauge=100; lastMilestone=0; crashT=-1;
+  trainX=0; trainY=0; camX=0; camY=0;
+  speed=0; maxSpeed=0; combo=0; shake=0; tilt=0;
+  sparks=[]; rings=[];
+  $('startOv').classList.add('hidden');
+  $('overOv').classList.add('hidden');
+  playing=true; updateHUD();
+}
+$('startBtn').addEventListener('click', start);
+$('retryBtn').addEventListener('click', start);
+
+/* ══════════ HUD ══════════ */
+function updateHUD(){
+  const km = kmNow();
+  $('km').textContent = km.toFixed(1);
+  const w = $('kmWrap');
+  w.classList.add('pop'); setTimeout(()=>w.classList.remove('pop'),80);
+  const ns = nextStation(km);
+  if(ns){ $('nextSt').textContent=ns[0]; $('nextDist').textContent=`까지 ${(ns[1]-km).toFixed(0)}km`; }
+  else { $('nextSt').textContent='종착 없음'; $('nextDist').textContent='— 무한 운행'; }
+  const c = $('combo');
+  if(combo>=5){ c.textContent = `${combo} 연속 · ${Math.round(speed)}km/h`; c.classList.add('show'); }
+  else c.classList.remove('show');
+}
+function updateSignal(){
+  $('lampG').className='lamp'+(gauge>50?' on-g':'');
+  $('lampY').className='lamp'+(gauge<=50&&gauge>22?' on-y':'');
+  $('lampR').className='lamp'+(gauge<=22?' on-r':'');
+  const bar=$('gaugebar');
+  bar.style.transform=`scaleX(${Math.max(0,gauge)/100})`;
+  bar.style.background = gauge>50?'#22c55e':(gauge>22?'#facc15':'#ef4444');
+  if(playing && gauge<=22 && performance.now()-lastWarnT>520){ lastWarnT=performance.now(); Snd.warn(); }
+}
+
+/* ══════════ 렌더 ══════════ */
+function scr(s){ return { sx:W/2+(s.x*TILE*.62)-camX, sy:H*.66-(s.y*TILE*.52)+camY }; }
+function roundRect(x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/* ══════════ 배경: 밤하늘 (v0.2 원본 방식) ══════════ */
+const TERRAIN = [
+  {to:60,  type:0, name:'수도권'},
+  {to:150, type:1, name:'충청권'},
+  {to:250, type:2, name:'추풍령'},
+  {to:340, type:3, name:'영남권'},
+  {to:1e9, type:4, name:'남해권'},
+];
+function terrainAt(km){ for(const t of TERRAIN) if(km<t.to) return t; return TERRAIN[TERRAIN.length-1]; }
+
+const stars = Array.from({length:80},()=>({
+  x:Math.random(), y:Math.random()*.72, r:Math.random()*1.4+.4, tw:Math.random()*6.28
+}));
+
+function drawBG(t){
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#080e1f'); g.addColorStop(1,'#16204a');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#cdd6f4';
+  for(const s of stars){
+    ctx.globalAlpha = .3+.3*Math.sin(t*.001+s.tw);
+    ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.r, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+/* 속도선 */
+function drawSpeedLines(t){
+  const n = Math.floor(speed/16);
+  ctx.strokeStyle='rgba(143,163,200,.28)'; ctx.lineWidth=2;
+  for(let i=0;i<n;i++){
+    const y = ((t*.6*(speed/90) + i*167) % (H+120)) - 60;
+    const x = (i*97)%W;
+    const len = 24+speed*.14;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-len*.35, y+len); ctx.stroke();
+  }
+}
+
+function drawTrack(){
+  const from=Math.max(0,pos-6), to=Math.min(steps.length-1,pos+26);
+  for(let i=from;i<to;i++){
+    const a=scr(steps[i]), b=scr(steps[i+1]);
+    const dx=b.sx-a.sx, dy=b.sy-a.sy, len=Math.hypot(dx,dy);
+    const nx=-dy/len, ny=dx/len, passed=i<pos;
+    ctx.strokeStyle = passed?'#212a4f':'#33406f'; ctx.lineWidth=3;
+    for(let k=1;k<=4;k++){
+      const px=a.sx+dx*k/5, py=a.sy+dy*k/5;
+      ctx.beginPath(); ctx.moveTo(px+nx*9,py+ny*9); ctx.lineTo(px-nx*9,py-ny*9); ctx.stroke();
+    }
+    // 다음 밟을 구간 하이라이트
+    const glow = (i===pos);
+    ctx.strokeStyle = glow ? '#2f6bff' : (passed?'#46507a':'#8fa3c8');
+    ctx.lineWidth = glow ? 3.4 : 2.5;
+    if(glow){ ctx.shadowColor='#2f6bff'; ctx.shadowBlur=14; }
+    for(const o of [-5.5,5.5]){
+      ctx.beginPath(); ctx.moveTo(a.sx+nx*o,a.sy+ny*o); ctx.lineTo(b.sx+nx*o,b.sy+ny*o); ctx.stroke();
+    }
+    ctx.shadowBlur=0;
+  }
+}
+function drawParticles(){
+  for(let i=sparks.length-1;i>=0;i--){
+    const p=sparks[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.14; p.life-=.045;
+    if(p.life<=0){ sparks.splice(i,1); continue; }
+    ctx.globalAlpha=p.life; ctx.fillStyle=p.c;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  for(let i=rings.length-1;i>=0;i--){
+    const r=rings[i]; r.r+=9; r.life-=.03;
+    if(r.life<=0){ rings.splice(i,1); continue; }
+    ctx.globalAlpha=r.life*.7; ctx.strokeStyle='#2f6bff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(trainX, trainY-10, r.r, 0, 6.283); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+function drawTrain(){
+  const cur = scr(steps[pos]);
+  const ease = .38;
+  trainX += (cur.sx-trainX)*ease;
+  trainY += (cur.sy-trainY)*ease;
+  let tx=trainX, ty=trainY, rot=tilt;
+  const facing = steps[pos].dir;
+
+  if(crashT>=0){
+    crashT++;
+    tx += -facing*crashT*2.4;
+    ty += crashT*crashT*.36;
+    rot = -facing*crashT*.07;
+    if(crashT>44){ crashT=-1; finishOver(); }
+  }
+
+  // 헤드라이트 빔
+  ctx.save();
+  ctx.globalAlpha = .16 + Math.min(.2, speed/900);
+  const grd = ctx.createRadialGradient(tx,ty-10,4, tx,ty-10, 90+speed*.2);
+  grd.addColorStop(0,'#ffe9a3'); grd.addColorStop(1,'rgba(255,233,163,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(tx,ty-10,90+speed*.2,0,6.283); ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(tx, ty-12); ctx.rotate(rot);
+  const bw=36,bh=21;
+  ctx.fillStyle='#eef2ff'; roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
+  ctx.fillStyle='#2f6bff'; roundRect(-bw/2,2,bw,7,3); ctx.fill();
+  ctx.fillStyle='#1a2340'; roundRect(-bw/2+6,-6,bw-12,7,3); ctx.fill();
+  ctx.fillStyle='#ffe9a3';
+  ctx.beginPath(); ctx.arc(facing*(bw/2-3),0,3.2,0,6.283); ctx.fill();
+  ctx.restore();
+}
+
+/* ══════════ 루프 ══════════ */
+function loop(t){
+  const dt = Math.min(50, t-tPrev)/1000; tPrev=t;
+
+  const tgt = steps[pos];
+  camX += (tgt.x*TILE*.62 - camX)*.14;
+  camY += (tgt.y*TILE*.52 - camY)*.14;
+
+  tilt *= .82;
+  speed *= .975;
+  if(speed<0) speed=0;
+  if(playing && performance.now()-lastTapT>700 && combo){ combo=0; updateHUD(); }
+  shake *= .86;
+
+  if(playing && pos>=5){                       // 초반 5걸음은 게이지 동결(진입 장벽 완화)
+    gauge -= (10 + Math.min(18, kmNow()*.04)) * dt;
+    if(gauge<=0){ gauge=0; derail(); }
+  }
+
+  ctx.save();
+  if(shake>.4) ctx.translate((Math.random()-.5)*shake, (Math.random()-.5)*shake);
+  drawBG(t);
+  if(speed>40) drawSpeedLines(t);
+  drawTrack();
+  drawTrain();
+  drawParticles();
+  ctx.restore();
+
+  updateSignal();
+  requestAnimationFrame(loop);
+}
+genSteps(); updateHUD();
+requestAnimationFrame(t=>{ tPrev=t; requestAnimationFrame(loop); });
+})();
+</script>
+<a href="index.html" id="backHome" style="position:fixed;left:12px;bottom:14px;z-index:99;
+ display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;
+ background:rgba(11,18,38,.72);border:1px solid rgba(255,255,255,.18);
+ color:#eef2ff;font-size:13px;font-weight:700;text-decoration:none;
+ backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">‹ 홈으로</a>
+</body>
+</html>

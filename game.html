@@ -70,6 +70,43 @@
 
   #banner{position:fixed;top:20%;left:50%;transform:translate(-50%,0) scale(.85);opacity:0;background:var(--korail-blue);color:#fff;font-weight:800;font-size:21px;padding:13px 30px;border-radius:30px;pointer-events:none;transition:all .28s cubic-bezier(.2,1.4,.4,1);box-shadow:0 8px 34px rgba(47,107,255,.5);z-index:8}
   #banner.show{opacity:1;transform:translate(-50%,0) scale(1)}
+
+  /* ══════════ 리워드 광고 (app.css --primary / PGov 톤) ══════════ */
+  @font-face{font-family:'PGov';src:url('fonts/pgov-regular.woff2')format('woff2');font-weight:400;font-display:swap;}
+  @font-face{font-family:'PGov';src:url('fonts/pgov-medium.woff2')format('woff2');font-weight:500;font-display:swap;}
+  @font-face{font-family:'PGov';src:url('fonts/pgov-semi_bold.woff2')format('woff2');font-weight:600;font-display:swap;}
+  @font-face{font-family:'PGov';src:url('fonts/pgov-bold.woff2')format('woff2');font-weight:700;font-display:swap;}
+  :root{ --kp-primary:#0156D0; }
+  .hide{display:none!important}
+
+  .ad-overlay{position:fixed;inset:0;z-index:50;background:#05070f;display:flex;flex-direction:column;
+    font-family:'PGov',Pretendard,-apple-system,sans-serif}
+  .ad-top{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;
+    padding:14px;gap:8px}
+  .ad-mute,.ad-close{background:rgba(11,18,38,.72);border:1px solid rgba(255,255,255,.18);
+    color:#eef2ff;border-radius:20px;font-family:inherit;font-weight:600;cursor:pointer}
+  .ad-mute{padding:8px 14px;font-size:12px}
+  .ad-close{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:15px;padding:0;flex:none}
+  .ad-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;background:#000}
+  #ytHost{width:100%;max-width:420px;height:100%;margin:0 auto}
+  .ad-progress{height:3px;background:rgba(255,255,255,.14);flex:none}
+  .ad-progress-fill{height:100%;width:0%;background:var(--kp-primary);transition:width .2s linear}
+
+  .ad-done,.ad-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;background:rgba(5,7,15,.94);text-align:center;padding:28px}
+  .ad-done-badge{font-size:19px;font-weight:700;color:#fff}
+  .ad-cta{background:var(--kp-primary);color:#fff;font-weight:700;font-size:15px;
+    text-decoration:none;border-radius:14px;padding:14px 28px}
+  .ad-return{background:transparent;border:1px solid rgba(255,255,255,.3);color:#eef2ff;
+    font-family:inherit;font-size:14px;font-weight:600;border-radius:14px;padding:12px 26px;cursor:pointer}
+  .ad-confirm p{font-size:15px;color:#eef2ff;max-width:260px;line-height:1.6;font-weight:500}
+  .ad-confirm-btns{display:flex;gap:10px}
+  .ad-confirm-btns button{font-family:inherit;font-size:13px;font-weight:700;
+    border-radius:12px;padding:11px 18px;cursor:pointer;border:none}
+  #adConfirmStay{background:var(--kp-primary);color:#fff}
+  #adConfirmLeave{background:transparent;border:1px solid rgba(255,255,255,.3);color:#eef2ff}
+  .btn.ad-btn{background:var(--kp-primary);font-family:'PGov',inherit}
 </style>
 </head>
 <body>
@@ -121,7 +158,33 @@
   </div>
   <div id="nearMiss"></div>
   <button class="btn" id="retryBtn">다시 운행</button>
+  <button class="btn ad-btn hide" id="adWatchBtn">영상 보고 5회 더 도전</button>
   <p class="foot">탄소절감량 = 거리 × 183g/km<br>(승용차 210g − KTX 27g, gCO₂/인·km)</p>
+</div>
+
+<div class="ad-overlay hide" id="adOverlay" role="dialog" aria-modal="true" aria-label="홍보영상 시청">
+  <div class="ad-top">
+    <button class="ad-mute" id="adMuteBtn" type="button">🔇 소리 켜기</button>
+    <button class="ad-close" id="adCloseBtn" type="button" aria-label="닫기">✕</button>
+  </div>
+  <div class="ad-stage" id="adStage">
+    <div id="ytHost"></div>
+  </div>
+  <div class="ad-progress"><div class="ad-progress-fill" id="adProgressFill"></div></div>
+
+  <div class="ad-done hide" id="adDone">
+    <div class="ad-done-badge">기회 5회를 받았어요</div>
+    <a class="ad-cta hide" id="adCta" target="_blank" rel="noopener"></a>
+    <button class="ad-return" id="adReturnBtn" type="button">게임으로 돌아가기</button>
+  </div>
+
+  <div class="ad-confirm hide" id="adConfirm">
+    <p>지금 나가면 기회를 받을 수 없어요</p>
+    <div class="ad-confirm-btns">
+      <button id="adConfirmStay" type="button">계속 보기</button>
+      <button id="adConfirmLeave" type="button">그냥 나가기</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -328,6 +391,7 @@ function finishOver(){
   $('ecoKg').textContent = (km*0.183).toFixed(1)+' kg';
   $('overTitle').textContent = gauge<=0 ? '신호 정지!' : '탈선!';
   $('overOv').classList.remove('hidden');
+  refreshGameOverButtons();
 }
 function start(){
   Snd.init(); Snd.ready(); Snd.start();
@@ -341,7 +405,151 @@ function start(){
   playing=true; updateHUD();
 }
 $('startBtn').addEventListener('click', start);
-$('retryBtn').addEventListener('click', start);
+$('retryBtn').addEventListener('click', ()=>{
+  const n = getChances();
+  if(n>0) setChances(n-1);
+  start();
+});
+
+/* ══════════ 리워드 광고 (기회 시스템) ══════════
+   시안 수준 구현. 실제 적용 시 서버에서 세션 토큰 발급 후
+   시청 완료를 검증해야 함. 클라이언트 저장 값은 조작 가능. */
+const ADS = [
+  { id:'0zYNDoyh4jE', title:'영주시 홍보영상',
+    cta:'영주 특산물 보러가기', url:'https://nhfm.co.kr/' },
+  { id:'MsZnJzUaHY0', title:'양산시 홍보영상',
+    cta:null, url:null },
+  { id:'_r3nMxXTb14', title:'네버엔딩 코리아',
+    cta:'대한민국 구석구석 보러가기', url:'https://korean.visitkorea.or.kr' },
+];
+const CHANCES_KEY = 'railrun_chances';
+const AD_IDX_KEY  = 'railrun_ad_idx';
+if(sessionStorage.getItem(CHANCES_KEY)===null) sessionStorage.setItem(CHANCES_KEY,'3');
+function getChances(){ return parseInt(sessionStorage.getItem(CHANCES_KEY)||'3',10); }
+function setChances(n){ sessionStorage.setItem(CHANCES_KEY, String(Math.max(0,n))); }
+function advanceAdIndex(){
+  const i = parseInt(sessionStorage.getItem(AD_IDX_KEY)||'0',10);
+  sessionStorage.setItem(AD_IDX_KEY, String((i+1)%ADS.length));
+  return i;
+}
+function refreshGameOverButtons(){
+  const n = getChances();
+  if(n>0){
+    $('retryBtn').textContent = `다시 운행(${n})`;
+    $('retryBtn').classList.remove('hide');
+    $('adWatchBtn').classList.add('hide');
+  } else {
+    $('retryBtn').classList.add('hide');
+    $('adWatchBtn').classList.remove('hide');
+  }
+}
+
+/* YouTube IFrame API 지연 로드 */
+let ytApiReady = false, ytApiWaiters = [];
+(function loadYT(){
+  const s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+window.onYouTubeIframeAPIReady = function(){
+  ytApiReady = true;
+  ytApiWaiters.forEach(fn=>fn()); ytApiWaiters=[];
+};
+function whenYTReady(fn){ ytApiReady ? fn() : ytApiWaiters.push(fn); }
+
+let ytPlayer=null, currentAd=null, adMuted=true;
+let watch = { accumulated:0, duration:0, ended:false, paused:true, rewarded:false, timerId:null };
+
+function openAdOverlay(){
+  currentAd = ADS[advanceAdIndex()];
+  clearInterval(watch.timerId);
+  watch = { accumulated:0, duration:0, ended:false, paused:true, rewarded:false, timerId:null };
+  adMuted = true;
+  $('adMuteBtn').textContent = '🔇 소리 켜기';
+  $('adProgressFill').style.width = '0%';
+  $('adDone').classList.add('hide');
+  $('adConfirm').classList.add('hide');
+  $('adStage').classList.remove('hide');
+  $('adOverlay').classList.remove('hide');
+  whenYTReady(()=>createPlayer(currentAd));
+  watch.timerId = setInterval(()=>{
+    if(document.visibilityState==='visible' && !watch.paused && !watch.ended){
+      watch.accumulated += 0.25;
+      if(watch.duration>0) $('adProgressFill').style.width = Math.min(100, watch.accumulated/watch.duration*100)+'%';
+      tryGrantReward();
+    }
+  }, 250);
+}
+function createPlayer(ad){
+  let host = document.getElementById('ytHost');
+  if(!host){
+    host = document.createElement('div'); host.id='ytHost';
+    $('adStage').appendChild(host);
+  }
+  ytPlayer = new YT.Player('ytHost', {
+    videoId: ad.id, width:'100%', height:'100%',
+    playerVars:{ autoplay:1, mute:1, controls:0, disablekb:1, rel:0, playsinline:1, modestbranding:1 },
+    events:{
+      onReady(){ try{ ytPlayer.mute(); ytPlayer.playVideo(); }catch(e){} },
+      onStateChange: onPlayerStateChange
+    }
+  });
+}
+function onPlayerStateChange(e){
+  const S = YT.PlayerState;
+  if(e.data===S.PLAYING){
+    watch.paused=false;
+    if(!watch.duration) watch.duration = ytPlayer.getDuration();
+  } else if(e.data===S.PAUSED){
+    watch.paused=true;
+  } else if(e.data===S.ENDED){
+    watch.paused=true; watch.ended=true;
+    tryGrantReward();
+  }
+}
+function tryGrantReward(){
+  if(watch.rewarded || !watch.ended) return;
+  if(watch.duration>0 && watch.accumulated >= watch.duration*0.9) grantReward();
+}
+function grantReward(){
+  watch.rewarded = true;
+  clearInterval(watch.timerId);
+  setChances(getChances()+5);
+  $('adStage').classList.add('hide');
+  $('adDone').classList.remove('hide');
+  const cta = $('adCta');
+  if(currentAd.cta){
+    cta.textContent = currentAd.cta; cta.href = currentAd.url;
+    cta.classList.remove('hide');
+  } else cta.classList.add('hide');
+}
+function closeAdOverlay(){
+  clearInterval(watch.timerId);
+  try{ ytPlayer && ytPlayer.destroy && ytPlayer.destroy(); }catch(e){}
+  ytPlayer = null;
+  $('adOverlay').classList.add('hide');
+  $('adConfirm').classList.add('hide');
+  refreshGameOverButtons();
+}
+$('adWatchBtn').addEventListener('click', openAdOverlay);
+$('adMuteBtn').addEventListener('click', ()=>{
+  if(!ytPlayer) return;
+  if(adMuted){ ytPlayer.unMute(); adMuted=false; $('adMuteBtn').textContent='🔊 소리 끄기'; }
+  else{ ytPlayer.mute(); adMuted=true; $('adMuteBtn').textContent='🔇 소리 켜기'; }
+});
+$('adCloseBtn').addEventListener('click', ()=>{
+  if(watch.rewarded){ closeAdOverlay(); return; }
+  watch.paused = true;
+  try{ ytPlayer && ytPlayer.pauseVideo && ytPlayer.pauseVideo(); }catch(e){}
+  $('adConfirm').classList.remove('hide');
+});
+$('adConfirmStay').addEventListener('click', ()=>{
+  $('adConfirm').classList.add('hide');
+  watch.paused = false;
+  try{ ytPlayer && ytPlayer.playVideo && ytPlayer.playVideo(); }catch(e){}
+});
+$('adConfirmLeave').addEventListener('click', closeAdOverlay);
+$('adReturnBtn').addEventListener('click', closeAdOverlay);
 
 /* ══════════ HUD ══════════ */
 function updateHUD(){

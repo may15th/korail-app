@@ -179,7 +179,8 @@ body[data-demo="on"] .carbon::before{
      display:flex;align-items:center;gap:6px;}
 .pid .copy{width:11px;height:12px;border:1.2px solid #7D828D;border-radius:2px;
            box-shadow:2.5px -2.5px 0 -1.2px var(--bg),2.5px -2.5px 0 0 #7D828D;}
-.pmy{display:flex;align-items:center;gap:8px;margin-top:2px;
+.pmy{display:flex;align-items:center;gap:8px;
+     padding:8px 12px;margin:-6px -12px -8px -12px;
      font-size:15.29px;line-height:19.2px;font-weight:500;color:#C7C9D0;}
 .pmy img{width:6.4px;}
 
@@ -235,4 +236,4 @@ body[data-demo="on"] .cue-row::after{
   animation:pulse 1.8s ease-in-out infinite;}
 body[data-demo="on"] .tab.cue::after{left:2px;right:2px;top:4px;bottom:4px;}
 body[data-demo="on"] .cue-row{position:relative;}
-body[data-demo="on"] .cue-row::after{left:8px;right:8px;top:2px;bottom:2px;}
+body[data-demo="on"] .cue-row::after{left:0;right:0;top:0;bottom:0;}

@@ -51,7 +51,7 @@
   .zone{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:30px;opacity:.45}
   .zone span{font-size:13px;color:var(--dim);border:1px solid #2c3766;border-radius:20px;padding:8px 18px;background:rgba(11,18,38,.6)}
 
-  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(7,11,24,.85);backdrop-filter:blur(6px);text-align:center;padding:24px;transition:opacity .25s;z-index:10}
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(7,11,24,.85);backdrop-filter:blur(6px);text-align:center;padding:24px;transition:opacity .25s;z-index:10;overflow-y:auto}
   .overlay.hidden{opacity:0;pointer-events:none}
   .brand{font-size:13px;letter-spacing:4px;color:var(--korail-blue);font-weight:700}
   h1{font-size:44px;font-weight:800;letter-spacing:-1.5px}
@@ -76,8 +76,30 @@
   @font-face{font-family:'PGov';src:url('fonts/pgov-medium.woff2')format('woff2');font-weight:500;font-display:swap;}
   @font-face{font-family:'PGov';src:url('fonts/pgov-semi_bold.woff2')format('woff2');font-weight:600;font-display:swap;}
   @font-face{font-family:'PGov';src:url('fonts/pgov-bold.woff2')format('woff2');font-weight:700;font-display:swap;}
-  :root{ --kp-primary:#0156D0; }
+  :root{ --kp-primary:#0156D0; --kp-card:#1D1F29; }
   .hide{display:none!important}
+
+  /* ══════════ 리더보드 (app.css --primary / --card / PGov 톤) ══════════ */
+  .lbWrap{width:100%;max-width:300px;font-family:'PGov',Pretendard,-apple-system,sans-serif;text-align:left}
+  .lbStatus{text-align:center;font-size:13px;color:var(--dim);padding:10px 0}
+  .lbMe{display:flex;align-items:center;justify-content:center;gap:7px;font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:10px}
+  .lbEditBtn{background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:4px;line-height:1}
+  .lbEdit{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+  .lbEditInput{flex:1;min-width:0;background:var(--kp-card);border:1px solid #2c3766;color:var(--text);
+    border-radius:10px;padding:9px 10px;font-size:13px;font-family:inherit}
+  .lbReroll,.lbConfirm{flex:none;border:none;border-radius:10px;padding:9px 12px;font-size:12px;
+    font-weight:700;font-family:inherit;cursor:pointer}
+  .lbReroll{background:var(--kp-card);border:1px solid #2c3766;color:var(--text)}
+  .lbConfirm{background:var(--kp-primary);color:#fff}
+  .lbList{background:var(--kp-card);border:1px solid #2c3766;border-radius:14px;padding:6px 4px;max-height:210px;overflow-y:auto}
+  .lbRow{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12.5px;border-radius:8px}
+  .lbRow.me{background:rgba(1,86,208,.24)}
+  .lbRank{width:20px;flex:none;color:var(--dim);font-weight:700;text-align:center}
+  .lbNick{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  .lbKm{flex:none;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)}
+  .lbSpd{flex:none;width:60px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums;font-size:11px}
+  .lbMyRank{margin-top:8px;text-align:center;font-size:12px;color:var(--dim)}
+  .lbEmpty{padding:16px;text-align:center;font-size:12px;color:var(--dim)}
 
   .ad-overlay{position:fixed;inset:0;z-index:50;background:#05070f;display:flex;flex-direction:column;
     font-family:'PGov',Pretendard,-apple-system,sans-serif}
@@ -157,6 +179,22 @@
     <div class="row eco"><span class="k">자가용 대비 탄소절감</span><span class="v" id="ecoKg">0 kg</span></div>
   </div>
   <div id="nearMiss"></div>
+
+  <div class="lbWrap hide" id="lbWrap">
+    <div class="lbStatus" id="lbStatus">기록 저장 중…</div>
+    <div class="lbMe hide" id="lbMe">
+      <span id="lbMeNick"></span>
+      <button class="lbEditBtn" id="lbEditBtn" type="button" aria-label="닉네임 변경">✎</button>
+    </div>
+    <div class="lbEdit hide" id="lbEdit">
+      <input class="lbEditInput" id="lbEditInput" maxlength="24" autocomplete="off">
+      <button class="lbReroll" id="lbRerollBtn" type="button">🎲</button>
+      <button class="lbConfirm" id="lbConfirmBtn" type="button">확인</button>
+    </div>
+    <div class="lbList" id="lbList"></div>
+    <div class="lbMyRank hide" id="lbMyRank"></div>
+  </div>
+
   <button class="btn" id="retryBtn">다시 운행</button>
   <button class="btn ad-btn hide" id="adWatchBtn">영상 보고 5회 더 도전</button>
   <p class="foot">탄소절감량 = 거리 × 183g/km<br>(승용차 210g − KTX 27g, gCO₂/인·km)</p>
@@ -187,6 +225,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (() => {
 /* ══════════ 사운드 (WebAudio, 파일 없이 합성) ══════════ */
@@ -269,6 +308,7 @@ let camX=0, camY=0, trainX=0, trainY=0, crashT=-1;
 let lastMilestone=0, tPrev=0;
 let shake=0, tilt=0, speed=0, maxSpeed=0, combo=0, lastTapT=0;
 let sparks=[], rings=[], lastWarnT=0;
+let speedTimeAcc=0, speedSampleAcc=0;   // 평균 속도(리더보드 avg_speed_kmh) 계산용
 const $ = id=>document.getElementById(id);
 
 const kmNow = ()=> pos*KM_PER_STEP;
@@ -393,6 +433,8 @@ function finishOver(){
   $('overTitle').textContent = gauge<=0 ? '신호 정지!' : '탈선!';
   $('overOv').classList.remove('hidden');
   refreshGameOverButtons();
+  const avgSpeedKmh = speedTimeAcc>0 ? speedSampleAcc/speedTimeAcc : 0;
+  saveRunAndShowLeaderboard(km, avgSpeedKmh);
 }
 function start(){
   Snd.init(); Snd.ready(); Snd.start();
@@ -400,6 +442,7 @@ function start(){
   pos=0; gauge=100; lastMilestone=0; crashT=-1;
   trainX=0; trainY=0; camX=0; camY=0;
   speed=0; maxSpeed=0; combo=0; shake=0; tilt=0;
+  speedTimeAcc=0; speedSampleAcc=0;
   sparks=[]; rings=[];
   $('startOv').classList.add('hidden');
   $('overOv').classList.add('hidden');
@@ -551,6 +594,187 @@ $('adConfirmStay').addEventListener('click', ()=>{
 });
 $('adConfirmLeave').addEventListener('click', closeAdOverlay);
 $('adReturnBtn').addEventListener('click', closeAdOverlay);
+
+/* ══════════ 리더보드 (Supabase) ══════════ */
+const sb = window.supabase.createClient(
+  'https://bssxucfniopzhelswawa.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzc3h1Y2ZuaW9wemhlbHN3YXdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxOTU5NjQsImV4cCI6MjEwNDc3MTk2NH0.917cAhyVFo9amjcC0cAvNBvNSHgiVQPEpXz-Fnf5Mwc'
+);
+
+const ADJ = ['헐레벌떡','느긋한','졸린','씩씩한','두근두근','방구석','늦잠자던','신난','조용한','엉겁결에',
+  '오늘도','갑자기','살금살금','통통','까칠한','푸릇푸릇','몽글몽글','반짝이는','어리둥절','용감한'];
+const NOUN = ['수달','너구리','다람쥐','고슴도치','펭귄','알파카','판다','코알라','햄스터','토끼',
+  '여우','부엉이','오리','고양이','강아지','거북이','두더지','양','사슴','물개',
+  '반딧불이','무당벌레','사슴벌레','장수풍뎅이','잠자리','꿀벌','나비','개미','여치','귀뚜라미',
+  '방울벌레','달팽이','풍뎅이','민들레','토끼풀','강아지풀','해바라기','단풍잎','새싹','이끼',
+  '솔방울','나팔꽃','클로버','버섯','떡잎','들꽃','갈대','도토리'];
+
+function randCandidate(){
+  const a = ADJ[Math.floor(Math.random()*ADJ.length)];
+  const n = NOUN[Math.floor(Math.random()*NOUN.length)];
+  return `${a} ${n}`;
+}
+// 후보 접두어(candidate%)로 개수 조회 후 0개면 그대로, 1개 이상이면 (count+1) 숫자를 붙임
+async function generateUniqueNickname(excludeId){
+  const base = randCandidate();
+  try{
+    let q = sb.from('players').select('id', { count:'exact', head:true }).like('nickname', base+'%');
+    if(excludeId) q = q.neq('id', excludeId);
+    const { count, error } = await q;
+    if(error) throw error;
+    return (count>0) ? base+(count+1) : base;
+  }catch(e){
+    console.error('nickname check error', e);
+    return base;
+  }
+}
+async function insertPlayerWithRetry(maxAttempts=5){
+  for(let i=0;i<maxAttempts;i++){
+    const nickname = await generateUniqueNickname();
+    const { data, error } = await sb.from('players').insert({ nickname }).select().single();
+    if(!error) return data;
+    if(error.code !== '23505'){ console.error('player insert error', error); return null; }
+    // 유니크 충돌(23505) → 새 후보로 재시도
+  }
+  return null;
+}
+async function insertRun(playerId, distanceKm, avgSpeedKmh, trainGrade){
+  const { error } = await sb.from('runs').insert({
+    player_id: playerId,
+    distance_km: Math.round(distanceKm*10)/10,
+    avg_speed_kmh: Math.round(avgSpeedKmh),
+    train_grade: trainGrade
+  });
+  if(error) console.error('run insert error', error);
+}
+function gradeFor(km){
+  if(km>=417) return 'KTX-산천';
+  if(km>=240) return 'KTX';
+  if(km>=96)  return '새마을호';
+  if(km>=22)  return '무궁화호';
+  return '통근열차';
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let lbRunToken = 0, currentPlayer = null;
+function lbShowStatus(msg){
+  $('lbStatus').textContent = msg;
+  $('lbStatus').classList.remove('hide');
+  $('lbMe').classList.add('hide');
+  $('lbEdit').classList.add('hide');
+}
+function resetLeaderboardUI(){
+  currentPlayer = null;
+  $('lbWrap').classList.remove('hide');
+  $('lbList').innerHTML = '';
+  $('lbMyRank').classList.add('hide');
+  $('lbEdit').classList.add('hide');
+  lbShowStatus('기록 저장 중…');
+}
+function renderMyNickname(nick){ $('lbMeNick').textContent = nick; }
+function renderLeaderboardList(rows, myPlayerId){
+  const list = $('lbList');
+  if(!rows.length){ list.innerHTML = '<div class="lbEmpty">아직 기록이 없어요</div>'; return; }
+  list.innerHTML = rows.map((r,i)=>{
+    const nick = (r.players && r.players.nickname) || '익명';
+    const mine = r.player_id === myPlayerId;
+    return `<div class="lbRow${mine?' me':''}">
+      <span class="lbRank">${i+1}</span>
+      <span class="lbNick">${escapeHtml(nick)}</span>
+      <span class="lbKm">${Number(r.distance_km).toFixed(1)}km</span>
+      <span class="lbSpd">${Math.round(r.avg_speed_kmh)}km/h</span>
+    </div>`;
+  }).join('');
+}
+async function loadLeaderboard(myPlayerId, myKm, token){
+  const { data, error } = await sb.from('runs')
+    .select('distance_km, avg_speed_kmh, player_id, players(nickname)')
+    .order('distance_km', { ascending:false })
+    .limit(20);
+  if(token !== lbRunToken) return;
+  if(error){
+    console.error('leaderboard load error', error);
+    $('lbList').innerHTML = '<div class="lbEmpty">리더보드를 불러오지 못했어요</div>';
+    return;
+  }
+  const rows = data || [];
+  renderLeaderboardList(rows, myPlayerId);
+  if(rows.some(r=>r.player_id===myPlayerId)){
+    $('lbMyRank').classList.add('hide');
+    return;
+  }
+  const { count, error: rankErr } = await sb.from('runs')
+    .select('id', { count:'exact', head:true })
+    .gt('distance_km', myKm);
+  if(token !== lbRunToken) return;
+  if(!rankErr){
+    $('lbMyRank').textContent = `내 순위: ${(count||0)+1}위`;
+    $('lbMyRank').classList.remove('hide');
+  }
+}
+async function saveRunAndShowLeaderboard(km, avgSpeedKmh){
+  const token = ++lbRunToken;
+  resetLeaderboardUI();
+  const grade = gradeFor(km);
+  const player = await insertPlayerWithRetry();
+  if(token !== lbRunToken) return;
+  if(!player){ lbShowStatus('기록 저장에 실패했어요'); return; }
+  currentPlayer = player;
+  await insertRun(player.id, km, avgSpeedKmh, grade);
+  if(token !== lbRunToken) return;
+  renderMyNickname(player.nickname);
+  $('lbStatus').classList.add('hide');
+  $('lbMe').classList.remove('hide');
+  await loadLeaderboard(player.id, km, token);
+}
+
+/* 닉네임 변경: 연필 아이콘 → 인라인 입력창 → [확인] 시에만 저장 */
+$('lbEditBtn').addEventListener('click', ()=>{
+  if(!currentPlayer) return;
+  $('lbEditInput').value = currentPlayer.nickname;
+  $('lbEdit').classList.remove('hide');
+  $('lbMe').classList.add('hide');
+});
+$('lbRerollBtn').addEventListener('click', async ()=>{
+  if(!currentPlayer) return;
+  const btn = $('lbRerollBtn');
+  btn.disabled = true;
+  const candidate = await generateUniqueNickname(currentPlayer.id);
+  $('lbEditInput').value = candidate;
+  btn.disabled = false;
+});
+$('lbConfirmBtn').addEventListener('click', async ()=>{
+  if(!currentPlayer) return;
+  const val = $('lbEditInput').value.trim();
+  if(!val) return;
+  // TODO: 실제 배포 전 부적절어 필터 추가 필요.
+  // 자유 텍스트 입력이므로 update 직전인 이 지점에서 검증해야 함
+  // (bad-words-ko 등 라이브러리 검토). 현재는 필터 없이 통과시킴.
+  const btn = $('lbConfirmBtn');
+  btn.disabled = true;
+  try{
+    const { count } = await sb.from('players')
+      .select('id', { count:'exact', head:true })
+      .like('nickname', val+'%')
+      .neq('id', currentPlayer.id);
+    const finalNick = (count>0) ? val+(count+1) : val;
+    const { data, error } = await sb.from('players')
+      .update({ nickname: finalNick, nickname_changed_count: (currentPlayer.nickname_changed_count||0)+1 })
+      .eq('id', currentPlayer.id)
+      .select()
+      .single();
+    if(error){ console.error('nickname update error', error); return; }
+    currentPlayer = data;
+    renderMyNickname(data.nickname);
+    $('lbEdit').classList.add('hide');
+    $('lbMe').classList.remove('hide');
+    await loadLeaderboard(currentPlayer.id, kmNow(), lbRunToken);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 /* ══════════ HUD ══════════ */
 function updateHUD(){
@@ -705,6 +929,7 @@ function loop(t){
   tilt *= .82;
   speed *= .975;
   if(speed<0) speed=0;
+  if(playing){ speedTimeAcc += dt; speedSampleAcc += speed*dt; }
   if(playing && performance.now()-lastTapT>700 && combo){ combo=0; updateHUD(); }
   shake *= .86;
 

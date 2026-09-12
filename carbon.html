@@ -51,6 +51,9 @@ body{
   -webkit-background-clip:text;background-clip:text;color:transparent;
   font-variant-numeric:tabular-nums}
 .bigunit{font-size:22px;font-weight:700;color:var(--green)}
+.big, .counter .n{display:inline-block}
+@keyframes popBounce{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.pop{animation:popBounce .3s ease-out}
 .hero .caption{margin-top:12px;font-size:14px;color:var(--dim);line-height:1.6}
 .hero .caption b{color:var(--text)}
 
@@ -77,7 +80,7 @@ body{
 .card h2{font-size:14px;font-weight:600;color:var(--dim);margin-bottom:16px}
 .chart{display:flex;align-items:flex-end;gap:7px;height:120px}
 .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px}
-.bar .fill{width:100%;background:linear-gradient(180deg,#3b7bfa,#2a5bc4);border-radius:5px 5px 2px 2px;transition:height .5s}
+.bar .fill{width:100%;background:linear-gradient(180deg,#3b7bfa,#2a5bc4);border-radius:5px 5px 2px 2px;transition:height 1s cubic-bezier(.2,.8,.2,1)}
 .bar.peak .fill{background:linear-gradient(180deg,#5fe0a0,#2fbf71)}
 .bar .lab{font-size:10px;color:var(--dimmer)}
 .chartfoot{display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
@@ -102,7 +105,7 @@ body{
 .counter .n{font-size:30px;font-weight:800;color:var(--green);letter-spacing:-1px;font-variant-numeric:tabular-nums}
 .counter .u{font-size:14px;color:#9fc4b4;font-weight:600}
 .progress{height:6px;background:rgba(255,255,255,.09);border-radius:3px;overflow:hidden;margin-top:10px}
-.progress i{display:block;height:100%;width:68%;background:var(--green);border-radius:3px}
+.progress i{display:block;height:100%;width:0;background:var(--green);border-radius:3px;transition:width 1.2s ease-out}
 .progress-lab{display:flex;justify-content:space-between;font-size:11px;color:#7fae9b;margin-top:7px}
 
 /* ── 최근 이용 내역 ── */
@@ -152,6 +155,11 @@ body{
   border-radius:12px;padding:12px 28px;font-size:14px;font-family:inherit;cursor:pointer}
 
 .note{padding:0 20px 26px;font-size:11px;color:var(--dimmer);line-height:1.7;text-align:center}
+
+@media (prefers-reduced-motion: reduce){
+  .bar .fill, .progress i{transition:none}
+  .pop{animation:none}
+}
 </style>
 <script src="fit.js"></script>
 </head>
@@ -271,13 +279,6 @@ body{
   </div>
 
   <div class="note">본 화면은 제안용 시안이며 수치는 예시입니다.</div>
-<!-- 
-    <div class="tb"><span class="i">🚗</span>이동·편의</div>
-    <div class="tb"><span class="i">🧳</span>여행</div>
-    <div class="tb"><span class="i">🎫</span>나의 티켓</div>
-    <div class="tb on"><span class="i">☰</span>전체메뉴</div>
-  </div> -->
-
 </div>
 
 <!-- 인증서 모달 -->
@@ -295,6 +296,43 @@ body{
 </div>
 
 <script>
+const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 40% 이상 노출 시 1회만 콜백 실행 (동작 줄이기 설정 시 즉시 실행)
+function onceVisible(el, threshold, cb){
+  if(prefersReduced || !('IntersectionObserver' in window)){ cb(); return; }
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        io.unobserve(entry.target);
+        cb();
+      }
+    });
+  }, {threshold});
+  io.observe(el);
+}
+
+// easeInOutCubic 카운트업 + 도착 시 통통거림
+function easeInOutCubic(t){
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+}
+function animateCount(el, target, {duration=1200, format=v=>Math.round(v).toLocaleString()}={}){
+  if(prefersReduced){ el.textContent = format(target); return; }
+  const start = performance.now();
+  (function step(now){
+    const t = Math.min(1, (now-start)/duration);
+    const eased = easeInOutCubic(t);
+    el.textContent = format(target*eased);
+    if(t < 1) requestAnimationFrame(step);
+    else{
+      el.classList.remove('pop');
+      void el.offsetWidth;
+      el.classList.add('pop');
+      el.addEventListener('animationend', ()=> el.classList.remove('pop'), {once:true});
+    }
+  })(start);
+}
+
 // 나무 36그루 렌더 (순차 등장)
 const forest = document.getElementById('forest');
 for(let i=0;i<36;i++){
@@ -304,6 +342,14 @@ for(let i=0;i<36;i++){
   forest.appendChild(t);
 }
 
+// 히어로: 235kg 카운트업 (40% 노출 시 1회)
+const bigNum = document.getElementById('bigNum');
+const BIG_TARGET = 235;
+if(!prefersReduced) bigNum.textContent = '0';
+onceVisible(document.querySelector('.hero'), .4, ()=>{
+  animateCount(bigNum, BIG_TARGET, {duration:1200, format:v=>Math.round(v)});
+});
+
 // 기간별 데이터
 const DATA = {
   w:{title:'최근 7일 절감량', labs:['월','화','수','목','금','토','일'], vals:[0,12.4,0,0,18.2,57.1,0], sum:'87.7 kg'},
@@ -311,41 +357,58 @@ const DATA = {
   y:{title:'연도별 절감량', labs:['2023','2024','2025','2026'], vals:[142,198,241,283], sum:'864.0 kg'}
 };
 const chart = document.getElementById('chart');
+let chartReady = prefersReduced;   // 최초 1회 노출 전까지는 false
+let pendingBars = null;
+
 function render(p){
   const d = DATA[p];
   document.getElementById('chartTitle').textContent = d.title;
   document.getElementById('sumTxt').textContent = d.sum;
   const max = Math.max(...d.vals) || 1;
   chart.innerHTML = '';
+  const bars = [];
   d.vals.forEach((v,i)=>{
     const peak = v === max;
+    const targetH = Math.max(3, v/max*95) + '%';
     const el = document.createElement('div');
     el.className = 'bar' + (peak?' peak':'');
     el.innerHTML = `<div class="fill" style="height:0"></div><div class="lab">${d.labs[i]}</div>`;
     chart.appendChild(el);
+    bars.push({el, targetH});
+  });
+  playBars(bars);
+}
+function playBars(bars){
+  if(!chartReady){ pendingBars = bars; return; }
+  // 더블 rAF: height:0 이 실제로 페인트된 다음 프레임에 목표값으로 전환해 트랜지션 보장
+  requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
-      el.querySelector('.fill').style.height = Math.max(3, v/max*95) + '%';
+      bars.forEach(b=> b.el.querySelector('.fill').style.height = b.targetH);
     });
   });
 }
 render('m');
+onceVisible(chart.closest('.section') || chart, .3, ()=>{
+  chartReady = true;
+  if(pendingBars){ playBars(pendingBars); pendingBars = null; }
+});
 document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
-    render(t.dataset.p);
+    render(t.dataset.p);   // 탭 전환 시에는 항상 재생 (chartReady가 이미 true)
   });
 });
 
-// 카운터 애니메이션
+// 여름 캠페인: 12,847톤 카운트업 + 진행바 (40% 노출 시 1회, 같은 타이밍)
 const total = document.getElementById('total');
-let n = 0;
-const target = 12847;
-const iv = setInterval(()=>{
-  n += Math.ceil((target-n)/12);
-  if(n>=target){ n=target; clearInterval(iv); }
-  total.textContent = n.toLocaleString();
-}, 40);
+const TOTAL_TARGET = 12847;
+const progressFill = document.querySelector('.progress i');
+if(!prefersReduced) total.textContent = '0';
+onceVisible(document.querySelector('.event'), .4, ()=>{
+  animateCount(total, TOTAL_TARGET, {duration:1200});
+  progressFill.style.width = '68%';
+});
 
 // 인증서 모달
 const modal = document.getElementById('modal');

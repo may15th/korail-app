@@ -212,8 +212,14 @@
 
   <div class="ad-done hide" id="adDone">
     <div class="ad-done-badge">기회 5회를 받았어요</div>
-    <a class="ad-cta hide" id="adCta" target="_blank" rel="noopener"></a>
+    <a class="ad-cta hide" id="adCta"></a>
     <button class="ad-return" id="adReturnBtn" type="button">게임으로 돌아가기</button>
+  </div>
+
+  <div class="ad-done hide" id="adFail">
+    <div class="ad-done-badge">다른 영상을 준비 중이에요</div>
+    <p style="font-size:13px;color:#9db4cf">그래도 기회 5회는 드릴게요!</p>
+    <button class="ad-return" id="adFailReturnBtn" type="button">게임으로 돌아가기</button>
   </div>
 
   <div class="ad-confirm hide" id="adConfirm">
@@ -465,16 +471,32 @@ const ADS = [
     cta:null, url:null },
   { id:'_r3nMxXTb14', title:'네버엔딩 코리아',
     cta:'대한민국 구석구석 보러가기', url:'https://korean.visitkorea.or.kr' },
+  { id:'38HSuZLcj9c', title:'함평나비대축제',
+    cta:null, url:null },
+  { id:'ZIsD_f0ZPWI', title:'이천 흙메이트 여행',
+    cta:null, url:null },
+  { id:'3IVPbZo8lX8', title:'레일택배',
+    cta:'레일택배 서비스 보기', url:null,
+    // 외부 링크 대신 앱 내부 이동: allmenu.html 의 레일택배 섹션으로 스크롤
+    internalLink:'allmenu.html#railparcel' },
+  { id:'guKQg_gHA9s', title:'울산한바퀴',
+    cta:null, url:null },
 ];
 const CHANCES_KEY = 'railrun_chances';
-const AD_IDX_KEY  = 'railrun_ad_idx';
+const LAST_AD_KEY = 'lastAdIdx';
+const AD_MAX_RETRIES = 2;
 if(sessionStorage.getItem(CHANCES_KEY)===null) sessionStorage.setItem(CHANCES_KEY,'3');
 function getChances(){ return parseInt(sessionStorage.getItem(CHANCES_KEY)||'3',10); }
 function setChances(n){ sessionStorage.setItem(CHANCES_KEY, String(Math.max(0,n))); }
-function advanceAdIndex(){
-  const i = parseInt(sessionStorage.getItem(AD_IDX_KEY)||'0',10);
-  sessionStorage.setItem(AD_IDX_KEY, String((i+1)%ADS.length));
-  return i;
+// 완전 무작위 선택. 직전에 본 광고와는 겹치지 않음
+function pickAd(){
+  const last = Number(sessionStorage.getItem(LAST_AD_KEY) ?? -1);
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * ADS.length);
+  } while (idx === last && ADS.length > 1);
+  sessionStorage.setItem(LAST_AD_KEY, idx);
+  return ADS[idx];
 }
 function refreshGameOverButtons(){
   const n = getChances();
@@ -501,20 +523,28 @@ window.onYouTubeIframeAPIReady = function(){
 };
 function whenYTReady(fn){ ytApiReady ? fn() : ytApiWaiters.push(fn); }
 
-let ytPlayer=null, currentAd=null, adMuted=true;
+let ytPlayer=null, currentAd=null, adMuted=true, adRetryCount=0;
 let watch = { accumulated:0, duration:0, ended:false, paused:true, rewarded:false, timerId:null };
 
 function openAdOverlay(){
-  currentAd = ADS[advanceAdIndex()];
+  adRetryCount = 0;
+  $('adConfirm').classList.add('hide');
+  $('adFail').classList.add('hide');
+  $('adOverlay').classList.remove('hide');
+  startAdAttempt(pickAd());
+}
+function startAdAttempt(ad){
+  currentAd = ad;
   clearInterval(watch.timerId);
+  try{ ytPlayer && ytPlayer.destroy && ytPlayer.destroy(); }catch(e){}
+  ytPlayer = null;
   watch = { accumulated:0, duration:0, ended:false, paused:true, rewarded:false, timerId:null };
   adMuted = true;
   $('adMuteBtn').textContent = '🔇 소리 켜기';
   $('adProgressFill').style.width = '0%';
   $('adDone').classList.add('hide');
-  $('adConfirm').classList.add('hide');
+  $('adFail').classList.add('hide');
   $('adStage').classList.remove('hide');
-  $('adOverlay').classList.remove('hide');
   whenYTReady(()=>createPlayer(currentAd));
   watch.timerId = setInterval(()=>{
     if(document.visibilityState==='visible' && !watch.paused && !watch.ended){
@@ -535,7 +565,8 @@ function createPlayer(ad){
     playerVars:{ autoplay:1, mute:1, controls:0, disablekb:1, rel:0, playsinline:1, modestbranding:1 },
     events:{
       onReady(){ try{ ytPlayer.mute(); ytPlayer.playVideo(); }catch(e){} },
-      onStateChange: onPlayerStateChange
+      onStateChange: onPlayerStateChange,
+      onError: onPlayerError
     }
   });
 }
@@ -551,9 +582,37 @@ function onPlayerStateChange(e){
     tryGrantReward();
   }
 }
+// 임베드 차단(101/150) 등 재생 실패 시 다른 랜덤 영상으로 자동 재시도 (최대 2회)
+function onPlayerError(e){
+  console.warn('YT player error', e && e.data);
+  clearInterval(watch.timerId);
+  if(adRetryCount < AD_MAX_RETRIES){
+    adRetryCount++;
+    startAdAttempt(pickAd());
+  } else {
+    showAdFallback();
+  }
+}
 function tryGrantReward(){
   if(watch.rewarded || !watch.ended) return;
   if(watch.duration>0 && watch.accumulated >= watch.duration*0.9) grantReward();
+}
+function setupCta(ad){
+  const cta = $('adCta');
+  if(ad.url){
+    cta.textContent = ad.cta;
+    cta.href = ad.url;
+    cta.target = '_blank'; cta.rel = 'noopener';
+    cta.classList.remove('hide');
+  } else if(ad.internalLink){
+    cta.textContent = ad.cta;
+    cta.href = ad.internalLink;
+    cta.removeAttribute('target'); cta.removeAttribute('rel');
+    cta.classList.remove('hide');
+  } else {
+    cta.classList.add('hide');
+    cta.removeAttribute('href');
+  }
 }
 function grantReward(){
   watch.rewarded = true;
@@ -561,11 +620,17 @@ function grantReward(){
   setChances(getChances()+5);
   $('adStage').classList.add('hide');
   $('adDone').classList.remove('hide');
-  const cta = $('adCta');
-  if(currentAd.cta){
-    cta.textContent = currentAd.cta; cta.href = currentAd.url;
-    cta.classList.remove('hide');
-  } else cta.classList.add('hide');
+  setupCta(currentAd);
+}
+// 재생 자체가 끝내 실패한 경우: 영상 없이도 보상은 정상 지급
+function showAdFallback(){
+  watch.rewarded = true;
+  clearInterval(watch.timerId);
+  try{ ytPlayer && ytPlayer.destroy && ytPlayer.destroy(); }catch(e){}
+  ytPlayer = null;
+  setChances(getChances()+5);
+  $('adStage').classList.add('hide');
+  $('adFail').classList.remove('hide');
 }
 function closeAdOverlay(){
   clearInterval(watch.timerId);
@@ -576,6 +641,7 @@ function closeAdOverlay(){
   refreshGameOverButtons();
 }
 $('adWatchBtn').addEventListener('click', openAdOverlay);
+$('adFailReturnBtn').addEventListener('click', closeAdOverlay);
 $('adMuteBtn').addEventListener('click', ()=>{
   if(!ytPlayer) return;
   if(adMuted){ ytPlayer.unMute(); adMuted=false; $('adMuteBtn').textContent='🔊 소리 끄기'; }

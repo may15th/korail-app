@@ -320,6 +320,7 @@ function tap(dir){
   }
 }
 addEventListener('pointerdown', e=>{
+  if(e.target.closest('#sound')) return;
   Snd.init(); Snd.ready();
   if(playing) tap(e.clientX < W/2 ? -1 : 1);
 });

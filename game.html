@@ -471,12 +471,20 @@ function start(){
   $('overOv').classList.add('hidden');
   playing=true; updateHUD();
 }
-$('startBtn').addEventListener('click', start);
-$('retryBtn').addEventListener('click', ()=>{
-  const n = getChances();
-  if(n>0) setChances(n-1);
+// 최초 진입("운행 시작")도 재도전과 동일하게 기회 1개를 소모한다.
+// 그래야 새로고침/뒤로가기로 startOv 를 다시 띄워도 기회 카운트를 우회할 수 없다.
+function attemptStart(){
+  if(getChances()<=0){
+    $('startOv').classList.add('hidden');
+    $('overOv').classList.remove('hidden');
+    refreshGameOverButtons();
+    return;
+  }
+  setChances(getChances()-1);
   start();
-});
+}
+$('startBtn').addEventListener('click', attemptStart);
+$('retryBtn').addEventListener('click', attemptStart);
 
 /* ══════════ 리워드 광고 (기회 시스템) ══════════
    시안 수준 구현. 실제 적용 시 서버에서 세션 토큰 발급 후
@@ -1061,6 +1069,13 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 genSteps(); updateHUD();
+// 페이지를 새로 열었을 때도 기회가 0이면 무료 "운행 시작" 화면 대신 광고 유도 화면을 바로 띄운다
+if(getChances()<=0){
+  $('startOv').classList.add('hidden');
+  $('overOv').classList.remove('hidden');
+  $('overTitle').textContent = '운행 종료';
+  refreshGameOverButtons();
+}
 requestAnimationFrame(t=>{ tPrev=t; requestAnimationFrame(loop); });
 })();
 </script>

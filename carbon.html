@@ -160,15 +160,25 @@ body{
   .bar .fill, .progress i{transition:none}
   .pop{animation:none}
 }
+
+/* ── 페이지 전환 애니메이션 (transition.js 가 body 에 토글) ── */
+.fade-leave{opacity:0;transition:opacity .15s ease}
+.fade-enter{opacity:0}
+.fade-enter-active{opacity:1;transition:opacity .15s ease}
+
+@media (prefers-reduced-motion: reduce){
+  .fade-leave,.fade-enter,.fade-enter-active{transition:none}
+}
 </style>
 <script src="fit.js"></script>
 </head>
 <body>
+<script src="transition.js"></script>
 
 <div class="phone">
 
   <div class="appbar">
-    <a href="mypage.html" class="back" style="text-decoration:none;color:inherit;">‹</a>
+    <a href="mypage.html" class="back" data-transition="fade" style="text-decoration:none;color:inherit;">‹</a>
     <h1>나의 탄소 리포트</h1>
     <span class="share">↑ 공유</span>
   </div>

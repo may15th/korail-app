@@ -141,9 +141,19 @@
   #adConfirmStay{background:var(--kp-primary);color:#fff}
   #adConfirmLeave{background:transparent;border:1px solid rgba(255,255,255,.3);color:#eef2ff}
   .btn.ad-btn{background:var(--kp-primary);font-family:'PGov',inherit}
+
+  /* ── 페이지 전환 애니메이션 (transition.js 가 body 에 토글) ── */
+  .fade-leave{opacity:0;transition:opacity .15s ease}
+  .fade-enter{opacity:0}
+  .fade-enter-active{opacity:1;transition:opacity .15s ease}
+
+  @media (prefers-reduced-motion: reduce){
+    .fade-leave,.fade-enter,.fade-enter-active{transition:none}
+  }
 </style>
 </head>
 <body>
+<script src="transition.js"></script>
 
 <canvas id="cv"></canvas>
 <div id="gaugebar"></div>

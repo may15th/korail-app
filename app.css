@@ -227,6 +227,17 @@ body[data-demo="on"] .carbon::before{
     font-size:var(--fs-md);line-height:var(--lh-sm);font-weight:600;}
 
 
+/* ── 페이지 전환 애니메이션 (transition.js 가 body 에 토글) ── */
+.fade-leave { opacity: 0; transition: opacity .15s ease; }
+.fade-enter { opacity: 0; }
+.fade-enter-active { opacity: 1; transition: opacity .15s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-leave, .fade-enter, .fade-enter-active {
+    transition: none;
+  }
+}
+
 /* ── 시연용 클릭 유도 (탭 / 리스트 행) ── */
 body[data-demo="on"] .tab.cue::after,
 body[data-demo="on"] .cue-row::after{

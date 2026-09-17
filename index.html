@@ -28,20 +28,20 @@
   .folder-header h2{font-size:var(--fs-2xl);line-height:var(--lh-2xl);font-weight:700;}
   .folder-sub{margin-top:4px;font-size:var(--fs-sm);line-height:var(--lh-sm);color:var(--dim);}
 
-  .folder-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px;}
-  .folder-app{position:relative;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:8px;background:rgba(255,255,255,.04);
-    border:0;border-radius:18px;padding:20px 10px;cursor:pointer;
+  /* 갤럭시 폴더 스타일: 3열 그리드, 모든 셀 동일 크기(정사각형).
+     정확한 셀 크기/간격은 Figma 실측값 나오는 대로 조정 예정 — 지금은 기본값. */
+  .folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+  .folder-app{position:relative;aspect-ratio:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,.04);
+    border:0;border-radius:18px;padding:10px 6px;cursor:pointer;
     font-family:inherit;color:var(--txt);}
-  .folder-app img{width:38px;height:38px;}
-  .folder-app span:last-child{font-size:var(--fs-lg);line-height:var(--lh-lg);font-weight:700;}
-  .folder-app.main{grid-column:1/-1;padding:26px 10px;background:rgba(1,86,208,.14);}
-  .folder-app.main img{width:48px;height:48px;}
-  .folder-app.main span:last-child{font-size:var(--fs-2xl);line-height:var(--lh-2xl);}
+  .folder-app img{width:34px;height:34px;border-radius:10px;object-fit:cover;}
+  .folder-app span:last-child{font-size:var(--fs-sm);line-height:var(--lh-sm);font-weight:700;text-align:center;}
+  .folder-app.main{background:rgba(1,86,208,.14);}
 
   .folder-app.locked{opacity:.55;background:rgba(255,255,255,.02);}
-  .folder-app.locked .lock-icon{position:absolute;top:8px;right:10px;font-size:13px;}
-  .folder-app.locked .q-icon{font-size:30px;line-height:1;}
+  .folder-app.locked .lock-icon{position:absolute;top:8px;right:8px;font-size:12px;}
+  .folder-app.locked .q-icon{font-size:26px;line-height:1;}
   .folder-app.locked .hint{font-size:var(--fs-sm);line-height:var(--lh-sm);font-weight:600;color:var(--dim);}
 
   .folder-app .badge-new{position:absolute;top:-6px;left:-6px;
@@ -67,6 +67,7 @@
 </style>
 </head>
 <body data-demo="on">
+<script src="transition.js"></script>
 <div class="app home">
 
   <!-- ═══ 헤더 (고정) ═══ -->
@@ -133,7 +134,7 @@
       <a class="cell"><span class="ic"><img src="img/ic_parcel.png"  style="width:30.58px"></span><span class="lb">레일택배</span></a>
 
       <!-- ★ 신규 -->
-      <a class="cell new" id="miniGameCell" href="game.html">
+      <a class="cell new" id="miniGameCell" href="game.html" data-transition="none">
         <span class="ic"><img src="img/ic_game.png" style="width:29.87px"></span>
         <span class="lb">미니게임</span>
       </a>
@@ -159,10 +160,10 @@
   <!-- ═══ 탭바 (고정) ═══ -->
   <nav class="tabbar">
     <a class="tab on" href="index.html"><img class="on-i" src="img/tab_home_on.png"><img class="off-i" src="img/tab_home_off.png"><span>홈</span></a>
-    <a class="tab"><img class="on-i" src="img/tab_move_off.png"><img class="off-i" src="img/tab_move_off.png"><span>이동 · 편의</span></a>
-    <a class="tab"><img class="on-i" src="img/tab_travel_off.png"><img class="off-i" src="img/tab_travel_off.png"><span>여행</span></a>
-    <a class="tab"><img class="on-i" src="img/tab_ticket_off.png"><img class="off-i" src="img/tab_ticket_off.png"><span>나의 티켓</span></a>
-    <a class="tab cue" href="allmenu.html"><img class="on-i" src="img/tab_menu_on.png"><img class="off-i" src="img/tab_menu_off.png"><span>전체메뉴</span></a>
+    <a class="tab" data-transition="fade"><img class="on-i" src="img/tab_move_off.png"><img class="off-i" src="img/tab_move_off.png"><span>이동 · 편의</span></a>
+    <a class="tab" data-transition="fade"><img class="on-i" src="img/tab_travel_off.png"><img class="off-i" src="img/tab_travel_off.png"><span>여행</span></a>
+    <a class="tab" data-transition="fade"><img class="on-i" src="img/tab_ticket_off.png"><img class="off-i" src="img/tab_ticket_off.png"><span>나의 티켓</span></a>
+    <a class="tab cue" href="allmenu.html" data-transition="fade"><img class="on-i" src="img/tab_menu_on.png"><img class="off-i" src="img/tab_menu_off.png"><span>전체메뉴</span></a>
   </nav>
 
 </div>
@@ -176,9 +177,9 @@
       <p class="folder-sub">기차와 함께하는 즐거운 순간들</p>
     </div>
     <div class="folder-grid">
-      <a class="folder-app main" href="game.html">
+      <a class="folder-app main" href="game.html" data-transition="fade">
         <span class="badge-new">NEW</span>
-        <img src="img/ic_game.png" alt="">
+        <img src="img/ic_railrun.png" alt="">
         <span>레일런</span>
       </a>
       <button class="folder-app locked" type="button" data-hint="겨울 준비중">
@@ -249,6 +250,16 @@
   window.addEventListener('popstate', ()=>{
     if(!modal.classList.contains('hidden')) closeModal();
     if(!overlay.classList.contains('hidden')) closeFolderVisual();
+  });
+  // 이 페이지를 벗어날 때(레일런 진입 등 실제 페이지 이동)는 폴더/모달을
+  // 즉시 닫힌 기본 상태로 되돌려 둔다. 뒤로가기(bfcache 복원)는 이 시점의
+  // DOM 스냅샷을 그대로 보여주므로, 그래야 game.html → 뒤로가기 시
+  // "폴더가 열린 홈화면"이 아니라 기본 홈화면이 보인다.
+  window.addEventListener('pagehide', ()=>{
+    overlay.classList.remove('show');
+    overlay.classList.add('hidden');
+    modal.classList.remove('show');
+    modal.classList.add('hidden');
   });
 
   cell.addEventListener('click', e=>{

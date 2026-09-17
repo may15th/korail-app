@@ -74,7 +74,7 @@
       <a class="cell"><span class="ic"><img src="img/ic_parcel.png"  style="width:30.58px"></span><span class="lb">레일택배</span></a>
 
       <!-- ★ 신규 -->
-      <a class="cell new" href="game.html">
+      <a class="cell new" id="miniGameCell" href="minigame-folder.html">
         <span class="ic"><img src="img/ic_game.png" style="width:29.87px"></span>
         <span class="lb">미니게임</span>
       </a>
@@ -107,5 +107,17 @@
   </nav>
 
 </div>
+
+<script>
+// 미니게임 진입: 클릭한 아이콘이 살짝 확대된 후 폴더 화면으로 이동
+document.getElementById('miniGameCell').addEventListener('click', function(e){
+  e.preventDefault();
+  const href = this.getAttribute('href');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){ location.href = href; return; }
+  this.style.transition = 'transform .15s ease-out';
+  this.style.transform = 'scale(1.1)';
+  setTimeout(()=>{ location.href = href; }, 150);
+});
+</script>
 </body>
 </html>

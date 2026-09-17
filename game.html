@@ -115,6 +115,18 @@
   .ad-progress{height:3px;background:rgba(255,255,255,.14);flex:none}
   .ad-progress-fill{height:100%;width:0%;background:var(--kp-primary);transition:width .2s linear}
 
+  /* 15초 보상 토스트 + 계속보기/돌아가기 버튼 (영상 재생 중 오버레이) */
+  .ad-toast{position:absolute;top:50%;left:50%;z-index:4;transform:translate(-50%,-50%);
+    background:rgba(5,7,15,.92);color:#fff;font-weight:700;font-size:14px;
+    padding:12px 22px;border-radius:30px;pointer-events:none;white-space:nowrap;
+    animation:adToastPop .25s ease-out}
+  @keyframes adToastPop{from{opacity:0;transform:translate(-50%,-50%) scale(.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  .ad-skip{position:absolute;left:0;right:0;bottom:18px;z-index:4;display:flex;gap:10px;justify-content:center;padding:0 18px}
+  .ad-skip button{flex:1;max-width:180px;font-family:inherit;font-size:13px;font-weight:700;
+    border-radius:12px;padding:12px 16px;cursor:pointer}
+  #adSkipContinueBtn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#eef2ff}
+  #adSkipReturnBtn{background:var(--kp-primary);border:none;color:#fff}
+
   .ad-done,.ad-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:16px;background:rgba(5,7,15,.94);text-align:center;padding:28px}
   .ad-done-badge{font-size:19px;font-weight:700;color:#fff}
@@ -207,6 +219,11 @@
   </div>
   <div class="ad-stage" id="adStage">
     <div id="ytHost"></div>
+    <div class="ad-toast hide" id="adToast">기회 5회를 받았어요 ✓</div>
+    <div class="ad-skip hide" id="adSkip">
+      <button id="adSkipContinueBtn" type="button">계속 보기</button>
+      <button id="adSkipReturnBtn" type="button">게임으로 돌아가기</button>
+    </div>
   </div>
   <div class="ad-progress"><div class="ad-progress-fill" id="adProgressFill"></div></div>
 
@@ -547,13 +564,16 @@ function startAdAttempt(ad){
   $('adProgressFill').style.width = '0%';
   $('adDone').classList.add('hide');
   $('adFail').classList.add('hide');
+  $('adToast').classList.add('hide');
+  $('adSkip').classList.add('hide');
   $('adStage').classList.remove('hide');
   whenYTReady(()=>createPlayer(currentAd));
   watch.timerId = setInterval(()=>{
     if(document.visibilityState==='visible' && !watch.paused && !watch.ended){
       watch.accumulated += 0.25;
       if(watch.duration>0) $('adProgressFill').style.width = Math.min(100, watch.accumulated/watch.duration*100)+'%';
-      tryGrantReward();
+      // 15초 이상 영상: 누적 시청시간이 15초에 도달하는 순간 즉시 지급 (영상은 계속 재생)
+      if(!watch.rewarded && watch.duration>=15 && watch.accumulated>=15) grantRewardMidPlay();
     }
   }, 250);
 }
@@ -582,7 +602,9 @@ function onPlayerStateChange(e){
     watch.paused=true;
   } else if(e.data===S.ENDED){
     watch.paused=true; watch.ended=true;
-    tryGrantReward();
+    // 15초 미만 영상은 여기서 처음 보상 지급, 15초 이상은 이미 지급됐으므로 재지급 안 함
+    if(!watch.rewarded) grantRewardOnEnd();
+    showAdCompletion();
   }
 }
 // 임베드 차단(101/150) 등 재생 실패 시 다른 랜덤 영상으로 자동 재시도 (최대 2회)
@@ -596,9 +618,32 @@ function onPlayerError(e){
     showAdFallback();
   }
 }
-function tryGrantReward(){
-  if(watch.rewarded || !watch.ended) return;
-  if(watch.duration>0 && watch.accumulated >= watch.duration*0.9) grantReward();
+function grantChances(){
+  watch.rewarded = true;
+  setChances(getChances()+5);
+}
+// 15초 이상 영상: 누적 15초 도달 시점 — 영상은 계속 재생, 토스트+선택 버튼만 표시
+function grantRewardMidPlay(){
+  grantChances();
+  showRewardToast();
+  $('adSkip').classList.remove('hide');
+}
+// 15초 미만 영상: 끝까지 재생 완료 시점에 지급
+function grantRewardOnEnd(){
+  grantChances();
+}
+function showRewardToast(){
+  const t = $('adToast');
+  t.classList.remove('hide');
+  clearTimeout(showRewardToast._to);
+  showRewardToast._to = setTimeout(()=> t.classList.add('hide'), 1500);
+}
+// 영상 자연 종료 시 완주 화면(CTA + 게임으로 돌아가기)으로 전환
+function showAdCompletion(){
+  clearInterval(watch.timerId);
+  $('adStage').classList.add('hide');
+  $('adDone').classList.remove('hide');
+  setupCta(currentAd);
 }
 function setupCta(ad){
   const cta = $('adCta');
@@ -616,14 +661,6 @@ function setupCta(ad){
     cta.classList.add('hide');
     cta.removeAttribute('href');
   }
-}
-function grantReward(){
-  watch.rewarded = true;
-  clearInterval(watch.timerId);
-  setChances(getChances()+5);
-  $('adStage').classList.add('hide');
-  $('adDone').classList.remove('hide');
-  setupCta(currentAd);
 }
 // 재생 자체가 끝내 실패한 경우: 영상 없이도 보상은 정상 지급
 function showAdFallback(){
@@ -645,6 +682,10 @@ function closeAdOverlay(){
 }
 $('adWatchBtn').addEventListener('click', openAdOverlay);
 $('adFailReturnBtn').addEventListener('click', closeAdOverlay);
+$('adSkipContinueBtn').addEventListener('click', ()=>{
+  $('adSkip').classList.add('hide');
+});
+$('adSkipReturnBtn').addEventListener('click', closeAdOverlay);
 $('adMuteBtn').addEventListener('click', ()=>{
   if(!ytPlayer) return;
   if(adMuted){ ytPlayer.unMute(); adMuted=false; $('adMuteBtn').textContent='🔊 소리 끄기'; }

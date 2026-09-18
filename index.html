@@ -31,21 +31,20 @@
   /* 갤럭시 폴더 스타일 — Figma node 24:2887 실측값(피그마 프레임 "Background+Shadow") 그대로 적용 */
   .folder-grid{display:flex;align-items:flex-start;gap:12px;margin-top:16px;}
   .folder-app{position:relative;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    border:0;cursor:pointer;font-family:inherit;color:var(--txt);}
+    align-items:center;justify-content:center;gap:6px;width:78px;
+    border:0;background:none;padding:0;cursor:pointer;font-family:inherit;color:var(--txt);}
 
-  .folder-app.main{width:78px;gap:6px;background:none;padding:0;}
   .folder-icon{position:relative;width:78px;height:78px;border-radius:18px;}
   .folder-icon img{position:absolute;inset:0;width:100%;height:100%;
     border-radius:18px;object-fit:cover;}
   .folder-app.main .label{font-size:13.5px;line-height:16.36px;font-weight:700;text-align:center;}
 
-  .folder-app.locked{width:78.67px;height:79.31px;gap:8px;
-    padding:14.15px 8px 14.16px;border-radius:18px;
-    opacity:.55;background:rgba(255, 255, 255, 0.05);}
-  .folder-app.locked .lock-icon{position:absolute;top:8px;right:8px;font-size:12px;}
+  .folder-lockbox{position:relative;width:78px;height:78px;border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.05);opacity:.55;}
+  .folder-app.locked .lock-icon{position:absolute;top:8px;right:8.33px;font-size:12px;}
   .folder-app.locked .q-icon{font-size:26px;line-height:1;}
-  .folder-app.locked .hint{font-size:13.5px;line-height:16.36px;font-weight:600;color:#91939A;}
+  .folder-app.locked .hint{font-size:13.5px;line-height:16.36px;font-weight:600;color:#91939A;text-align:center;}
 
   .folder-app .badge-new{position:absolute;top:-6px;left:-6px;
     background:#0156D0;color:#fff;font-size:10px;
@@ -188,13 +187,17 @@
         <span class="label">레일런</span>
       </a>
       <button class="folder-app locked" type="button" data-hint="겨울 준비중">
-        <span class="lock-icon">🔒</span>
-        <span class="q-icon">?</span>
+        <span class="folder-lockbox">
+          <span class="q-icon">?</span>
+          <span class="lock-icon">🔒</span>
+        </span>
         <span class="hint">겨울 준비중</span>
       </button>
       <button class="folder-app locked" type="button" data-hint="준비중">
-        <span class="lock-icon">🔒</span>
-        <span class="q-icon">?</span>
+        <span class="folder-lockbox">
+          <span class="q-icon">?</span>
+          <span class="lock-icon">🔒</span>
+        </span>
         <span class="hint">준비중</span>
       </button>
     </div>

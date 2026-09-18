@@ -121,7 +121,14 @@
     padding:12px 22px;border-radius:30px;pointer-events:none;white-space:nowrap;
     animation:adToastPop .25s ease-out}
   @keyframes adToastPop{from{opacity:0;transform:translate(-50%,-50%) scale(.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-  .ad-skip{position:absolute;left:0;right:0;bottom:18px;z-index:4;display:flex;gap:10px;justify-content:center;padding:0 18px}
+  .ad-skip{position:absolute;left:0;right:0;bottom:18px;z-index:4;display:flex;gap:10px;justify-content:center;padding:0 18px;
+    opacity:0;pointer-events:none;transition:opacity .15s ease}
+  .ad-skip.show{opacity:1;pointer-events:auto}
+
+  /* 광고 15초 경과 후 계속보기/돌아가기 버튼과 좌하단 홈으로 버튼이 겹치지 않도록,
+     한쪽이 나타날 때 다른 쪽은 페이드아웃 */
+  #backHome{transition:opacity .15s ease}
+  #backHome.away{opacity:0;pointer-events:none}
   .ad-skip button{flex:1;max-width:180px;font-family:inherit;font-size:13px;font-weight:700;
     border-radius:12px;padding:12px 16px;cursor:pointer}
   #adSkipContinueBtn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#eef2ff}
@@ -183,11 +190,11 @@
 </div>
 
 <div class="overlay" id="startOv">
-  <div class="brand">KORAIL MINI</div>
+  <div class="brand">KORAIL MINI GAME</div>
   <h1>레일<em>런</em></h1>
   <p class="sub">선로가 꺾이는 방향으로<br>화면 왼쪽·오른쪽을 탭하세요.<br>빠르게 연타할수록 속도가 붙습니다.</p>
   <button class="btn" id="startBtn">운행 시작</button>
-  <p class="foot">경부고속선 실제 역 거리 기준 · 프로토타입 v0.2</p>
+  <!-- <p class="foot">경부고속선 실제 역 거리 기준 · 프로토타입 v0.2</p> -->
 </div>
 
 <div class="overlay hidden" id="overOv">
@@ -230,7 +237,7 @@
   <div class="ad-stage" id="adStage">
     <div id="ytHost"></div>
     <div class="ad-toast hide" id="adToast">기회 5회를 받았어요 ✓</div>
-    <div class="ad-skip hide" id="adSkip">
+    <div class="ad-skip" id="adSkip">
       <button id="adSkipContinueBtn" type="button">계속 보기</button>
       <button id="adSkipReturnBtn" type="button">게임으로 돌아가기</button>
     </div>
@@ -583,7 +590,7 @@ function startAdAttempt(ad){
   $('adDone').classList.add('hide');
   $('adFail').classList.add('hide');
   $('adToast').classList.add('hide');
-  $('adSkip').classList.add('hide');
+  setAdSkipVisible(false);
   $('adStage').classList.remove('hide');
   whenYTReady(()=>createPlayer(currentAd));
   watch.timerId = setInterval(()=>{
@@ -640,11 +647,17 @@ function grantChances(){
   watch.rewarded = true;
   setChances(getChances()+5);
 }
+// adSkip(계속보기/돌아가기)과 좌하단 홈으로 버튼이 겹치지 않도록 서로 반대로 페이드
+function setAdSkipVisible(visible){
+  $('adSkip').classList.toggle('show', visible);
+  const home = document.getElementById('backHome');
+  if(home) home.classList.toggle('away', visible);
+}
 // 15초 이상 영상: 누적 15초 도달 시점 — 영상은 계속 재생, 토스트+선택 버튼만 표시
 function grantRewardMidPlay(){
   grantChances();
   showRewardToast();
-  $('adSkip').classList.remove('hide');
+  setAdSkipVisible(true);
 }
 // 15초 미만 영상: 끝까지 재생 완료 시점에 지급
 function grantRewardOnEnd(){
@@ -659,6 +672,7 @@ function showRewardToast(){
 // 영상 자연 종료 시 완주 화면(CTA + 게임으로 돌아가기)으로 전환
 function showAdCompletion(){
   clearInterval(watch.timerId);
+  setAdSkipVisible(false);
   $('adStage').classList.add('hide');
   $('adDone').classList.remove('hide');
   setupCta(currentAd);
@@ -687,6 +701,7 @@ function showAdFallback(){
   try{ ytPlayer && ytPlayer.destroy && ytPlayer.destroy(); }catch(e){}
   ytPlayer = null;
   setChances(getChances()+5);
+  setAdSkipVisible(false);
   $('adStage').classList.add('hide');
   $('adFail').classList.remove('hide');
 }
@@ -694,6 +709,7 @@ function closeAdOverlay(){
   clearInterval(watch.timerId);
   try{ ytPlayer && ytPlayer.destroy && ytPlayer.destroy(); }catch(e){}
   ytPlayer = null;
+  setAdSkipVisible(false);
   $('adOverlay').classList.add('hide');
   $('adConfirm').classList.add('hide');
   refreshGameOverButtons();
@@ -701,7 +717,7 @@ function closeAdOverlay(){
 $('adWatchBtn').addEventListener('click', openAdOverlay);
 $('adFailReturnBtn').addEventListener('click', closeAdOverlay);
 $('adSkipContinueBtn').addEventListener('click', ()=>{
-  $('adSkip').classList.add('hide');
+  setAdSkipVisible(false);
 });
 $('adSkipReturnBtn').addEventListener('click', closeAdOverlay);
 $('adMuteBtn').addEventListener('click', ()=>{

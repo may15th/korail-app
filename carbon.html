@@ -35,18 +35,21 @@ body{
 }
 .phone::-webkit-scrollbar{display:none}
 
-/* ── 상태바/앱바 ── */
-.statusbar{display:flex;justify-content:space-between;padding:10px 18px 4px;font-size:12px;color:var(--dim)}
+/* ── 페이지 래퍼: Figma 루트 프레임의 padding:20px, gap:24px 그대로 ── */
+.page{display:flex;flex-direction:column;gap:24px;padding:20px;}
+
+/* ── 앱바 ── */
 .appbar{display:flex;align-items:center;gap:12px;padding:12px 16px 16px}
 .appbar .back{font-size:22px;color:var(--text);line-height:1}
 .appbar h1{font-size:17px;font-weight:700}
 .appbar .share{margin-left:auto;font-size:13px;color:var(--dim);display:flex;align-items:center;gap:5px}
 
 /* ── 히어로 ── */
-.hero{padding:8px 20px 26px;text-align:center;position:relative;overflow:hidden}
-.hero .eyebrow{font-size:13px;color:var(--dim);margin-bottom:14px}
+.hero{display:flex;flex-direction:column;align-items:center;gap:11.4px;
+  padding:8px 20px;text-align:center;overflow:hidden}
+.hero .eyebrow{font-size:13px;color:var(--dim)}
 .bigwrap{display:flex;align-items:baseline;justify-content:center;gap:6px}
-.big{font-size:64px;font-weight:800;letter-spacing:-3px;line-height:1;
+.big{font-size:64px;font-weight:700;letter-spacing:-3px;line-height:1;
   background:linear-gradient(180deg,#5fe0a0,#2fbf71);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   font-variant-numeric:tabular-nums}
@@ -54,56 +57,64 @@ body{
 .big, .counter .n{display:inline-block}
 @keyframes popBounce{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
 .pop{animation:popBounce .3s ease-out}
-.hero .caption{margin-top:12px;font-size:14px;color:var(--dim);line-height:1.6}
+.hero .caption{font-size:14px;color:var(--dim);line-height:1.6}
 .hero .caption b{color:var(--text)}
+.hero .caption.small{font-size:13px}
 
 /* 나무 시각화 (시그니처) */
-.forest{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:20px auto 0;max-width:260px}
+.forest{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:260px}
 .tree{width:15px;height:20px;position:relative;opacity:0;animation:grow .4s forwards}
 .tree::before{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
   width:2px;height:6px;background:#5a4632;border-radius:1px}
 .tree::after{content:"";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);
-  width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;
-  border-bottom:15px solid var(--green)}
+  width:0;height:0;border-left:6.667px solid transparent;border-right:6.667px solid transparent;
+  border-bottom:14.667px solid var(--green)}
 .tree.half::after{border-bottom-color:#1e6b45}
 @keyframes grow{to{opacity:1}}
 
-/* ── 기간 탭 ── */
-.tabs{display:flex;gap:8px;padding:0 20px 18px}
-.tab{flex:1;text-align:center;padding:11px 0;font-size:14px;font-weight:600;
-  border-radius:11px;background:var(--bg2);color:var(--dim);border:1px solid transparent;cursor:pointer}
+/* ── 카드 공통 ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18.667px}
+.card h2{font-size:14px;font-weight:700;color:var(--dim);margin-bottom:16px}
+
+/* ── 그래프 카드: 기간 탭이 카드 헤더 안에 위치 ── */
+.cardhead{display:flex;align-items:center;gap:5px;margin-bottom:14px}
+.cardhead h2{flex:1;min-width:0;margin-bottom:0}
+.tabs{display:flex;gap:5px;flex:none}
+.tab{width:45px;height:25px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;border-radius:11px;background:var(--bg2);color:var(--dim);
+  border:1px solid transparent;cursor:pointer}
 .tab.on{background:rgba(59,123,250,.14);color:var(--blue);border-color:rgba(59,123,250,.4)}
 
-/* ── 차트 ── */
-.section{padding:0 20px 24px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
-.card h2{font-size:14px;font-weight:600;color:var(--dim);margin-bottom:16px}
-.chart{display:flex;align-items:flex-end;gap:7px;height:120px}
-.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px}
-.bar .fill{width:100%;background:linear-gradient(180deg,#3b7bfa,#2a5bc4);border-radius:5px 5px 2px 2px;transition:height 1s cubic-bezier(.2,.8,.2,1)}
+/* ── 막대 그래프 ── */
+.chart{display:flex;align-items:stretch;gap:7px;height:200px}
+.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;min-width:0}
+.bar .fill{width:100%;height:0;background:linear-gradient(180deg,#3b7bfa,#2a5bc4);
+  border-radius:5px 5px 2px 2px;transition:height 1s cubic-bezier(.2,.8,.2,1)}
 .bar.peak .fill{background:linear-gradient(180deg,#5fe0a0,#2fbf71)}
-.bar .lab{font-size:10px;color:var(--dimmer)}
+.bar .lab{font-size:10px;color:var(--dimmer);flex:none}
 .chartfoot{display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
 .chartfoot .k{color:var(--dim)}
 .chartfoot .v{font-weight:700}
 
-/* ── 환산 지표 3종 ── */
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.metric{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 10px;text-align:center}
-.metric .ico{font-size:20px;margin-bottom:7px}
-.metric .val{font-size:19px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.metric .lab{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.4}
+/* ── 환산 지표 3종 (그래프 카드 내부) ── */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.metric{display:flex;flex-direction:column;align-items:center;gap:3.3px;
+  background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:14px;padding:15.667px 10.667px}
+.metric .ico{font-size:20px}
+.metric .val{font-size:19px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.metric .val span{font-size:12px}
+.metric .lab{font-size:11px;color:var(--dim);line-height:1.4}
 
 /* ── 이벤트 배너 ── */
-.event{background:linear-gradient(135deg,#123c2c,#0f2b3d);
-  border:1px solid #1f5a44;border-radius:16px;padding:18px}
+.event{background:linear-gradient(134.26deg,#123c2c,#0f2b3d);
+  border:1px solid #1f5a44;border-radius:16px;padding:19px 18.667px 18.66px}
 .event .tag{display:inline-block;font-size:11px;font-weight:700;color:#0d1117;
-  background:var(--green);padding:3px 9px;border-radius:20px;margin-bottom:11px}
+  background:var(--green);padding:3px 9px;border-radius:20px;margin-bottom:10.32px}
 .event h3{font-size:17px;font-weight:700;line-height:1.45;margin-bottom:8px}
 .event p{font-size:13px;color:#9fc4b4;line-height:1.6}
-.counter{display:flex;align-items:baseline;gap:5px;margin:14px 0 4px}
-.counter .n{font-size:30px;font-weight:800;color:var(--green);letter-spacing:-1px;font-variant-numeric:tabular-nums}
-.counter .u{font-size:14px;color:#9fc4b4;font-weight:600}
+.counter{display:flex;align-items:baseline;gap:5px;margin-top:14px}
+.counter .n{font-size:30px;font-weight:700;color:var(--green);letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.counter .u{font-size:14px;color:#9fc4b4;font-weight:700}
 .progress{height:6px;background:rgba(255,255,255,.09);border-radius:3px;overflow:hidden;margin-top:10px}
 .progress i{display:block;height:100%;width:0;background:var(--green);border-radius:3px;transition:width 1.2s ease-out}
 .progress-lab{display:flex;justify-content:space-between;font-size:11px;color:#7fae9b;margin-top:7px}
@@ -113,13 +124,13 @@ body{
 .trip:last-child{border-bottom:none;padding-bottom:0}
 .trip .date{font-size:11px;color:var(--dimmer);width:42px;flex-shrink:0;line-height:1.4}
 .trip .route{flex:1}
-.trip .route .r{font-size:14px;font-weight:600}
+.trip .route .r{font-size:14px;font-weight:700}
 .trip .route .t{font-size:11px;color:var(--dim);margin-top:3px}
 .trip .amt{font-size:14px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
 
 /* ── 인증서 공유 ── */
-.certbtn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:14px;
-  padding:16px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
+.certbtn{width:100%;height:59px;background:var(--blue);color:#fff;border:none;border-radius:14px;
+  padding:0 16px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:8px}
 .certbtn:active{transform:scale(.99)}
 
@@ -135,12 +146,7 @@ body{
 .basis .row .v{color:var(--text);font-variant-numeric:tabular-nums}
 .basis .src{font-size:11px;color:var(--dimmer);line-height:1.7;margin-top:11px}
 
-/* ── 하단 탭바 ── */
-.tabbar{display:flex;border-top:1px solid var(--line);background:var(--bg);padding:9px 0 22px;margin-top:8px}
-.tb{flex:1;text-align:center;font-size:10px;color:var(--dimmer)}
-.tb .i{font-size:19px;display:block;margin-bottom:3px;opacity:.5}
-.tb.on{color:var(--blue)}
-.tb.on .i{opacity:1}
+.note{padding:0 20px 26px;font-size:11px;color:var(--dimmer);line-height:1.7;text-align:center}
 
 /* ── 인증서 모달 ── */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:24px;z-index:50}
@@ -153,8 +159,6 @@ body{
 .cert .certroute{margin-top:18px;padding-top:16px;border-top:1px dashed #2c4f74;font-size:12px;color:#7d95b3;line-height:1.7}
 .closebtn{margin-top:18px;background:none;border:1px solid #3a4560;color:var(--dim);
   border-radius:12px;padding:12px 28px;font-size:14px;font-family:inherit;cursor:pointer}
-
-.note{padding:0 20px 26px;font-size:11px;color:var(--dimmer);line-height:1.7;text-align:center}
 
 @media (prefers-reduced-motion: reduce){
   .bar .fill, .progress i{transition:none}
@@ -176,6 +180,7 @@ body{
 <script src="transition.js"></script>
 
 <div class="phone">
+<div class="page">
 
   <div class="appbar">
     <a href="mypage.html" class="back" data-transition="fade" style="text-decoration:none;color:inherit;">‹</a>
@@ -191,104 +196,92 @@ body{
     </div>
     <div class="caption">자가용 대신 기차를 선택해<br>이산화탄소 <b>235kg</b>을 줄였어요</div>
     <div class="forest" id="forest"></div>
-    <div class="caption" style="margin-top:14px;font-size:13px">소나무 <b>36그루</b>가 1년간 흡수하는 양</div>
+    <div class="caption small">소나무 <b>36그루</b>가 1년간 흡수하는 양</div>
   </div>
 
-  <!-- 기간 탭 -->
-  <div class="tabs">
-    <div class="tab" data-p="w">주간</div>
-    <div class="tab on" data-p="m">월간</div>
-    <div class="tab" data-p="y">연간</div>
-  </div>
-
-  <!-- 차트 -->
-  <div class="section">
-    <div class="card">
+  <!-- 그래프 카드: 기간 탭 + 막대그래프 + 기간합계 + 환산지표 3종 -->
+  <div class="card">
+    <div class="cardhead">
       <h2 id="chartTitle">최근 6개월 절감량</h2>
-      <div class="chart" id="chart"></div>
-      <div class="chartfoot">
-        <span class="k">기간 합계</span>
-        <span class="v" id="sumTxt">168.4 kg</span>
+      <div class="tabs">
+        <div class="tab" data-p="w">주간</div>
+        <div class="tab on" data-p="m">월간</div>
+        <div class="tab" data-p="y">연간</div>
       </div>
     </div>
-  </div>
-
-  <!-- 환산 지표 -->
-  <div class="section">
+    <div class="chart" id="chart"></div>
+    <div class="chartfoot">
+      <span class="k">기간 합계</span>
+      <span class="v" id="sumTxt">283.6 kg</span>
+    </div>
     <div class="metrics">
       <div class="metric">
         <div class="ico">⛽</div>
-        <div class="val">98<span style="font-size:12px">L</span></div>
+        <div class="val">98<span>L</span></div>
         <div class="lab">아낀 연료</div>
       </div>
       <div class="metric">
         <div class="ico">🌲</div>
-        <div class="val">36<span style="font-size:12px">그루</span></div>
+        <div class="val">36<span>그루</span></div>
         <div class="lab">소나무 환산</div>
       </div>
       <div class="metric">
         <div class="ico">🚆</div>
-        <div class="val">14<span style="font-size:12px">회</span></div>
+        <div class="val">14<span>회</span></div>
         <div class="lab">기차 이용</div>
       </div>
     </div>
   </div>
 
   <!-- 이벤트 -->
-  <div class="section">
-    <div class="event">
-      <span class="tag">여름 캠페인</span>
-      <h3>기차로 떠난 여름,<br>함께 줄인 탄소</h3>
-      <p>7~8월 코레일 고객이 함께 만든 감축량입니다.</p>
-      <div class="counter"><span class="n" id="total">12,847</span><span class="u">톤 CO₂</span></div>
-      <div class="progress"><i></i></div>
-      <div class="progress-lab"><span>목표 18,000톤</span><span>68% 달성</span></div>
-    </div>
+  <div class="event">
+    <span class="tag">여름 캠페인</span>
+    <h3>기차로 떠난 여름,<br>함께 줄인 탄소</h3>
+    <p>7~8월 코레일 고객이 함께 만든 감축량입니다.</p>
+    <div class="counter"><span class="n" id="total">12,847</span><span class="u">톤 CO₂</span></div>
+    <div class="progress"><i></i></div>
+    <div class="progress-lab"><span>목표 18,000톤</span><span>68% 달성</span></div>
   </div>
 
   <!-- 최근 이용 -->
-  <div class="section">
-    <div class="card">
-      <h2>최근 이용 내역</h2>
-      <div class="trip">
-        <div class="date">08.22<br>토</div>
-        <div class="route"><div class="r">영천 → 서울</div><div class="t">KTX · 312km</div></div>
-        <div class="amt">57.1kg</div>
-      </div>
-      <div class="trip">
-        <div class="date">08.09<br>일</div>
-        <div class="route"><div class="r">서울 → 부산</div><div class="t">KTX · 417km</div></div>
-        <div class="amt">76.3kg</div>
-      </div>
-      <div class="trip">
-        <div class="date">07.28<br>화</div>
-        <div class="route"><div class="r">동대구 → 서울</div><div class="t">KTX · 293km</div></div>
-        <div class="amt">53.6kg</div>
-      </div>
+  <div class="card">
+    <h2>최근 이용 내역</h2>
+    <div class="trip">
+      <div class="date">08.22<br>토</div>
+      <div class="route"><div class="r">영천 → 서울</div><div class="t">KTX · 312km</div></div>
+      <div class="amt">57.1kg</div>
+    </div>
+    <div class="trip">
+      <div class="date">08.09<br>일</div>
+      <div class="route"><div class="r">서울 → 부산</div><div class="t">KTX · 417km</div></div>
+      <div class="amt">76.3kg</div>
+    </div>
+    <div class="trip">
+      <div class="date">07.28<br>화</div>
+      <div class="route"><div class="r">동대구 → 서울</div><div class="t">KTX · 293km</div></div>
+      <div class="amt">53.6kg</div>
     </div>
   </div>
 
   <!-- 인증서 -->
-  <div class="section">
-    <button class="certbtn" id="openCert">🌱 탄소절감 인증서 만들기</button>
-  </div>
+  <button class="certbtn" id="openCert">🌱 탄소절감 인증서 만들기</button>
 
   <!-- 산정근거 -->
-  <div class="section">
-    <details class="basis">
-      <summary>산정 근거 보기</summary>
-      <div class="row"><span class="k">승용차 배출계수</span><span class="v">210 gCO₂/km</span></div>
-      <div class="row"><span class="k">KTX 배출계수</span><span class="v">27 gCO₂/인·km</span></div>
-      <div class="row"><span class="k">차이 (감축 단가)</span><span class="v">183 gCO₂/km</span></div>
-      <div class="row"><span class="k">소나무 흡수량</span><span class="v">6.6 kgCO₂/년·그루</span></div>
-      <div class="src">
-        승용차 계수는 국토교통부 자동차 등록현황의 연료별(내연기관·하이브리드·전기) 구성비를 가중평균해 산출하며, 전기차 부분은 정부 공표 국가 전력배출계수를 적용합니다. 계수는 매년 갱신됩니다.<br>
-        출처 · 국토교통부 교통부문 온실가스 배출량 조사보고서, 한국교통연구원, 온실가스종합정보센터, 국립산림과학원
-      </div>
-    </details>
-  </div>
+  <details class="basis">
+    <summary>산정 근거 보기</summary>
+    <div class="row"><span class="k">승용차 배출계수</span><span class="v">210 gCO₂/km</span></div>
+    <div class="row"><span class="k">KTX 배출계수</span><span class="v">27 gCO₂/인·km</span></div>
+    <div class="row"><span class="k">차이 (감축 단가)</span><span class="v">183 gCO₂/km</span></div>
+    <div class="row"><span class="k">소나무 흡수량</span><span class="v">6.6 kgCO₂/년·그루</span></div>
+    <div class="src">
+      승용차 계수는 국토교통부 자동차 등록현황의 연료별(내연기관·하이브리드·전기) 구성비를 가중평균해 산출하며, 전기차 부분은 정부 공표 국가 전력배출계수를 적용합니다. 계수는 매년 갱신됩니다.<br>
+      출처 · 국토교통부 교통부문 온실가스 배출량 조사보고서, 한국교통연구원, 온실가스종합정보센터, 국립산림과학원
+    </div>
+  </details>
 
   <div class="note">본 화면은 제안용 시안이며 수치는 예시입니다.</div>
+
+</div>
 </div>
 
 <!-- 인증서 모달 -->
@@ -360,12 +353,14 @@ onceVisible(document.querySelector('.hero'), .4, ()=>{
   animateCount(bigNum, BIG_TARGET, {duration:1200, format:v=>Math.round(v)});
 });
 
-// 기간별 데이터
+// 기간별 데이터 (주간/월간/연간 — 탭마다 다른 그래프)
 const DATA = {
   w:{title:'최근 7일 절감량', labs:['월','화','수','목','금','토','일'], vals:[0,12.4,0,0,18.2,57.1,0], sum:'87.7 kg'},
   m:{title:'최근 6개월 절감량', labs:['3월','4월','5월','6월','7월','8월'], vals:[21.3,34.8,12.1,28.4,53.6,133.4], sum:'283.6 kg'},
   y:{title:'연도별 절감량', labs:['2023','2024','2025','2026'], vals:[142,198,241,283], sum:'864.0 kg'}
 };
+const CHART_H = 200;      // .chart 고정 높이(px)와 동일하게 유지
+const LABEL_RESERVE = 23; // 라벨(10px)+gap(7px)+여유 만큼 막대 최대 높이에서 제외
 const chart = document.getElementById('chart');
 let chartReady = prefersReduced;   // 최초 1회 노출 전까지는 false
 let pendingBars = null;
@@ -375,11 +370,12 @@ function render(p){
   document.getElementById('chartTitle').textContent = d.title;
   document.getElementById('sumTxt').textContent = d.sum;
   const max = Math.max(...d.vals) || 1;
+  const maxFillPx = CHART_H - LABEL_RESERVE;
   chart.innerHTML = '';
   const bars = [];
   d.vals.forEach((v,i)=>{
     const peak = v === max;
-    const targetH = Math.max(3, v/max*95) + '%';
+    const targetH = Math.max(3, Math.round(v/max*maxFillPx)) + 'px';
     const el = document.createElement('div');
     el.className = 'bar' + (peak?' peak':'');
     el.innerHTML = `<div class="fill" style="height:0"></div><div class="lab">${d.labs[i]}</div>`;
@@ -398,7 +394,7 @@ function playBars(bars){
   });
 }
 render('m');
-onceVisible(chart.closest('.section') || chart, .3, ()=>{
+onceVisible(chart.closest('.card') || chart, .3, ()=>{
   chartReady = true;
   if(pendingBars){ playBars(pendingBars); pendingBars = null; }
 });

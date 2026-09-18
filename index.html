@@ -18,34 +18,37 @@
   .folder-overlay.show .folder-bg{opacity:1;}
 
   .folder-container{position:relative;width:300px;max-width:80vw;
-    background:var(--card);border-radius:28px;padding:20px;
+    background:#1D1F29;border-radius:28px;padding:19.335px 20px 19.99px;
     transform:scale(.3);opacity:0;
     transform-origin:var(--origin-x,50%) var(--origin-y,50%);
     transition:transform .32s cubic-bezier(.2,.9,.3,1.15),opacity .22s ease;
-    box-shadow:0 20px 60px rgba(0,0,0,.5);}
+    box-shadow:0 20px 30px rgba(0,0,0,.5);}
   .folder-overlay.show .folder-container{transform:scale(1);opacity:1;}
 
-  .folder-header h2{font-size:var(--fs-2xl);line-height:var(--lh-2xl);font-weight:700;}
-  .folder-sub{margin-top:4px;font-size:var(--fs-sm);line-height:var(--lh-sm);color:var(--dim);}
+  .folder-header h2{font-size:17.8px;line-height:21.33px;font-weight:700;}
+  .folder-sub{margin-top:4.01px;font-size:13.5px;line-height:16.36px;color:#91939A;}
 
-  /* 갤럭시 폴더 스타일: 3열 그리드, 모든 셀 동일 크기(정사각형).
-     정확한 셀 크기/간격은 Figma 실측값 나오는 대로 조정 예정 — 지금은 기본값. */
-  .folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
-  .folder-app{position:relative;aspect-ratio:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,.04);
-    border:0;border-radius:18px;padding:10px 6px;cursor:pointer;
-    font-family:inherit;color:var(--txt);}
-  .folder-app img{width:34px;height:34px;border-radius:10px;object-fit:cover;}
-  .folder-app span:last-child{font-size:var(--fs-sm);line-height:var(--lh-sm);font-weight:700;text-align:center;}
-  .folder-app.main{background:rgba(1,86,208,.14);}
+  /* 갤럭시 폴더 스타일 — Figma node 24:2887 실측값(피그마 프레임 "Background+Shadow") 그대로 적용 */
+  .folder-grid{display:flex;align-items:flex-start;gap:12px;margin-top:16px;}
+  .folder-app{position:relative;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    border:0;cursor:pointer;font-family:inherit;color:var(--txt);}
 
-  .folder-app.locked{opacity:.55;background:rgba(255,255,255,.02);}
+  .folder-app.main{width:78px;gap:6px;background:none;padding:0;}
+  .folder-icon{position:relative;width:78px;height:78px;border-radius:18px;}
+  .folder-icon img{position:absolute;inset:0;width:100%;height:100%;
+    border-radius:18px;object-fit:cover;}
+  .folder-app.main .label{font-size:13.5px;line-height:16.36px;font-weight:700;text-align:center;}
+
+  .folder-app.locked{width:78.67px;height:79.31px;gap:8px;
+    padding:14.15px 8px 14.16px;border-radius:18px;
+    opacity:.55;background:rgba(255, 255, 255, 0.5);}
   .folder-app.locked .lock-icon{position:absolute;top:8px;right:8px;font-size:12px;}
   .folder-app.locked .q-icon{font-size:26px;line-height:1;}
-  .folder-app.locked .hint{font-size:var(--fs-sm);line-height:var(--lh-sm);font-weight:600;color:var(--dim);}
+  .folder-app.locked .hint{font-size:13.5px;line-height:16.36px;font-weight:600;color:#91939A;}
 
   .folder-app .badge-new{position:absolute;top:-6px;left:-6px;
-    background:var(--primary);color:#fff;font-size:10px;
+    background:#0156D0;color:#fff;font-size:10px;
     padding:2px 8px;border-radius:10px;font-weight:700;}
 
   /* Coming soon 모달 */
@@ -178,9 +181,11 @@
     </div>
     <div class="folder-grid">
       <a class="folder-app main" href="game.html" data-transition="fade">
-        <span class="badge-new">NEW</span>
-        <img src="img/ic_railrun.png" alt="">
-        <span>레일런</span>
+        <span class="folder-icon">
+          <img src="img/ic_railrun.png" alt="">
+          <span class="badge-new">NEW</span>
+        </span>
+        <span class="label">레일런</span>
       </a>
       <button class="folder-app locked" type="button" data-hint="겨울 준비중">
         <span class="lock-icon">🔒</span>
@@ -199,7 +204,7 @@
 <div id="comingSoonModal" class="modal hidden">
   <div class="modal-box">
     <h3>곧 만나요!</h3>
-    <p>다음 업데이트에서 새로운 미니게임을 공개할 예정이에요.</p>
+    <p>다음 업데이트에서 새로운 미니게임을 <br> 공개할 예정이에요.</p>
     <button id="modalConfirm" type="button">확인</button>
   </div>
 </div>

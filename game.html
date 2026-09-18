@@ -33,13 +33,6 @@
   #combo{margin-top:8px;font-size:15px;font-weight:800;color:var(--signal-yellow);opacity:0;transition:opacity .2s}
   #combo.show{opacity:1}
 
-  #signal{display:flex;flex-direction:column;align-items:center;gap:6px}
-  #mast{width:34px;padding:7px 0;border-radius:17px;background:#1c2547;border:1px solid #2c3766;display:flex;flex-direction:column;align-items:center;gap:6px}
-  .lamp{width:20px;height:20px;border-radius:50%;background:#22294a;transition:background .12s,box-shadow .12s}
-  .lamp.on-g{background:var(--signal-green);box-shadow:0 0 14px var(--signal-green)}
-  .lamp.on-y{background:var(--signal-yellow);box-shadow:0 0 14px var(--signal-yellow)}
-  .lamp.on-r{background:var(--signal-red);box-shadow:0 0 14px var(--signal-red)}
-  #signal .lbl{font-size:10px;color:var(--dim);letter-spacing:2px}
   #gaugebar{position:fixed;top:0;left:0;height:4px;width:100%;transform-origin:left;background:var(--signal-green);z-index:6}
 
   /* ══════════ 네온 밤하늘 비주얼 업그레이드 ══════════ */
@@ -194,14 +187,6 @@
     <div class="km" id="kmWrap"><span id="km">0.0</span><small>km</small></div>
     <div class="next">다음 역 <b id="nextSt">광명</b> <span id="nextDist"></span></div>
     <div id="combo"></div>
-  </div>
-  <div id="signal" aria-hidden="true">
-    <div id="mast">
-      <div class="lamp" id="lampR"></div>
-      <div class="lamp" id="lampY"></div>
-      <div class="lamp" id="lampG"></div>
-    </div>
-    <div class="lbl">신호</div>
   </div>
 </div>
 
@@ -987,10 +972,7 @@ function updateHUD(){
   if(combo>=5){ c.textContent = `${combo} 연속 · ${Math.round(speed)}km/h`; c.classList.add('show'); }
   else c.classList.remove('show');
 }
-function updateSignal(){
-  $('lampG').className='lamp'+(gauge>50?' on-g':'');
-  $('lampY').className='lamp'+(gauge<=50&&gauge>22?' on-y':'');
-  $('lampR').className='lamp'+(gauge<=22?' on-r':'');
+function updateGaugeBar(){
   const bar=$('gaugebar');
   bar.style.transform=`scaleX(${Math.max(0,gauge)/100})`;
   bar.style.background = gauge>50?'#22c55e':(gauge>22?'#facc15':'#ef4444');
@@ -1189,7 +1171,7 @@ function loop(t){
   drawParticles();
   ctx.restore();
 
-  updateSignal();
+  updateGaugeBar();
   requestAnimationFrame(loop);
 }
 genSteps(); updateHUD();

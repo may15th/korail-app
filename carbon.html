@@ -42,7 +42,15 @@ body{
 .appbar{display:flex;align-items:center;gap:12px;padding:12px 16px 16px}
 .appbar .back{font-size:22px;color:var(--text);line-height:1}
 .appbar h1{font-size:17px;font-weight:700}
-.appbar .share{margin-left:auto;font-size:13px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.appbar .share{margin-left:auto;font-size:13px;color:var(--dim);display:flex;align-items:center;gap:5px;
+  background:none;border:0;font-family:inherit;padding:4px;cursor:pointer;position:relative}
+/* 클릭 유도 점멸 테두리 — app.css 의 .cue/data-demo 패턴을 이 파일 톤(--blue)으로 재현 */
+body[data-demo="on"] .share.cue::after{
+  content:'';position:absolute;left:-8px;right:-8px;top:-6px;bottom:-6px;
+  border-radius:12px;pointer-events:none;
+  box-shadow:0 0 0 1.5px var(--blue),0 0 16px rgba(59,123,250,.5);
+  background:rgba(59,123,250,.10);animation:cuePulse 1.8s ease-in-out infinite}
+@keyframes cuePulse{0%,100%{opacity:.5}50%{opacity:1}}
 
 /* ── 히어로 ── */
 .hero{display:flex;flex-direction:column;align-items:center;gap:11.4px;
@@ -87,11 +95,22 @@ body{
 
 /* ── 막대 그래프 ── */
 .chart{display:flex;align-items:stretch;gap:7px;height:200px}
-.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;min-width:0}
-.bar .fill{width:100%;height:0;background:linear-gradient(180deg,#3b7bfa,#2a5bc4);
+.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;min-width:0;cursor:pointer}
+.bar .fill{position:relative;width:100%;height:0;background:linear-gradient(180deg,#3b7bfa,#2a5bc4);
   border-radius:5px 5px 2px 2px;transition:height 1s cubic-bezier(.2,.8,.2,1)}
 .bar.peak .fill{background:linear-gradient(180deg,#5fe0a0,#2fbf71)}
 .bar .lab{font-size:10px;color:var(--dimmer);flex:none}
+/* 막대 호버/클릭(탭) 시 절감량 수치 표시 */
+.bar-value{position:absolute;bottom:100%;left:50%;margin-bottom:6px;
+  transform:translateX(-50%) translateY(4px);
+  background:#0d1117;border:1px solid var(--line);color:var(--text);
+  font-size:11px;font-weight:700;padding:3px 7px;border-radius:8px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;z-index:2}
+.bar:hover .bar-value,.bar:focus-visible .bar-value,.bar.show-value .bar-value{
+  opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion: reduce){
+  .bar-value{transition:none}
+}
 .chartfoot{display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
 .chartfoot .k{color:var(--dim)}
 .chartfoot .v{font-weight:700}
@@ -160,9 +179,34 @@ body{
 .closebtn{margin-top:18px;background:none;border:1px solid #3a4560;color:var(--dim);
   border-radius:12px;padding:12px 28px;font-size:14px;font-family:inherit;cursor:pointer}
 
+/* ── 공유 바텀시트 (app.css --card-alt/--primary 톤 → 이 파일의 --bg2/--blue 로 재현) ── */
+.sheet-wrap{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,0);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
+  pointer-events:none;transition:background .2s ease,backdrop-filter .2s ease,-webkit-backdrop-filter .2s ease}
+.sheet-wrap.show{background:rgba(0,0,0,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto}
+.sheet{width:100%;max-width:var(--vw,384px);background:var(--bg2);
+  border-radius:20px 20px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 30px rgba(0,0,0,.4);
+  transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.9,.3,1)}
+.sheet-wrap.show .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--line);border-radius:2px;margin:4px auto 12px}
+.sheet-opt{width:100%;display:flex;align-items:center;gap:10px;
+  background:none;border:0;color:var(--text);font-family:inherit;
+  font-size:15px;font-weight:600;padding:15px 4px;cursor:pointer;text-align:left}
+.sheet-opt+.sheet-opt{border-top:1px solid var(--line)}
+.sheet-opt .ico{font-size:18px;width:22px;text-align:center;flex:none}
+
+/* ── 토스트 ── */
+.toast{position:fixed;left:50%;bottom:32px;z-index:70;transform:translate(-50%,12px);
+  background:rgba(20,24,36,.95);color:var(--text);font-size:13px;font-weight:700;
+  padding:10px 18px;border-radius:20px;opacity:0;pointer-events:none;
+  transition:opacity .2s ease,transform .2s ease}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
 @media (prefers-reduced-motion: reduce){
   .bar .fill, .progress i{transition:none}
   .pop{animation:none}
+  .sheet-wrap, .sheet, .toast{transition:none}
 }
 
 /* ── 페이지 전환 애니메이션 (transition.js 가 body 에 토글) ── */
@@ -175,8 +219,9 @@ body{
 }
 </style>
 <script src="fit.js"></script>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/latest/kakao.min.js"></script>
 </head>
-<body>
+<body data-demo="on">
 <script src="transition.js"></script>
 
 <div class="phone">
@@ -185,7 +230,7 @@ body{
   <div class="appbar">
     <a href="mypage.html" class="back" data-transition="fade" style="text-decoration:none;color:inherit;">‹</a>
     <h1>나의 탄소 리포트</h1>
-    <span class="share">↑ 공유</span>
+    <button class="share cue" id="shareBtn" type="button">↑ 공유</button>
   </div>
 
   <!-- 히어로: 누적 절감량 -->
@@ -298,6 +343,17 @@ body{
   </div>
 </div>
 
+<!-- 공유 바텀시트 -->
+<div class="sheet-wrap" id="shareWrap">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-opt" id="shareKakao" type="button"><span class="ico">💬</span>카카오톡으로 공유</button>
+    <button class="sheet-opt" id="shareCopy" type="button"><span class="ico">🔗</span>링크 복사</button>
+  </div>
+</div>
+
+<div class="toast" id="shareToast"></div>
+
 <script>
 const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -365,6 +421,8 @@ const chart = document.getElementById('chart');
 let chartReady = prefersReduced;   // 최초 1회 노출 전까지는 false
 let pendingBars = null;
 
+function fmtKg(v){ return (Number.isInteger(v) ? v : v.toFixed(1)) + 'kg'; }
+
 function render(p){
   const d = DATA[p];
   document.getElementById('chartTitle').textContent = d.title;
@@ -378,7 +436,8 @@ function render(p){
     const targetH = Math.max(3, Math.round(v/max*maxFillPx)) + 'px';
     const el = document.createElement('div');
     el.className = 'bar' + (peak?' peak':'');
-    el.innerHTML = `<div class="fill" style="height:0"></div><div class="lab">${d.labs[i]}</div>`;
+    el.tabIndex = 0;
+    el.innerHTML = `<div class="fill" style="height:0"><span class="bar-value">${fmtKg(v)}</span></div><div class="lab">${d.labs[i]}</div>`;
     chart.appendChild(el);
     bars.push({el, targetH});
   });
@@ -406,6 +465,26 @@ document.querySelectorAll('.tab').forEach(t=>{
   });
 });
 
+// 막대 클릭(탭) 시 절감량 수치 토글 — 호버는 CSS 로만 처리, 여긴 터치 기기용
+chart.addEventListener('click', e=>{
+  const bar = e.target.closest('.bar');
+  if(!bar) return;
+  document.querySelectorAll('.bar.show-value').forEach(b=>{
+    if(b!==bar){ b.classList.remove('show-value'); clearTimeout(b._hideTO); }
+  });
+  bar.classList.toggle('show-value');
+  clearTimeout(bar._hideTO);
+  if(bar.classList.contains('show-value')){
+    bar._hideTO = setTimeout(()=> bar.classList.remove('show-value'), 2500);
+  }
+});
+document.addEventListener('click', e=>{
+  if(e.target.closest('.bar')) return;
+  document.querySelectorAll('.bar.show-value').forEach(b=>{
+    b.classList.remove('show-value'); clearTimeout(b._hideTO);
+  });
+});
+
 // 여름 캠페인: 12,847톤 카운트업 + 진행바 (40% 노출 시 1회, 같은 타이밍)
 const total = document.getElementById('total');
 const TOTAL_TARGET = 12847;
@@ -421,6 +500,87 @@ const modal = document.getElementById('modal');
 document.getElementById('openCert').onclick = ()=>modal.classList.add('show');
 document.getElementById('closeCert').onclick = ()=>modal.classList.remove('show');
 modal.onclick = e=>{ if(e.target===modal) modal.classList.remove('show'); };
+
+// 토스트
+let toastTO;
+function showToast(msg){
+  const t = document.getElementById('shareToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTO);
+  toastTO = setTimeout(()=> t.classList.remove('show'), 1500);
+}
+
+// 공유 바텀시트
+const shareWrap = document.getElementById('shareWrap');
+function openShareSheet(){ shareWrap.classList.add('show'); }
+function closeShareSheet(){ shareWrap.classList.remove('show'); }
+document.getElementById('shareBtn').addEventListener('click', openShareSheet);
+shareWrap.addEventListener('click', e=>{ if(e.target===shareWrap) closeShareSheet(); });
+
+// 카운트업이 끝난 뒤의 실제 DOM 값을 읽는다(하드코딩 금지). #bigNum 이 카운트업
+// 애니메이션 도중(0 또는 진행 중 숫자)일 가능성에 대비해, 항상 최종값을 담고 있는
+// 정적 텍스트(.hero .caption b, 애니메이션 대상이 아님)로 폴백한다.
+function getReducedKg(){
+  const live = parseInt(document.getElementById('bigNum').textContent.trim(), 10);
+  if(!isNaN(live) && live > 0) return live;
+  const m = document.querySelector('.hero .caption b')?.textContent.match(/\d+/);
+  return m ? parseInt(m[0], 10) : 0;
+}
+
+// 카카오 디벨로퍼스 "코레일 미니게임" 앱(ID 1582271)의 JavaScript 키.
+// 카카오 JS 키는 도메인 화이트리스트로 보호되는 공개키라 클라이언트 코드에 노출돼도 안전함.
+if(window.Kakao && !Kakao.isInitialized()){
+  try{ Kakao.init('67d65fdf0d38f60fcba91573841785e2'); }catch(e){ console.warn('Kakao init 실패', e); }
+}
+function shareToKakao(){
+  if(!(window.Kakao && Kakao.isInitialized && Kakao.isInitialized())){
+    showToast('카카오톡 공유를 사용할 수 없어요');
+    return;
+  }
+  Kakao.Share.sendDefault({
+    objectType: 'feed',
+    content: {
+      title: `이번 달 ${getReducedKg()}kg CO2 절감했어요!`,
+      description: '탄소중립 마일리지로 함께해요',
+      imageUrl: location.origin + '/img/logo.png',
+      link: { mobileWebUrl: location.href, webUrl: location.href }
+    },
+    buttons: [{
+      title: '탄소리포트 보기',
+      link: { mobileWebUrl: location.href, webUrl: location.href }
+    }]
+  });
+}
+document.getElementById('shareKakao').addEventListener('click', ()=>{
+  closeShareSheet();
+  shareToKakao();
+});
+
+// 링크 복사 (Clipboard API + 구형 브라우저 fallback)
+async function copyShareLink(){
+  const url = location.href;
+  let ok = false;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    }
+  }catch(e){ ok = false; }
+  if(!ok){
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+    document.body.removeChild(ta);
+  }
+  closeShareSheet();
+  showToast(ok ? '링크가 복사되었어요' : '복사에 실패했어요');
+}
+document.getElementById('shareCopy').addEventListener('click', copyShareLink);
 </script>
 </body>
 </html>

@@ -42,6 +42,28 @@
   #signal .lbl{font-size:10px;color:var(--dim);letter-spacing:2px}
   #gaugebar{position:fixed;top:0;left:0;height:4px;width:100%;transform-origin:left;background:var(--signal-green);z-index:6}
 
+  /* ══════════ 네온 밤하늘 비주얼 업그레이드 ══════════ */
+  #meteors{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:2}
+  .meteor{position:absolute;top:0;left:0;width:110px;height:2px;
+    background:linear-gradient(90deg, rgba(255,255,255,0), #eaf6ff 85%);
+    border-radius:2px;filter:drop-shadow(0 0 4px #bfe4ff) drop-shadow(0 0 8px #38BDF8);
+    transform-origin:left center;animation:meteorFall linear forwards}
+  @keyframes meteorFall{
+    0%{opacity:0;transform:translate(0,0) rotate(35deg) scaleX(.3)}
+    12%{opacity:1;transform:translate(0,0) rotate(35deg) scaleX(1)}
+    88%{opacity:1}
+    100%{opacity:0;transform:translate(240px,168px) rotate(35deg) scaleX(1)}
+  }
+  @keyframes boostShake{
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-4px)}
+    75%{transform:translateX(4px)}
+  }
+  body.boost-shake{animation:boostShake .15s linear 3}
+  @media (prefers-reduced-motion: reduce){
+    body.boost-shake{animation:none}
+  }
+
   #sound{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:auto;
     background:rgba(28,37,71,.7);border:1px solid #2c3766;color:var(--dim);border-radius:20px;
     padding:7px 14px;font-size:12px;font-family:inherit;cursor:pointer}
@@ -163,6 +185,7 @@
 <script src="transition.js"></script>
 
 <canvas id="cv"></canvas>
+<div id="meteors" aria-hidden="true"></div>
 <div id="gaugebar"></div>
 <button id="sound">🔊 소리 켜짐</button>
 
@@ -349,6 +372,9 @@ let lastMilestone=0, tPrev=0;
 let shake=0, tilt=0, speed=0, maxSpeed=0, combo=0, lastTapT=0;
 let sparks=[], rings=[], lastWarnT=0;
 let speedTimeAcc=0, speedSampleAcc=0;   // 평균 속도(리더보드 avg_speed_kmh) 계산용
+let boostUntil=0;   // 게이지 100% 도달 시 부스터 시각효과 종료 시각(performance.now() 기준)
+let starScroll=0;   // 배경 별 패럴랙스 스크롤 오프셋(px)
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id=>document.getElementById(id);
 
 const kmNow = ()=> pos*KM_PER_STEP;
@@ -362,6 +388,22 @@ function resize(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
 addEventListener('resize', resize); resize();
+
+/* ══════════ 별똥별 (순수 장식, 게임 로직과 무관) ══════════ */
+const meteorLayer = $('meteors');
+function spawnMeteor(){
+  const el = document.createElement('div');
+  el.className = 'meteor';
+  el.style.left = (Math.random()*70)+'vw';
+  el.style.top = (Math.random()*32)+'vh';
+  el.style.animationDuration = (0.8 + Math.random()*0.4).toFixed(2)+'s';
+  el.addEventListener('animationend', ()=> el.remove());   // 쌓이지 않도록 즉시 제거
+  meteorLayer.appendChild(el);
+}
+function scheduleMeteor(){
+  setTimeout(()=>{ spawnMeteor(); scheduleMeteor(); }, 3000 + Math.random()*5000);
+}
+if(!reduceMotion) scheduleMeteor();
 
 /* ══════════ 선로 ══════════ */
 function genSteps(){
@@ -386,7 +428,9 @@ function tap(dir){
     const now = performance.now();
     combo = (now - lastTapT < 620) ? combo+1 : 1;
     lastTapT = now;
+    const prevGauge = gauge;
     gauge = Math.min(100, gauge + 9 + Math.min(7, combo*0.5));   // 콤보 보너스 회복
+    if(gauge>=100 && prevGauge<100) triggerBoost();   // 게이지 풀 도달 순간에만 1회 발동
     speed = Math.min(320, speed + 26);
     maxSpeed = Math.max(maxSpeed, speed);
 
@@ -398,6 +442,16 @@ function tap(dir){
   } else {
     derail();
   }
+}
+// 게이지 풀 도달 시 부스터 시각효과(화면 흔들림 + 빛 궤적 + 배경 서지) 발동.
+// 실제 speed/gauge 값이나 판정 로직은 건드리지 않는 순수 연출.
+function triggerBoost(){
+  if(reduceMotion) return;
+  boostUntil = performance.now() + 2000;
+  document.body.classList.remove('boost-shake');
+  void document.body.offsetWidth;   // 리플로우 강제 → 애니메이션 재시작 보장
+  document.body.classList.add('boost-shake');
+  setTimeout(()=> document.body.classList.remove('boost-shake'), 460);
 }
 addEventListener('pointerdown', e=>{
   if(e.target.closest('#sound')) return;
@@ -969,21 +1023,40 @@ function drawBG(t){
   const g = ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,'#080e1f'); g.addColorStop(1,'#16204a');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // 달 (발광) — img/ic_railrun.png 톤(#E0F2FE → #7DD3FC) 참고
+  const moonX=W*.78, moonY=H*.14, moonR=Math.min(W,H)*.045;
+  ctx.save();
+  const halo = ctx.createRadialGradient(moonX,moonY,0, moonX,moonY,moonR*4);
+  halo.addColorStop(0,'rgba(125,211,252,.4)'); halo.addColorStop(1,'rgba(125,211,252,0)');
+  ctx.fillStyle=halo;
+  ctx.beginPath(); ctx.arc(moonX,moonY,moonR*4,0,6.283); ctx.fill();
+  const body = ctx.createRadialGradient(moonX-moonR*.3,moonY-moonR*.3,moonR*.1, moonX,moonY,moonR);
+  body.addColorStop(0,'#E0F2FE'); body.addColorStop(1,'#7DD3FC');
+  ctx.shadowColor='#7DD3FC'; ctx.shadowBlur=30;
+  ctx.fillStyle=body;
+  ctx.beginPath(); ctx.arc(moonX,moonY,moonR,0,6.283); ctx.fill();
+  ctx.restore();
+
+  // 별 (기본 저속 패럴랙스, 부스터 중엔 서지 — starScroll 은 loop()에서 dt 기준으로 갱신)
   ctx.fillStyle='#cdd6f4';
   for(const s of stars){
     ctx.globalAlpha = .3+.3*Math.sin(t*.001+s.tw);
-    ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.r, 0, 6.283); ctx.fill();
+    const sx = ((s.x*W - starScroll) % W + W) % W;
+    ctx.beginPath(); ctx.arc(sx, s.y*H, s.r, 0, 6.283); ctx.fill();
   }
   ctx.globalAlpha=1;
 }
 /* 속도선 */
-function drawSpeedLines(t){
-  const n = Math.floor(speed/16);
+function drawSpeedLines(t, boost){
+  boost = boost||0;
+  const vSpeed = speed + boost*260;             // 표시용 속도(실제 speed 값은 건드리지 않음)
+  const n = Math.floor(vSpeed/16);
   ctx.strokeStyle='rgba(143,163,200,.28)'; ctx.lineWidth=2;
   for(let i=0;i<n;i++){
-    const y = ((t*.6*(speed/90) + i*167) % (H+120)) - 60;
+    const y = ((t*.6*(vSpeed/90) + i*167) % (H+120)) - 60;
     const x = (i*97)%W;
-    const len = 24+speed*.14;
+    const len = 24+vSpeed*.14;
     ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-len*.35, y+len); ctx.stroke();
   }
 }
@@ -999,11 +1072,17 @@ function drawTrack(){
       const px=a.sx+dx*k/5, py=a.sy+dy*k/5;
       ctx.beginPath(); ctx.moveTo(px+nx*9,py+ny*9); ctx.lineTo(px-nx*9,py-ny*9); ctx.stroke();
     }
-    // 다음 밟을 구간 하이라이트
+    // 다음 밟을 구간 하이라이트 — 네온 다중 레이어 글로우(CSS 여러 겹 drop-shadow를 캔버스로 흉내)
     const glow = (i===pos);
-    ctx.strokeStyle = glow ? '#2f6bff' : (passed?'#46507a':'#8fa3c8');
+    ctx.strokeStyle = glow ? '#7DD3FC' : (passed?'#3a4a7a':'#5b6fa8');
     ctx.lineWidth = glow ? 3.4 : 2.5;
-    if(glow){ ctx.shadowColor='#2f6bff'; ctx.shadowBlur=14; }
+    if(glow){
+      ctx.shadowColor='#0EA5E9'; ctx.shadowBlur=18;
+      for(const o of [-5.5,5.5]){
+        ctx.beginPath(); ctx.moveTo(a.sx+nx*o,a.sy+ny*o); ctx.lineTo(b.sx+nx*o,b.sy+ny*o); ctx.stroke();
+      }
+      ctx.shadowColor='#38BDF8'; ctx.shadowBlur=8;
+    }
     for(const o of [-5.5,5.5]){
       ctx.beginPath(); ctx.moveTo(a.sx+nx*o,a.sy+ny*o); ctx.lineTo(b.sx+nx*o,b.sy+ny*o); ctx.stroke();
     }
@@ -1027,13 +1106,15 @@ function drawParticles(){
   }
   ctx.globalAlpha=1;
 }
-function drawTrain(){
+function drawTrain(boost){
+  boost = boost||0;
   const cur = scr(steps[pos]);
   const ease = .38;
   trainX += (cur.sx-trainX)*ease;
   trainY += (cur.sy-trainY)*ease;
   let tx=trainX, ty=trainY, rot=tilt;
   const facing = steps[pos].dir;
+  const bw=36,bh=21;
 
   if(crashT>=0){
     crashT++;
@@ -1051,9 +1132,21 @@ function drawTrain(){
   ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(tx,ty-10,90+speed*.2,0,6.283); ctx.fill();
   ctx.restore();
 
+  // 부스터 빛 궤적(motion trail) — 진행 방향 반대편으로 옅어지는 잔상
+  if(boost>0){
+    for(let ghost=3; ghost>=1; ghost--){
+      const off = ghost*9;
+      ctx.save();
+      ctx.globalAlpha = .22*boost*(1-(ghost-1)*0.22);
+      ctx.translate(tx-facing*off, ty-12); ctx.rotate(rot);
+      ctx.fillStyle='#7DD3FC';
+      roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
+      ctx.restore();
+    }
+  }
+
   ctx.save();
   ctx.translate(tx, ty-12); ctx.rotate(rot);
-  const bw=36,bh=21;
   ctx.fillStyle='#eef2ff'; roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
   ctx.fillStyle='#2f6bff'; roundRect(-bw/2,2,bw,7,3); ctx.fill();
   ctx.fillStyle='#1a2340'; roundRect(-bw/2+6,-6,bw-12,7,3); ctx.fill();
@@ -1082,12 +1175,17 @@ function loop(t){
     if(gauge<=0){ gauge=0; derail(); }
   }
 
+  // 부스터 시각효과 강도: 남은 시간 400ms 구간에서 서서히 0으로 꺼져 자연스럽게 복귀
+  const boostRemain = boostUntil - performance.now();
+  const boost = boostRemain<=0 ? 0 : Math.min(1, boostRemain/400);
+  starScroll = (starScroll + (20 + boost*420)*dt) % W;
+
   ctx.save();
   if(shake>.4) ctx.translate((Math.random()-.5)*shake, (Math.random()-.5)*shake);
   drawBG(t);
-  if(speed>40) drawSpeedLines(t);
+  if(speed>40 || boost>0) drawSpeedLines(t, boost);
   drawTrack();
-  drawTrain();
+  drawTrain(boost);
   drawParticles();
   ctx.restore();
 

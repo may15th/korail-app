@@ -219,7 +219,10 @@ body[data-demo="on"] .share.cue::after{
 }
 </style>
 <script src="fit.js"></script>
-<script src="https://t1.kakaocdn.net/kakao_js_sdk/latest/kakao.min.js"></script>
+<!-- 카카오가 /latest/ 경로를 더 이상 지원하지 않아 버전을 명시해야 함.
+     아래 버전은 이 코드 작성 시점 기준이며, 주기적으로 카카오 디벨로퍼스 문서에서
+     최신 버전을 확인해 갱신 필요: https://developers.kakao.com/docs/latest/ko/getting-started/sdk-js -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.3/kakao.min.js"></script>
 </head>
 <body data-demo="on">
 <script src="transition.js"></script>

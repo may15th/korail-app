@@ -47,14 +47,59 @@
     88%{opacity:1}
     100%{opacity:0;transform:translate(240px,168px) rotate(35deg) scaleX(1)}
   }
-  @keyframes boostShake{
-    0%,100%{transform:translateX(0)}
-    25%{transform:translateX(-4px)}
-    75%{transform:translateX(4px)}
+  /* ══════════ 부스터 ══════════ */
+  /* 침목 전용 레이어: 부스터 중 blur 로 개별 침목이 끊겨 보이는 스트로보를 뭉갠다.
+     상승 200ms ease-out / 복귀 200ms ease-in */
+  #cvTies{filter:blur(0px);transition:filter .2s ease-in;will-change:filter}
+  #cvTies.boost{filter:blur(3px);transition:filter .2s ease-out}
+
+  /* 다이나믹 비네트: 주변시야 자극 완화 (모션 아님 → reduced-motion 에서도 유지) */
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0;
+    transition:opacity .3s ease;
+    background:radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 42%, rgba(4,7,18,.92) 100%)}
+  #vignette.on{opacity:.28}
+
+  /* 부스터 게이지 UI: 원형 카운트다운 링 + 입력 진행 바 */
+  .boost-ui{display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;
+    transition:opacity .2s}
+  .boost-ring{position:relative;width:48px;height:48px}
+  .boost-ring svg{width:48px;height:48px;transform:rotate(-90deg)}
+  .boost-ring circle{fill:none;stroke-width:4;stroke-linecap:round}
+  .ring-track{stroke:rgba(255,255,255,.12)}
+  .ring-prog{stroke:var(--korail-blue);transition:stroke .2s;
+    stroke-dasharray:125.66}   /* 2πr, r=20 (JS 의 RING_C 와 동일) */
+  .boost-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+  .boost-bar{width:60px;height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+  .boost-bar i{display:block;height:100%;width:0;background:var(--korail-blue);border-radius:3px;
+    transition:width .12s linear,background .2s}
+  .boost-lbl{font-size:10px;letter-spacing:1px;color:var(--dim);font-weight:700;
+    text-shadow:0 1px 3px rgba(0,0,0,.7)}
+
+  .boost-ui.success .ring-prog,.boost-ui.boosting .ring-prog{stroke:var(--signal-green)}
+  .boost-ui.success .boost-bar i,.boost-ui.boosting .boost-bar i{background:var(--signal-green)}
+  .boost-ui.boosting .boost-lbl{color:var(--signal-green)}
+  .boost-ui.success{animation:boostFlash .6s ease-out}
+  @keyframes boostFlash{
+    0%{filter:drop-shadow(0 0 0 rgba(34,197,94,0))}
+    30%{filter:drop-shadow(0 0 12px rgba(34,197,94,.95))}
+    100%{filter:drop-shadow(0 0 0 rgba(34,197,94,0))}
   }
-  body.boost-shake{animation:boostShake .15s linear 3}
+  /* 실패 피드백: 화면 전체가 아니라 이 UI 요소만 살짝 */
+  .boost-ui.fail{animation:boostNudge .22s ease-out}
+  @keyframes boostNudge{
+    0%,100%{transform:translateX(0)}
+    30%{transform:translateX(-3px)}
+    70%{transform:translateX(3px)}
+  }
+  /* 쿨다운: 흐릿하게 남은 시간 표시 */
+  .boost-ui.cooldown{opacity:.45}
+  .boost-ui.cooldown .boost-bar i{background:var(--dim)}
+  .boost-ui.cooldown .ring-prog{stroke:var(--dim)}
+
   @media (prefers-reduced-motion: reduce){
-    body.boost-shake{animation:none}
+    #cvTies,#cvTies.boost{filter:none;transition:none}
+    .boost-ui.success,.boost-ui.fail{animation:none}
   }
 
   #sound{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:auto;
@@ -177,7 +222,11 @@
 <body>
 <script src="transition.js"></script>
 
+<!-- 3중 캔버스: 배경 → 침목(부스터 중 blur 대상) → 레일/기차/파티클 -->
+<canvas id="cvBg"></canvas>
+<canvas id="cvTies"></canvas>
 <canvas id="cv"></canvas>
+<div id="vignette" aria-hidden="true"></div>
 <div id="meteors" aria-hidden="true"></div>
 <div id="gaugebar"></div>
 <button id="sound">🔊 소리 켜짐</button>
@@ -187,6 +236,17 @@
     <div class="km" id="kmWrap"><span id="km">0.0</span><small>km</small></div>
     <div class="next">다음 역 <b id="nextSt">광명</b> <span id="nextDist"></span></div>
     <div id="combo"></div>
+  </div>
+  <div class="boost-ui" id="boostUI" aria-hidden="true">
+    <div class="boost-ring">
+      <svg viewBox="0 0 48 48">
+        <circle class="ring-track" cx="24" cy="24" r="20"></circle>
+        <circle class="ring-prog" id="boostRing" cx="24" cy="24" r="20"></circle>
+      </svg>
+      <span class="boost-num" id="boostNum">0</span>
+    </div>
+    <div class="boost-bar"><i id="boostFill"></i></div>
+    <div class="boost-lbl" id="boostLbl">부스터</div>
   </div>
 </div>
 
@@ -338,7 +398,12 @@ const Snd = (() => {
       tone({freq:180, dur:.5, type:'sawtooth', vol:.3, slide:-140});
       tone({freq:90, dur:.6, type:'square', vol:.25, slide:-50, delay:.05});
     },
-    start(){ [262,392,523].forEach((f,i)=>tone({freq:f,dur:.16,type:'triangle',vol:.24,delay:i*.08})); }
+    start(){ [262,392,523].forEach((f,i)=>tone({freq:f,dur:.16,type:'triangle',vol:.24,delay:i*.08})); },
+    /* 부스터 발동: 위로 솟는 상승음 + 바람 */
+    boost(){
+      [392,523,659,880].forEach((f,i)=>tone({freq:f,dur:.18,type:'triangle',vol:.22,delay:i*.05}));
+      noise({dur:.5, vol:.16, lp:3200, delay:.05});
+    }
   };
 })();
 
@@ -348,7 +413,31 @@ const STATIONS = [["서울",0],["광명",22],["천안아산",96],["오송",128],
   ["김천구미",240],["동대구",293],["신경주",349],["울산",383],["부산",417]];
 const TILE = 46;
 
+/* ══════════ 부스터 밸런스 상수 (여기 숫자만 바꿔서 조정) ══════════
+   발동: 시간 창(WINDOW) 안에 필요 입력수(NEED_TAPS)를 채우면 발동.
+   못 채우면 게이지 0으로 리셋(UI 만 살짝 흔들리는 실패 피드백). */
+const BOOST_MODES = {                       // 난이도 모드별 챌린지 난이도
+  mugunghwa:{ windowMs:4000, needTaps:12, label:'무궁화' },
+  itx:      { windowMs:3000, needTaps:12, label:'ITX'    },
+  ktx:      { windowMs:2500, needTaps:13, label:'KTX'    },
+};
+const BOOST_MODE      = 'itx';              // 모드 선택 시스템 도입 전까지 ITX 기준
+const BOOST_WINDOW_MS = BOOST_MODES[BOOST_MODE].windowMs;
+const BOOST_NEED_TAPS = BOOST_MODES[BOOST_MODE].needTaps;
+const BOOST_DURATION_MS = 4000;             // 부스터 지속
+const BOOST_SPEED_MULT  = 1.18;             // 이동·스크롤 배율. 1.15~1.2 권장
+                                            // (그 이상은 침목 스트로보/멀미 유발)
+const BOOST_SCORE_MULT  = 2;                // 부스터 중 거리(점수) 배율
+const BOOST_GRACE_MS    = 250;              // 발동 직후 충돌 무시 시간
+const BOOST_COOLDOWN_MS = 5000;             // 종료 후 재충전 불가 시간
+const BOOST_RAMP_MS     = 320;              // 배율 전환 보간(250~400ms, 급격한 시야 변화 방지)
+const BOOST_STREAKS     = 10;               // 스피드라인 파티클 수(8~12)
+const RING_C = 2*Math.PI*20;                // 카운트다운 링 둘레(r=20)
+
 /* ══════════ 상태 ══════════ */
+// 침목만 따로 그려야 부스터 중 그 레이어에만 CSS blur 를 걸 수 있다.
+const bgCv = document.getElementById('cvBg'), bgCtx = bgCv.getContext('2d');
+const tieCv = document.getElementById('cvTies'), tieCtx = tieCv.getContext('2d');
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 let W,H,DPR;
 let steps=[], pos=0, gauge=100, playing=false, best=0;
@@ -357,20 +446,27 @@ let lastMilestone=0, tPrev=0;
 let shake=0, tilt=0, speed=0, maxSpeed=0, combo=0, lastTapT=0;
 let sparks=[], rings=[], lastWarnT=0;
 let speedTimeAcc=0, speedSampleAcc=0;   // 평균 속도(리더보드 avg_speed_kmh) 계산용
-let boostUntil=0;   // 게이지 100% 도달 시 부스터 시각효과 종료 시각(performance.now() 기준)
 let starScroll=0;   // 배경 별 패럴랙스 스크롤 오프셋(px)
+// 부스터 상태
+let chargeTaps=0, chargeStart=0;        // 시간 창 챌린지 누적 입력 / 창 시작 시각
+let boosting=false, boostStart=0, boostEnd=0, cooldownEnd=0;
+let speedMult=1, rampFrom=1, rampTo=1, rampStart=0;   // 속도 배율 + 보간
+let bonusKm=0;      // 부스터 중 획득한 추가 거리(점수 배율 x2 반영분)
+let streaks=[];     // 부스터 스피드라인 파티클
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id=>document.getElementById(id);
 
-const kmNow = ()=> pos*KM_PER_STEP;
+const kmNow = ()=> pos*KM_PER_STEP + bonusKm;
 function stationAt(km){ let n=STATIONS[0][0]; for(const [a,d] of STATIONS) if(km>=d) n=a; return n; }
 function nextStation(km){ for(const [a,d] of STATIONS) if(d>km) return [a,d]; return null; }
 
 function resize(){
   DPR = Math.min(devicePixelRatio||1, 2);
   W = innerWidth; H = innerHeight;
-  cv.width = W*DPR; cv.height = H*DPR;
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  for(const [c,x] of [[bgCv,bgCtx],[tieCv,tieCtx],[cv,ctx]]){
+    c.width = W*DPR; c.height = H*DPR;
+    x.setTransform(DPR,0,0,DPR,0,0);
+  }
 }
 addEventListener('resize', resize); resize();
 
@@ -413,30 +509,144 @@ function tap(dir){
     const now = performance.now();
     combo = (now - lastTapT < 620) ? combo+1 : 1;
     lastTapT = now;
-    const prevGauge = gauge;
-    gauge = Math.min(100, gauge + 9 + Math.min(7, combo*0.5));   // 콤보 보너스 회복
-    if(gauge>=100 && prevGauge<100) triggerBoost();   // 게이지 풀 도달 순간에만 1회 발동
+    gauge = Math.min(100, gauge + 9 + Math.min(7, combo*0.5));   // 생존 게이지(기존 로직 유지)
+    if(boosting) bonusKm += KM_PER_STEP * (BOOST_SCORE_MULT - 1);  // 점수 배율
+    registerChargeTap(now);                                        // 부스터 챌린지 집계
     speed = Math.min(320, speed + 26);
     maxSpeed = Math.max(maxSpeed, speed);
 
     tilt = -steps[pos-1].dir * 0.22;
-    shake = Math.min(9, 3 + combo*.18);
+    // 입력 피드백은 기울기·스파크·사운드로. 화면 흔들림은 충돌 전용이라 여기선 쓰지 않는다
+    // (연타 중 계속 흔들리면 부스터 충전 구간 내내 화면이 떨려 멀미를 유발함)
     spawnSparks();
     Snd.step(combo);
     checkMilestone(); updateHUD();
   } else {
+    if(inBoostGrace()) return;   // 부스터 발동 직후 그레이스 타임: 충돌 판정 무시
     derail();
   }
 }
-// 게이지 풀 도달 시 부스터 시각효과(화면 흔들림 + 빛 궤적 + 배경 서지) 발동.
-// 실제 speed/gauge 값이나 판정 로직은 건드리지 않는 순수 연출.
-function triggerBoost(){
-  if(reduceMotion) return;
-  boostUntil = performance.now() + 2000;
-  document.body.classList.remove('boost-shake');
-  void document.body.offsetWidth;   // 리플로우 강제 → 애니메이션 재시작 보장
-  document.body.classList.add('boost-shake');
-  setTimeout(()=> document.body.classList.remove('boost-shake'), 460);
+
+/* ══════════ 부스터 ══════════ */
+const nowMs = ()=> performance.now();
+function inBoostGrace(){ return boosting && nowMs() < boostStart + BOOST_GRACE_MS; }
+function onCooldown(){ return nowMs() < cooldownEnd; }
+function easeInOutCubic(p){ return p<.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2,3)/2; }
+
+// 시간 창 안에 목표 입력수를 채우면 발동. 부스터 중·쿨다운 중엔 충전되지 않는다.
+function registerChargeTap(now){
+  if(boosting || onCooldown()){ chargeTaps = 0; return; }
+  if(chargeTaps === 0 || now - chargeStart > BOOST_WINDOW_MS){
+    if(chargeTaps > 0) failCharge();      // 직전 창을 못 채운 채 넘겼으면 실패 처리
+    chargeStart = now; chargeTaps = 1;
+  } else {
+    chargeTaps++;
+  }
+  if(chargeTaps >= BOOST_NEED_TAPS) startBoost(now);
+}
+function failCharge(){
+  chargeTaps = 0;
+  const ui = $('boostUI');                // 화면 전체가 아니라 게이지 UI 만 살짝 흔든다
+  ui.classList.remove('fail'); void ui.offsetWidth; ui.classList.add('fail');
+  setTimeout(()=> ui.classList.remove('fail'), 240);
+}
+function setSpeedMultTarget(target, now){
+  rampFrom = speedMult; rampTo = target; rampStart = now;
+}
+function startBoost(now){
+  chargeTaps = 0;
+  boosting = true; boostStart = now; boostEnd = now + BOOST_DURATION_MS;
+  setSpeedMultTarget(BOOST_SPEED_MULT, now);   // 즉시 전환 X — 보간으로 서서히
+  const ui = $('boostUI');
+  ui.classList.add('boosting');
+  ui.classList.remove('success'); void ui.offsetWidth; ui.classList.add('success');
+  setTimeout(()=> ui.classList.remove('success'), 600);
+  if(!reduceMotion) tieCv.classList.add('boost');   // 침목 레이어 blur 상승
+  $('vignette').classList.add('on');                // 비네트(모션 아님 → 항상 적용)
+  Snd.boost();
+}
+function endBoost(){
+  boosting = false;
+  cooldownEnd = nowMs() + BOOST_COOLDOWN_MS;
+  setSpeedMultTarget(1, nowMs());
+  $('boostUI').classList.remove('boosting');
+  tieCv.classList.remove('boost');
+  $('vignette').classList.remove('on');
+}
+function resetBoost(){
+  chargeTaps=0; chargeStart=0; boosting=false;
+  boostStart=0; boostEnd=0; cooldownEnd=0;
+  speedMult=1; rampFrom=1; rampTo=1; rampStart=0;
+  bonusKm=0; streaks=[];
+  tieCv.classList.remove('boost');
+  $('vignette').classList.remove('on');
+  $('boostUI').classList.remove('boosting','cooldown','success','fail');
+}
+
+// 소실점 기준 방사형 스피드라인. speed/길이에 랜덤 편차를 줘서 반복 주기가
+// 눈에 띄지 않게(= 스트로보 패턴이 생기지 않게) 한다.
+function spawnStreak(){
+  return {
+    ang: Math.random()*Math.PI*2,
+    r:   40 + Math.random()*90,
+    spd: 260 + Math.random()*420,
+    len: 50 + Math.random()*90,
+    life: 1,
+    fade: .5 + Math.random()*.6,
+    col: Math.random()<.4 ? '#ffffff' : '#7DD3FC'
+  };
+}
+function updateStreaks(dt){
+  const want = (boosting && !reduceMotion) ? BOOST_STREAKS : 0;
+  while(streaks.length < want) streaks.push(spawnStreak());
+  const maxR = Math.hypot(W,H);
+  for(let i=streaks.length-1;i>=0;i--){
+    const s = streaks[i];
+    s.r += s.spd*dt*speedMult;
+    s.life -= dt*s.fade;
+    if(s.life<=0 || s.r>maxR){
+      if(want) streaks[i] = spawnStreak(); else streaks.splice(i,1);
+    }
+  }
+}
+function drawStreaks(){
+  if(!streaks.length) return;
+  const vpx = W/2, vpy = H*.30;
+  ctx.save(); ctx.lineCap='round'; ctx.lineWidth=1.6;
+  ctx.shadowColor='#38BDF8'; ctx.shadowBlur=6;
+  for(const s of streaks){
+    const cos=Math.cos(s.ang), sin=Math.sin(s.ang);
+    ctx.globalAlpha = Math.sin(Math.max(0,Math.min(1,s.life))*Math.PI) * .55;  // 0→1→0
+    ctx.strokeStyle = s.col;
+    ctx.beginPath();
+    ctx.moveTo(vpx+cos*s.r, vpy+sin*s.r);
+    ctx.lineTo(vpx+cos*(s.r+s.len), vpy+sin*(s.r+s.len));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+let lastBoostNum='', lastBoostLbl='';
+function updateBoostUI(now){
+  const ui=$('boostUI'), ring=$('boostRing'), fill=$('boostFill');
+  let ringP=0, fillP=0, num='0', lbl='부스터', cooling=false;
+  if(boosting){
+    ringP = Math.max(0,(boostEnd-now)/BOOST_DURATION_MS);
+    fillP = 1; num='⚡'; lbl='부스터!';
+  } else if(onCooldown()){
+    cooling = true;
+    fillP = Math.max(0,(cooldownEnd-now)/BOOST_COOLDOWN_MS);   // 남은 쿨다운이 줄어듦
+    num = String(Math.ceil((cooldownEnd-now)/1000)); lbl='충전 중';
+  } else if(chargeTaps>0){
+    ringP = Math.max(0, 1-(now-chargeStart)/BOOST_WINDOW_MS);  // 3초 카운트다운
+    fillP = Math.min(1, chargeTaps/BOOST_NEED_TAPS);
+    num = String(chargeTaps);
+  }
+  ui.classList.toggle('cooldown', cooling);
+  ring.style.strokeDashoffset = RING_C*(1-ringP);   // dasharray 는 CSS 에 고정
+  fill.style.width = (fillP*100)+'%';
+  if(num!==lastBoostNum){ $('boostNum').textContent = num; lastBoostNum = num; }
+  if(lbl!==lastBoostLbl){ $('boostLbl').textContent = lbl; lastBoostLbl = lbl; }
 }
 addEventListener('pointerdown', e=>{
   if(e.target.closest('#sound')) return;
@@ -476,7 +686,7 @@ function checkMilestone(){
     if(d>0 && lastMilestone<d && km>=d){
       lastMilestone = d;
       showBanner(`${n}역 통과!`);
-      Snd.station(); spawnRing(); shake = 12;
+      Snd.station(); spawnRing();   // 역 통과 연출은 링+팡파레로. 흔들림은 충돌 전용
     }
   }
   if(km>=417 && km-lastMilestone>=100){
@@ -523,6 +733,7 @@ function start(){
   speed=0; maxSpeed=0; combo=0; shake=0; tilt=0;
   speedTimeAcc=0; speedSampleAcc=0;
   sparks=[]; rings=[];
+  resetBoost();
   $('startOv').classList.add('hidden');
   $('overOv').classList.add('hidden');
   playing=true; updateHUD();
@@ -1002,6 +1213,7 @@ const stars = Array.from({length:80},()=>({
 }));
 
 function drawBG(t){
+  const ctx = bgCtx;                       // 배경은 전용 레이어에 그린다
   const g = ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,'#080e1f'); g.addColorStop(1,'#16204a');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
@@ -1029,10 +1241,10 @@ function drawBG(t){
   }
   ctx.globalAlpha=1;
 }
-/* 속도선 */
-function drawSpeedLines(t, boost){
-  boost = boost||0;
-  const vSpeed = speed + boost*260;             // 표시용 속도(실제 speed 값은 건드리지 않음)
+/* 속도선 — 부스터 중에도 speedMult(1.15~1.2배)만 따른다. 과속 서지 금지(스트로보 방지) */
+function drawSpeedLines(t){
+  const ctx = bgCtx;
+  const vSpeed = speed * speedMult;            // 표시용 속도(실제 speed 값은 건드리지 않음)
   const n = Math.floor(vSpeed/16);
   ctx.strokeStyle='rgba(143,163,200,.28)'; ctx.lineWidth=2;
   for(let i=0;i<n;i++){
@@ -1049,10 +1261,12 @@ function drawTrack(){
     const a=scr(steps[i]), b=scr(steps[i+1]);
     const dx=b.sx-a.sx, dy=b.sy-a.sy, len=Math.hypot(dx,dy);
     const nx=-dy/len, ny=dx/len, passed=i<pos;
-    ctx.strokeStyle = passed?'#212a4f':'#33406f'; ctx.lineWidth=3;
+    // 침목: 전용 레이어(tieCtx)에 그린다 → 부스터 중 이 레이어에만 blur 가 걸려
+    // 개별 침목이 끊겨 보이지 않고 부드러운 광선 줄무늬가 된다.
+    tieCtx.strokeStyle = passed?'#212a4f':'#33406f'; tieCtx.lineWidth=3;
     for(let k=1;k<=4;k++){
       const px=a.sx+dx*k/5, py=a.sy+dy*k/5;
-      ctx.beginPath(); ctx.moveTo(px+nx*9,py+ny*9); ctx.lineTo(px-nx*9,py-ny*9); ctx.stroke();
+      tieCtx.beginPath(); tieCtx.moveTo(px+nx*9,py+ny*9); tieCtx.lineTo(px-nx*9,py-ny*9); tieCtx.stroke();
     }
     // 다음 밟을 구간 하이라이트 — 네온 다중 레이어 글로우(CSS 여러 겹 drop-shadow를 캔버스로 흉내)
     const glow = (i===pos);
@@ -1091,7 +1305,7 @@ function drawParticles(){
 function drawTrain(boost){
   boost = boost||0;
   const cur = scr(steps[pos]);
-  const ease = .38;
+  const ease = Math.min(.9, .38*speedMult);   // 열차 이동 속도도 배율을 따름
   trainX += (cur.sx-trainX)*ease;
   trainY += (cur.sy-trainY)*ease;
   let tx=trainX, ty=trainY, rot=tilt;
@@ -1140,10 +1354,20 @@ function drawTrain(boost){
 /* ══════════ 루프 ══════════ */
 function loop(t){
   const dt = Math.min(50, t-tPrev)/1000; tPrev=t;
+  const now = performance.now();
+
+  // ── 부스터 수명 관리 ──
+  if(boosting && now >= boostEnd) endBoost();
+  // 시간 창을 못 채운 채 넘겼으면 게이지 리셋(입력이 끊겨도 제때 풀리도록 루프에서도 체크)
+  if(!boosting && chargeTaps>0 && now - chargeStart > BOOST_WINDOW_MS) failCharge();
+  // 배율은 즉시 바뀌지 않고 BOOST_RAMP_MS 동안 ease-in-out 으로 보간(급격한 시야 변화 방지)
+  speedMult = rampFrom + (rampTo-rampFrom) * easeInOutCubic(Math.min(1,(now-rampStart)/BOOST_RAMP_MS));
+  const boostVis = Math.max(0, Math.min(1, (speedMult-1)/(BOOST_SPEED_MULT-1)));
+  updateStreaks(dt);
 
   const tgt = steps[pos];
-  camX += (tgt.x*TILE*.62 - camX)*.14;
-  camY += (tgt.y*TILE*.52 - camY)*.14;
+  camX += (tgt.x*TILE*.62 - camX)*Math.min(.9, .14*speedMult);   // 스크롤 속도 = 배율
+  camY += (tgt.y*TILE*.52 - camY)*Math.min(.9, .14*speedMult);
 
   tilt *= .82;
   speed *= .975;
@@ -1157,21 +1381,25 @@ function loop(t){
     if(gauge<=0){ gauge=0; derail(); }
   }
 
-  // 부스터 시각효과 강도: 남은 시간 400ms 구간에서 서서히 0으로 꺼져 자연스럽게 복귀
-  const boostRemain = boostUntil - performance.now();
-  const boost = boostRemain<=0 ? 0 : Math.min(1, boostRemain/400);
-  starScroll = (starScroll + (20 + boost*420)*dt) % W;
+  starScroll = (starScroll + 20*speedMult*dt) % W;   // 별 패럴랙스도 동일 배율
 
-  ctx.save();
-  if(shake>.4) ctx.translate((Math.random()-.5)*shake, (Math.random()-.5)*shake);
+  // 화면 흔들림(shake)은 충돌·역 통과 피드백 전용. 부스터는 흔들지 않는다.
+  const shx = shake>.4 ? (Math.random()-.5)*shake : 0;
+  const shy = shake>.4 ? (Math.random()-.5)*shake : 0;
+  tieCtx.clearRect(0,0,W,H); ctx.clearRect(0,0,W,H);
+  for(const c of [bgCtx,tieCtx,ctx]){ c.save(); c.translate(shx,shy); }
+
   drawBG(t);
-  if(speed>40 || boost>0) drawSpeedLines(t, boost);
-  drawTrack();
-  drawTrain(boost);
+  if(speed>40) drawSpeedLines(t);
+  drawTrack();            // 침목 → tieCtx / 레일 → ctx
+  drawTrain(boostVis);
   drawParticles();
-  ctx.restore();
+  drawStreaks();          // 부스터 전용 방사형 스피드라인
+
+  for(const c of [bgCtx,tieCtx,ctx]) c.restore();
 
   updateGaugeBar();
+  updateBoostUI(now);
   requestAnimationFrame(loop);
 }
 genSteps(); updateHUD();

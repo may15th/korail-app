@@ -464,6 +464,18 @@ const RAIL_JOINT_OVER  = 3;    // 꺾이는 지점 빈틈 메우기용 겹침(px
 const RAIL_PASSED_A    = .45;  // 이미 지나온 구간 투명도
 const RAIL_ACTIVE_A    = .45;  // 밟을 차례 구간에 덧씌우는 발광 세기
 
+/* ══════════ 열차 스프라이트 (img/train-*.png) ══════════
+   에셋 실측값(826x826). 에셋을 새로 뽑으면 다시 재야 한다.
+   주축이 게임 선로 각도(-140°/-40°)와 약 19° 차이가 나서 회전으로 맞춘다. */
+const TRAIN_SRC = { '-1':'img/train-left.png', '1':'img/train-right.png' };
+const TRAIN_GEO = {
+  '-1': { cx:368.4, cy:467.1, dir:-120.65*Math.PI/180 },   // 좌상단으로 진행
+  '1' : { cx:456.6, cy:467.1, dir: -59.35*Math.PI/180 },   // 우상단으로 진행
+};
+const TRAIN_ASSET_LEN = 516;   // 주축 방향 길이(에셋 px)
+const TRAIN_LEN       = 46;    // 화면상 열차 길이(px) — 크기는 이 값으로 조절
+const TRAIN_LIFT      = 12;    // 선로 위로 띄우는 높이(px)
+
 /* ══════════ 상태 ══════════ */
 // 침목만 따로 그려야 부스터 중 그 레이어에만 CSS blur 를 걸 수 있다.
 const bgCv = document.getElementById('cvBg'), bgCtx = bgCv.getContext('2d');
@@ -1378,6 +1390,17 @@ function buildRailStrip(im){
   return { cv:st, over:RAIL_JOINT_OVER, halfRatio:(halfMax*2)/sliceLen };
 }
 
+/* 열차 스프라이트 로드 — 실패하면 기존 절차적 열차로 폴백 */
+const trainImg = {};
+(function loadTrains(){
+  for(const key of ['-1','1']){
+    const im = new Image();
+    im.onload  = ()=> trainImg[key] = im;
+    im.onerror = ()=> console.warn('열차 에셋 로드 실패 — 기본 도형 사용:', TRAIN_SRC[key]);
+    im.src = TRAIN_SRC[key];
+  }
+})();
+
 (function loadRails(){
   let left = 2;
   for(const key of ['-1','1']){
@@ -1520,27 +1543,55 @@ function drawTrain(boost){
   ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(tx,ty-10,90+speed*.2,0,6.283); ctx.fill();
   ctx.restore();
 
-  // 부스터 빛 궤적(motion trail) — 진행 방향 반대편으로 옅어지는 잔상
-  if(boost>0){
-    for(let ghost=3; ghost>=1; ghost--){
-      const off = ghost*9;
+  const key = facing<0 ? '-1' : '1';
+  const im = trainImg[key];
+  if(im){
+    // 스프라이트: 에셋 주축을 현재 선로 진행 방향에 맞춰 회전시켜 얹는다
+    const geo = TRAIN_GEO[key];
+    const nxt = steps[pos+1] || steps[pos];
+    const n2 = scr(nxt), c2 = scr(steps[pos]);
+    const segAng = (nxt===steps[pos]) ? geo.dir : Math.atan2(n2.sy-c2.sy, n2.sx-c2.sx);
+    const s = TRAIN_LEN / TRAIN_ASSET_LEN;
+    const spin = segAng - geo.dir + rot;
+    const put = (px,py,alpha)=>{
       ctx.save();
-      ctx.globalAlpha = .22*boost*(1-(ghost-1)*0.22);
-      ctx.translate(tx-facing*off, ty-12); ctx.rotate(rot);
-      ctx.fillStyle='#7DD3FC';
-      roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
+      ctx.globalAlpha = alpha;
+      ctx.translate(px, py); ctx.rotate(spin); ctx.scale(s,s);
+      ctx.translate(-geo.cx, -geo.cy);
+      ctx.drawImage(im, 0, 0);
       ctx.restore();
+    };
+    // 부스터 빛 궤적 — 진행 방향 반대편으로 옅어지는 잔상
+    if(boost>0){
+      const bx = Math.cos(segAng), by = Math.sin(segAng);
+      for(let ghost=3; ghost>=1; ghost--){
+        const off = ghost*9;
+        put(tx-bx*off, ty-TRAIN_LIFT-by*off, .22*boost*(1-(ghost-1)*.22));
+      }
     }
+    put(tx, ty-TRAIN_LIFT, 1);
+  } else {
+    // 에셋 로드 전 폴백: 기존 절차적 열차
+    if(boost>0){
+      for(let ghost=3; ghost>=1; ghost--){
+        const off = ghost*9;
+        ctx.save();
+        ctx.globalAlpha = .22*boost*(1-(ghost-1)*0.22);
+        ctx.translate(tx-facing*off, ty-12); ctx.rotate(rot);
+        ctx.fillStyle='#7DD3FC';
+        roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.save();
+    ctx.translate(tx, ty-12); ctx.rotate(rot);
+    ctx.fillStyle='#eef2ff'; roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
+    ctx.fillStyle='#2f6bff'; roundRect(-bw/2,2,bw,7,3); ctx.fill();
+    ctx.fillStyle='#1a2340'; roundRect(-bw/2+6,-6,bw-12,7,3); ctx.fill();
+    ctx.fillStyle='#ffe9a3';
+    ctx.beginPath(); ctx.arc(facing*(bw/2-3),0,3.2,0,6.283); ctx.fill();
+    ctx.restore();
   }
-
-  ctx.save();
-  ctx.translate(tx, ty-12); ctx.rotate(rot);
-  ctx.fillStyle='#eef2ff'; roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
-  ctx.fillStyle='#2f6bff'; roundRect(-bw/2,2,bw,7,3); ctx.fill();
-  ctx.fillStyle='#1a2340'; roundRect(-bw/2+6,-6,bw-12,7,3); ctx.fill();
-  ctx.fillStyle='#ffe9a3';
-  ctx.beginPath(); ctx.arc(facing*(bw/2-3),0,3.2,0,6.283); ctx.fill();
-  ctx.restore();
 }
 
 /* ══════════ 루프 ══════════ */

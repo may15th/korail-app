@@ -57,11 +57,6 @@
     100%{opacity:0;transform:translate(240px,168px) rotate(35deg) scaleX(1)}
   }
   /* ══════════ 부스터 ══════════ */
-  /* 침목 전용 레이어: 부스터 중 blur 로 개별 침목이 끊겨 보이는 스트로보를 뭉갠다.
-     상승 200ms ease-out / 복귀 200ms ease-in */
-  #cvTies{filter:blur(0px);transition:filter .2s ease-in;will-change:filter}
-  #cvTies.boost{filter:blur(3px);transition:filter .2s ease-out}
-
   /* 다이나믹 비네트: 주변시야 자극 완화 (모션 아님 → reduced-motion 에서도 유지) */
   #vignette{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0;
     transition:opacity .3s ease;
@@ -107,7 +102,6 @@
   .boost-ui.cooldown .ring-prog{stroke:var(--dim)}
 
   @media (prefers-reduced-motion: reduce){
-    #cvTies,#cvTies.boost{filter:none;transition:none}
     .boost-ui.success,.boost-ui.fail{animation:none}
   }
 
@@ -455,6 +449,21 @@ const BOOST_RAMP_MS     = 320;              // 배율 전환 보간(250~400ms, �
 const BOOST_STREAKS     = 10;               // 스피드라인 파티클 수(8~12)
 const RING_C = 2*Math.PI*20;                // 카운트다운 링 둘레(r=20)
 
+/* ══════════ 선로 스프라이트 (img/rail-*.png) ══════════
+   에셋의 선로는 완만한 호(arc)라서 그대로 잘라 쓰면 조각마다 레일 수직 위치가 어긋나
+   이음매가 꺾여 보인다. → 로드할 때 중심선을 실측해서 "곧게 편" 띠(strip)로 한 번
+   변환해 두고, 매 프레임엔 그 띠를 회전·배치만 한다.
+   세그먼트 1칸(화면 37.2px) = 침목 4개 → 선로 폭 약 23.5px (기존 절차적 선로와 같은 밀도). */
+const RAIL_SRC = { '-1':'img/rail-left.png', '1':'img/rail-right.png' };
+const RAIL_TIE_PITCH   = 84;   // 침목 주기(에셋 px) — 에셋을 새로 뽑으면 이 값만 다시 재면 된다
+const RAIL_TIES_PER_SEG= 4;    // 세그먼트 1칸이 쓰는 침목 수 (밀도 결정)
+const RAIL_END_MARGIN  = 90;   // 레일 마감면(끝단, 침목 없는 구간) 회피 여백
+const RAIL_BANDS       = 24;   // 호를 펼 때 쪼개는 띠 개수 (많을수록 정확)
+const RAIL_STRIP_PX    = 160;  // 띠의 가로 해상도(화면 37px×DPR2 대비 2배 여유)
+const RAIL_JOINT_OVER  = 3;    // 꺾이는 지점 빈틈 메우기용 겹침(px). 키우면 침목이 겹쳐 보임
+const RAIL_PASSED_A    = .45;  // 이미 지나온 구간 투명도
+const RAIL_ACTIVE_A    = .45;  // 밟을 차례 구간에 덧씌우는 발광 세기
+
 /* ══════════ 상태 ══════════ */
 // 침목만 따로 그려야 부스터 중 그 레이어에만 CSS blur 를 걸 수 있다.
 const bgCv = document.getElementById('cvBg'), bgCtx = bgCv.getContext('2d');
@@ -581,10 +590,7 @@ function startBoost(now){
   ui.classList.add('boosting');
   ui.classList.remove('success'); void ui.offsetWidth; ui.classList.add('success');
   setTimeout(()=> ui.classList.remove('success'), 600);
-  if(!reduceMotion){
-    tieCv.classList.add('boost');                   // 침목 레이어 blur 상승
-    $('bgArt').classList.add('boost');              // 배경 미세 줌(별 패럴랙스 대체)
-  }
+  if(!reduceMotion) $('bgArt').classList.add('boost');   // 배경 미세 줌(별 패럴랙스 대체)
   $('vignette').classList.add('on');                // 비네트(모션 아님 → 항상 적용)
   Snd.boost();
 }
@@ -593,7 +599,6 @@ function endBoost(){
   cooldownEnd = nowMs() + BOOST_COOLDOWN_MS;
   setSpeedMultTarget(1, nowMs());
   $('boostUI').classList.remove('boosting');
-  tieCv.classList.remove('boost');
   $('bgArt').classList.remove('boost');
   $('vignette').classList.remove('on');
 }
@@ -602,7 +607,6 @@ function resetBoost(){
   boostStart=0; boostEnd=0; cooldownEnd=0;
   speedMult=1; rampFrom=1; rampTo=1; rampStart=0;
   bonusKm=0; streaks=[];
-  tieCv.classList.remove('boost');
   $('bgArt').classList.remove('boost');
   $('vignette').classList.remove('on');
   $('boostUI').classList.remove('boosting','cooldown','success','fail');
@@ -1285,7 +1289,140 @@ function drawSpeedLines(t){
   }
 }
 
-function drawTrack(){
+/* 에셋에서 선로 중심선을 실측한 뒤, 호를 곧게 편 직선 띠(strip)를 만든다.
+   에셋을 교체해도 중심선을 다시 재므로 좌표를 손으로 고칠 필요가 없다. */
+const railStrip = {};
+let railsReady = false;
+
+function buildRailStrip(im){
+  const N = im.width;
+  const c = document.createElement('canvas'); c.width=N; c.height=N;
+  const cx = c.getContext('2d', { willReadFrequently:true });
+  cx.drawImage(im, 0, 0);
+  const d = cx.getImageData(0,0,N,N).data;       // 같은 출처가 아니면 여기서 예외 → 폴백
+  const al = (x,y)=> (x<0||y<0||x>=N||y>=N) ? 0 : d[((y|0)*N+(x|0))*4+3];
+
+  // 1) 불투명 픽셀의 무게중심 + 주축(2차 모먼트) — 선로가 뻗은 방향
+  let sx=0, sy=0, n=0;
+  for(let y=0;y<N;y+=2) for(let x=0;x<N;x+=2) if(al(x,y)>60){ sx+=x; sy+=y; n++; }
+  if(!n) throw new Error('불투명 픽셀 없음');
+  const mx=sx/n, my=sy/n;
+  let xx=0, yy=0, xy=0;
+  for(let y=0;y<N;y+=2) for(let x=0;x<N;x+=2) if(al(x,y)>60){ const a=x-mx, b=y-my; xx+=a*a; yy+=b*b; xy+=a*b; }
+  let ang = .5*Math.atan2(2*xy, xx-yy);
+  if(Math.sin(ang) > 0) ang -= Math.PI;          // 항상 "위로 진행"(y 감소) 방향으로 통일
+  const ux=Math.cos(ang), uy=Math.sin(ang), px=-uy, py=ux;
+
+  // 2) 주축을 따라가며 밴드 중심/폭 측정 → 중심선 폴리라인
+  const R = N, cen = new Array(2*R+1).fill(null), cov = new Array(2*R+1).fill(0);
+  let halfMax = 0;
+  for(let i=0;i<=2*R;i++){
+    const t = i-R, ox = mx+ux*t, oy = my+uy*t;
+    let lo=null, hi=null, wide=null, wideHi=null, cnt=0;
+    for(let k=-140;k<=140;k++){
+      const a = al(Math.round(ox+px*k), Math.round(oy+py*k));
+      if(a>60){ if(lo===null) lo=k; hi=k; cnt++; }
+      if(a>8){ if(wide===null) wide=k; wideHi=k; }
+    }
+    if(lo!==null){ cen[i]=(lo+hi)/2; cov[i]=cnt; halfMax=Math.max(halfMax, Math.abs(wide), Math.abs(wideHi)); }
+  }
+  // 2-b) 침목 주기만큼 이동평균 — 중심선은 침목 간격으로 진동한다(침목 구간은 폭이 넓고
+  //      사이는 레일만 남아 중심이 흔들림). 이 노이즈까지 펴면 오히려 물결치므로 걸러낸다.
+  const smooth = cen.slice(), sHalf = Math.round(RAIL_TIE_PITCH/2);
+  for(let i=0;i<cen.length;i++){
+    if(cen[i]===null) continue;
+    let s=0, c=0;
+    for(let j=Math.max(0,i-sHalf); j<=Math.min(cen.length-1,i+sHalf); j++) if(cen[j]!==null){ s+=cen[j]; c++; }
+    smooth[i] = s/c;
+  }
+
+  // 3) 침목이 있는(폭이 넓은) 구간만 남기고 마감면 잘라내기
+  const full = Math.max(...cov);
+  let i0=0, i1=2*R;
+  while(i0<i1 && cov[i0] < full*.6) i0++;
+  while(i1>i0 && cov[i1] < full*.6) i1--;
+  i0 += RAIL_END_MARGIN; i1 -= RAIL_END_MARGIN;
+  const sliceLen = RAIL_TIE_PITCH*RAIL_TIES_PER_SEG;
+  if(i1-i0 < sliceLen) throw new Error('쓸 수 있는 구간이 너무 짧음');
+  const mid = (i0+i1)/2, T0 = Math.round(mid - sliceLen/2);   // 가운데에서 필요한 만큼만
+
+  // 4) 얇은 띠로 쪼개 곧게 펴서 그린다 (띠마다 개별 회전 → 호가 직선이 됨)
+  // 이음매 겹침만큼 띠를 양쪽으로 더 길게 뜬다(늘려 그리지 않으므로 침목 밀도는 그대로)
+  const overA = sliceLen * (RAIL_JOINT_OVER / 37.22);
+  const A0 = T0 - overA, A1 = T0 + sliceLen + overA;
+  const k = RAIL_STRIP_PX / sliceLen;                          // 에셋 → 띠 스케일
+  const sw = Math.round((A1-A0)*k), sh = Math.round(halfMax*2*k);
+  const st = document.createElement('canvas'); st.width=sw; st.height=sh;
+  const sc = st.getContext('2d');
+  sc.imageSmoothingQuality = 'high';
+  const pt = idx =>{                                           // 중심선(평활화) 위의 점
+    const j = Math.max(0, Math.min(2*R, Math.round(idx)));
+    const cc = smooth[j] ?? 0, t = j-R;
+    return [mx+ux*t+px*cc, my+uy*t+py*cc];
+  };
+  for(let b=0;b<RAIL_BANDS;b++){
+    const a0 = A0 + (A1-A0)*b/RAIL_BANDS, a1 = A0 + (A1-A0)*(b+1)/RAIL_BANDS;
+    const p0 = pt(a0), p1 = pt(a1);   // a0/a1 은 이미 cen[] 인덱스
+    const bl = Math.hypot(p1[0]-p0[0], p1[1]-p0[1]);
+    if(!bl) continue;
+    const x0 = (a0-A0)*k, x1 = (a1-A0)*k;
+    sc.save();
+    sc.beginPath(); sc.rect(x0, 0, x1-x0, sh); sc.clip();      // 이 띠 구간만
+    sc.translate(x0, sh/2);
+    sc.scale((x1-x0)/bl, (x1-x0)/bl);                          // 띠 길이에 맞춰 등방 스케일
+    sc.rotate(-Math.atan2(p1[1]-p0[1], p1[0]-p0[0]));          // 띠를 수평으로
+    sc.translate(-p0[0], -p0[1]);
+    sc.drawImage(im, 0, 0);
+    sc.restore();
+  }
+  return { cv:st, over:RAIL_JOINT_OVER, halfRatio:(halfMax*2)/sliceLen };
+}
+
+(function loadRails(){
+  let left = 2;
+  for(const key of ['-1','1']){
+    const im = new Image();
+    im.onload = ()=>{
+      try{ railStrip[key] = buildRailStrip(im); }
+      catch(e){ console.warn('레일 스프라이트 생성 실패 — 절차적 선로 사용:', e.message); return; }
+      if(--left === 0) railsReady = true;
+    };
+    im.onerror = ()=> console.warn('레일 에셋 로드 실패 — 절차적 선로 사용:', RAIL_SRC[key]);
+    im.src = RAIL_SRC[key];
+  }
+})();
+
+/* 곧게 편 띠를 세그먼트마다 회전·배치만 한다(왜곡·꺾임 없음) */
+function drawTrackSprite(){
+  const from=Math.max(0,pos-6), to=Math.min(steps.length-1,pos+26);
+  const g = tieCtx;                      // 선로 전용 레이어(기차·파티클보다 아래)
+  for(let i=from;i<to;i++){
+    const a=scr(steps[i]), b=scr(steps[i+1]);
+    const dx=b.sx-a.sx, dy=b.sy-a.sy, segLen=Math.hypot(dx,dy);
+    if(!segLen) continue;
+    const st = railStrip[steps[i].dir<0 ? '-1' : '1'];
+    if(!st) continue;
+    const over = st.over, h = segLen*st.halfRatio;
+    const passed = i<pos, active = i===pos;
+
+    g.save();
+    g.translate(a.sx, a.sy);
+    g.rotate(Math.atan2(dy,dx));          // +x = 세그먼트 진행 방향
+    g.globalAlpha = passed ? RAIL_PASSED_A : 1;
+    g.drawImage(st.cv, -over, -h/2, segLen+over*2, h);
+    if(active){                           // 밟을 차례 구간만 가산합성으로 네온 강조
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = RAIL_ACTIVE_A;
+      g.drawImage(st.cv, -over, -h/2, segLen+over*2, h);
+    }
+    g.restore();
+  }
+}
+
+function drawTrack(){ railsReady ? drawTrackSprite() : drawTrackProc(); }
+
+/* 에셋 로드 전(또는 실패 시) 폴백으로 쓰는 절차적 선로 */
+function drawTrackProc(){
   const from=Math.max(0,pos-6), to=Math.min(steps.length-1,pos+26);
   for(let i=from;i<to;i++){
     const a=scr(steps[i]), b=scr(steps[i+1]);

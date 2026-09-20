@@ -111,6 +111,15 @@
     .boost-ui.success,.boost-ui.fail{animation:none}
   }
 
+  /* ═══════════ DEV: 광고 토글 버튼 (최종 빌드 전 삭제) ═══════════ */
+  #devAds{position:fixed;right:12px;bottom:14px;z-index:99;
+    padding:9px 14px;border-radius:999px;
+    background:rgba(11,18,38,.72);border:1px dashed rgba(255,255,255,.35);
+    color:#eef2ff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #devAds.off{border-color:var(--signal-yellow);color:var(--signal-yellow)}
+  /* ═══════════ DEV 끝 ═══════════ */
+
   #sound{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:auto;
     background:rgba(28,37,71,.7);border:1px solid #2c3766;color:var(--dim);border-radius:20px;
     padding:7px 14px;font-size:12px;font-family:inherit;cursor:pointer}
@@ -240,6 +249,8 @@
 <div id="meteors" aria-hidden="true"></div>
 <div id="gaugebar"></div>
 <button id="sound">🔊 소리 켜짐</button>
+<!-- DEV: 광고 토글 버튼 (최종 빌드 전 삭제) -->
+<button id="devAds" type="button">광고 ON</button>
 
 <div id="hud">
   <div>
@@ -795,7 +806,10 @@ const CHANCES_KEY = 'railrun_chances';
 const LAST_AD_KEY = 'lastAdIdx';
 const AD_MAX_RETRIES = 2;
 if(sessionStorage.getItem(CHANCES_KEY)===null) sessionStorage.setItem(CHANCES_KEY,'3');
-function getChances(){ return parseInt(sessionStorage.getItem(CHANCES_KEY)||'3',10); }
+function getChances(){
+  if(devAdsOff()) return 99;   /* DEV: 광고 토글 — 최종 빌드에선 이 줄만 지우면 됨 */
+  return parseInt(sessionStorage.getItem(CHANCES_KEY)||'3',10);
+}
 function setChances(n){ sessionStorage.setItem(CHANCES_KEY, String(Math.max(0,n))); }
 // 완전 무작위 선택. 직전에 본 광고와는 겹치지 않음
 function pickAd(){
@@ -807,6 +821,37 @@ function pickAd(){
   sessionStorage.setItem(LAST_AD_KEY, idx);
   return ADS[idx];
 }
+/* ═══════════════ DEV: 광고 토글 (최종 빌드 전 삭제) ═══════════════
+   게임 디자인 작업 중 기회가 떨어져 광고 화면이 끼어드는 걸 막는 개발용 스위치.
+   OFF 로 두면 기회가 항상 99 로 보여서 광고 게이트가 뜨지 않는다.
+   설정은 localStorage 에 저장돼 새로고침해도 유지된다.
+
+   ── 삭제 방법 (3곳) ──
+   1) <button id="devAds"> 엘리먼트
+   2) #devAds CSS 블록
+   3) 이 블록 + getChances() 안의 "DEV:" 표시된 한 줄
+   ──────────────────────────────────────────────────────────────── */
+const DEV_ADS_KEY = 'railrun_dev_ads_off';
+function devAdsOff(){
+  try{ return localStorage.getItem(DEV_ADS_KEY) === '1'; }catch(e){ return false; }
+}
+function renderDevAdsBtn(){
+  const b = $('devAds'), off = devAdsOff();
+  b.textContent = off ? '광고 OFF' : '광고 ON';
+  b.classList.toggle('off', off);
+}
+$('devAds').addEventListener('pointerdown', e=> e.stopPropagation());  // 게임 입력(좌우 탭)으로 새지 않게
+$('devAds').addEventListener('click', e=>{
+  e.stopPropagation();
+  const next = !devAdsOff();
+  try{ localStorage.setItem(DEV_ADS_KEY, next ? '1' : '0'); }catch(err){}
+  if(!next) setChances(3);        // 광고를 다시 켤 땐 기회를 기본값으로 초기화
+  renderDevAdsBtn();
+  refreshGameOverButtons();       // 지금 떠 있는 게임오버 화면에 즉시 반영
+});
+renderDevAdsBtn();
+/* ═══════════════ DEV 블록 끝 ═══════════════ */
+
 function refreshGameOverButtons(){
   const n = getChances();
   if(n>0){
@@ -1245,29 +1290,54 @@ function drawTrack(){
   for(let i=from;i<to;i++){
     const a=scr(steps[i]), b=scr(steps[i+1]);
     const dx=b.sx-a.sx, dy=b.sy-a.sy, len=Math.hypot(dx,dy);
-    const nx=-dy/len, ny=dx/len, passed=i<pos;
-    // 침목: 전용 레이어(tieCtx)에 그린다 → 부스터 중 이 레이어에만 blur 가 걸려
-    // 개별 침목이 끊겨 보이지 않고 부드러운 광선 줄무늬가 된다.
-    tieCtx.strokeStyle = passed?'#212a4f':'#33406f'; tieCtx.lineWidth=3;
+    const nx=-dy/len, ny=dx/len;
+    const passed = i<pos, active = i===pos;
+    // 레일 한 쌍(양쪽 offset)을 현재 스타일로 긋는 헬퍼
+    const rail = o=>{ ctx.beginPath(); ctx.moveTo(a.sx+nx*o,a.sy+ny*o); ctx.lineTo(b.sx+nx*o,b.sy+ny*o); ctx.stroke(); };
+
+    /* 1. 침목 — 전용 레이어(tieCtx)에 그린다.
+       부스터 중 이 레이어에만 blur 가 걸려 개별 침목이 끊겨 보이지 않고 광선 줄무늬가 된다. */
+    tieCtx.save();
+    tieCtx.lineCap='round';
     for(let k=1;k<=4;k++){
       const px=a.sx+dx*k/5, py=a.sy+dy*k/5;
-      tieCtx.beginPath(); tieCtx.moveTo(px+nx*9,py+ny*9); tieCtx.lineTo(px-nx*9,py-ny*9); tieCtx.stroke();
+      // 침목 아래의 은은한 그림자
+      tieCtx.strokeStyle='rgba(3, 8, 30, .75)'; tieCtx.lineWidth=5;
+      tieCtx.beginPath(); tieCtx.moveTo(px+nx*12,py+ny*12); tieCtx.lineTo(px-nx*12,py-ny*12); tieCtx.stroke();
+      // 실제 침목
+      tieCtx.strokeStyle = passed ? 'rgba(37, 67, 120, .42)' : 'rgba(75, 116, 180, .72)';
+      tieCtx.lineWidth=2.6;
+      tieCtx.beginPath(); tieCtx.moveTo(px+nx*11,py+ny*11); tieCtx.lineTo(px-nx*11,py-ny*11); tieCtx.stroke();
     }
-    // 다음 밟을 구간 하이라이트 — 네온 다중 레이어 글로우(CSS 여러 겹 drop-shadow를 캔버스로 흉내)
-    const glow = (i===pos);
-    ctx.strokeStyle = glow ? '#7DD3FC' : (passed?'#3a4a7a':'#5b6fa8');
-    ctx.lineWidth = glow ? 3.4 : 2.5;
-    if(glow){
-      ctx.shadowColor='#0EA5E9'; ctx.shadowBlur=18;
-      for(const o of [-5.5,5.5]){
-        ctx.beginPath(); ctx.moveTo(a.sx+nx*o,a.sy+ny*o); ctx.lineTo(b.sx+nx*o,b.sy+ny*o); ctx.stroke();
-      }
-      ctx.shadowColor='#38BDF8'; ctx.shadowBlur=8;
+    tieCtx.restore();
+
+    ctx.save();
+    ctx.lineCap='round';
+
+    // 2. 레일의 어두운 구조물
+    ctx.strokeStyle='rgba(3, 10, 32, .95)'; ctx.lineWidth=7;
+    for(const o of [-6.5,6.5]) rail(o);
+
+    // 3. 레일 본체
+    ctx.strokeStyle = passed ? '#263D69' : '#416CA8'; ctx.lineWidth=3.8;
+    for(const o of [-6.5,6.5]) rail(o);
+
+    // 4. 얇은 Cyan 하이라이트
+    ctx.strokeStyle = passed ? 'rgba(63, 130, 190, .28)' : 'rgba(125, 211, 252, .78)';
+    ctx.lineWidth=1.15;
+    for(const o of [-6.5,6.5]) rail(o);
+
+    // 5. 현재 달려야 하는 선로만 네온 발광
+    if(active){
+      ctx.shadowColor='#0EA5E9'; ctx.shadowBlur=18;          // 넓고 약한 외곽광
+      ctx.strokeStyle='rgba(14, 165, 233, .38)'; ctx.lineWidth=4.5;
+      for(const o of [-6.5,6.5]) rail(o);
+      ctx.shadowColor='#38BDF8'; ctx.shadowBlur=8;           // 선명한 cyan 중심광
+      ctx.strokeStyle='#A5E9FF'; ctx.lineWidth=1.7;
+      for(const o of [-6.5,6.5]) rail(o);
     }
-    for(const o of [-5.5,5.5]){
-      ctx.beginPath(); ctx.moveTo(a.sx+nx*o,a.sy+ny*o); ctx.lineTo(b.sx+nx*o,b.sy+ny*o); ctx.stroke();
-    }
-    ctx.shadowBlur=0;
+
+    ctx.restore();   // lineCap·shadowBlur 등 상태 원복
   }
 }
 function drawParticles(){

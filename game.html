@@ -125,6 +125,65 @@
 
   .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(7,11,24,.85);backdrop-filter:blur(6px);text-align:center;padding:24px;transition:opacity .25s;z-index:10;overflow-y:auto}
   .overlay.hidden{opacity:0;pointer-events:none}
+
+  /* ══════════ 게임 홈 스플래시 (img/game_home.png) ══════════
+     원본 941×1672. 화면 비율이 달라도 이미지 속 버튼과 히트영역이 어긋나면 안 되므로
+     유동 배치 대신 이미지 전체를 한 덩어리(.splash-stage)로 스케일하고,
+     버튼은 그 안에서 원본 좌표의 백분율로 고정한다. (app.css fit.js 와 같은 사고방식)
+       · 가로는 항상 꽉 채운다  → 좌우가 잘려 버튼이 사라지는 일이 없다
+       · 세로는 최대 1.3배까지만 넘치게 허용(73.16svh = 941/1672 × 1.3)
+         → 가로로 넓은 화면에서 이미지가 과하게 커지지 않고, 잘려도 버튼(높이 36~51%)은 안전
+       · 남는 여백은 같은 이미지를 블러로 깔아 메운다 */
+  .overlay.splash{padding:0;gap:0;display:block;overflow:hidden;background:#050a1e;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    visibility:visible;transition:opacity .25s, visibility 0s}
+  /* 전면 이미지라 opacity:0 만으로는 게임 중에도 계속 합성된다 → 페이드가 끝나면 레이어를 끈다 */
+  .overlay.splash.hidden{visibility:hidden;transition:opacity .25s, visibility 0s .25s}
+  .splash-blur{position:absolute;inset:0;
+    background:#050a1e url('img/game_home.png') center center/cover no-repeat;
+    filter:blur(30px) brightness(.5);transform:scale(1.18)}
+  .splash-stage{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:min(100%, 73.16vh);
+    width:min(100%, 73.16svh);
+    aspect-ratio:941/1672;
+    box-shadow:0 0 70px 20px #050a1e}   /* 레터박스 경계선을 흐리게 */
+  .splash-stage img{display:block;width:100%;height:100%;
+    -webkit-user-drag:none;user-select:none}
+
+  /* 히트영역 — 원본 px ÷ (941, 1672).
+     play  x333–609  y607–848
+     lb    x104–302  y682–828   (아이콘 + LEADERBOARD 라벨)
+     set   x664–814  y682–828   (아이콘 + SETTINGS 라벨) */
+  .hot{position:absolute;pointer-events:auto;background:none;border:none;padding:0;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:transform .12s ease, filter .12s ease}
+  .hot:active{transform:scale(.94)}
+  .hot:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:12px}
+  .hot-play{left:35.39%;top:36.30%;width:29.33%;height:14.41%}
+  .hot-lb  {left:11.05%;top:40.79%;width:21.04%;height:8.73%}
+  .hot-set {left:70.56%;top:40.79%;width:15.94%;height:8.73%}
+  /* settings 는 아직 동작 없음 — 눌리는 피드백을 주지 않는다 */
+  .hot-set{cursor:default}
+  .hot-set:active{transform:none}
+  @media (prefers-reduced-motion: reduce){ .hot,.hot:active{transition:none;transform:none} }
+
+  /* ══════════ 홈 리더보드 패널 ══════════ */
+  .lbHome{position:fixed;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:rgba(4,8,22,.72);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    font-family:'PGov',Pretendard,-apple-system,sans-serif;
+    animation:lbHomeIn .2s ease-out}
+  @keyframes lbHomeIn{from{opacity:0}to{opacity:1}}
+  .lbHomePanel{width:100%;max-width:320px;background:rgba(13,20,46,.92);
+    border:1px solid rgba(96,150,255,.28);border-radius:20px;padding:18px 16px 16px;
+    box-shadow:0 18px 60px rgba(0,0,0,.55), 0 0 40px rgba(47,107,255,.18)}
+  .lbHomeHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .lbHomeTitle{font-size:14px;font-weight:800;letter-spacing:3px;color:#8fc0ff}
+  .lbHomeClose{background:none;border:none;color:var(--dim);font-size:16px;
+    font-family:inherit;cursor:pointer;padding:4px 6px;line-height:1}
+  .lbHomeSub{margin-top:4px;font-size:11.5px;color:var(--dim)}
+  /* .lbList 가 뒤에서 max-height 를 다시 잡으므로 특이도를 한 단계 올린다 */
+  .lbList.lbHomeList{margin-top:12px;max-height:46vh}
   .brand{font-size:13px;letter-spacing:4px;color:var(--korail-blue);font-weight:700}
   h1{font-size:44px;font-weight:800;letter-spacing:-1.5px}
   h1 em{font-style:normal;color:var(--korail-blue)}
@@ -272,12 +331,28 @@
   <div class="zone"><span>오른쪽 ▶</span></div>
 </div>
 
-<div class="overlay" id="startOv">
-  <div class="brand">KORAIL MINI GAME</div>
-  <h1>레일<em>런</em></h1>
-  <p class="sub">선로가 꺾이는 방향으로<br>화면 왼쪽·오른쪽을 탭하세요.<br>빠르게 연타할수록 속도가 붙습니다.</p>
-  <button class="btn" id="startBtn">운행 시작</button>
-  <!-- <p class="foot">경부고속선 실제 역 거리 기준 · 프로토타입 v0.2</p> -->
+<!-- 게임 홈: asset/game_home.png 를 그대로 깔고, 이미지 속 버튼 위에 투명 히트영역을 올린다.
+     좌표는 원본 941×1672 px 기준 비율(%)이라 어떤 화면 크기에서도 버튼과 정확히 겹친다. -->
+<div class="overlay splash" id="startOv">
+  <div class="splash-blur" aria-hidden="true"></div>
+  <div class="splash-stage">
+    <img src="img/game_home.png" alt="레일런 — RUN BEYOND THE SKY" draggable="false">
+    <button class="hot hot-play" id="startBtn" type="button" aria-label="게임 시작"></button>
+    <button class="hot hot-lb" id="lbOpenBtn" type="button" aria-label="리더보드"></button>
+    <button class="hot hot-set" id="settingsBtn" type="button" aria-label="설정"></button>
+  </div>
+</div>
+
+<!-- 홈에서 여는 리더보드(상위 20위). 게임오버 화면의 리더보드와 스타일을 공유한다. -->
+<div class="lbHome hide" id="lbHomeOv" role="dialog" aria-modal="true" aria-label="리더보드">
+  <div class="lbHomePanel">
+    <div class="lbHomeHead">
+      <span class="lbHomeTitle">LEADERBOARD</span>
+      <button class="lbHomeClose" id="lbHomeCloseBtn" type="button" aria-label="닫기">✕</button>
+    </div>
+    <p class="lbHomeSub">최고 운행 거리 상위 20위</p>
+    <div class="lbList lbHomeList" id="lbHomeList"></div>
+  </div>
 </div>
 
 <div class="overlay hidden" id="overOv">
@@ -793,6 +868,42 @@ function attemptStart(){
 }
 $('startBtn').addEventListener('click', attemptStart);
 $('retryBtn').addEventListener('click', attemptStart);
+
+/* ══════════ 홈 리더보드 (게임 시작 전) ══════════
+   게임오버 리더보드와 달리 '내 기록'이 없으므로 상위 20위만 보여준다. */
+let lbHomeLoading = false;
+async function loadHomeLeaderboard(){
+  if(lbHomeLoading) return;
+  lbHomeLoading = true;
+  const list = $('lbHomeList');
+  list.innerHTML = '<div class="lbEmpty">불러오는 중…</div>';
+  try{
+    const { data, error } = await sb.from('runs')
+      .select('distance_km, avg_speed_kmh, player_id, players(nickname)')
+      .order('distance_km', { ascending:false })
+      .limit(20);
+    if(error) throw error;
+    renderLeaderboardList(data || [], null);
+  }catch(e){
+    console.error('home leaderboard load error', e);
+    list.innerHTML = '<div class="lbEmpty">리더보드를 불러오지 못했어요</div>';
+  }finally{
+    lbHomeLoading = false;
+  }
+}
+function openHomeLeaderboard(){
+  $('lbHomeOv').classList.remove('hide');
+  loadHomeLeaderboard();
+}
+function closeHomeLeaderboard(){ $('lbHomeOv').classList.add('hide'); }
+$('lbOpenBtn').addEventListener('click', openHomeLeaderboard);
+$('lbHomeCloseBtn').addEventListener('click', closeHomeLeaderboard);
+// 패널 바깥(딤 영역) 탭으로도 닫기
+$('lbHomeOv').addEventListener('click', e=>{ if(e.target === $('lbHomeOv')) closeHomeLeaderboard(); });
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && !$('lbHomeOv').classList.contains('hide')) closeHomeLeaderboard();
+});
+// settings 는 아직 기능 없음 — 탭이 게임 조작으로 새지 않게만 막는다.
 
 /* ══════════ 리워드 광고 (기회 시스템) ══════════
    시안 수준 구현. 실제 적용 시 서버에서 세션 토큰 발급 후

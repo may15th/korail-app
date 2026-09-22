@@ -883,7 +883,7 @@ async function loadHomeLeaderboard(){
       .order('distance_km', { ascending:false })
       .limit(20);
     if(error) throw error;
-    renderLeaderboardList(data || [], null);
+    renderLeaderboardList(data || [], null, list);
   }catch(e){
     console.error('home leaderboard load error', e);
     list.innerHTML = '<div class="lbEmpty">리더보드를 불러오지 못했어요</div>';
@@ -1254,8 +1254,9 @@ function resetLeaderboardUI(){
   lbShowStatus('기록 저장 중…');
 }
 function renderMyNickname(nick){ $('lbMeNick').textContent = nick; }
-function renderLeaderboardList(rows, myPlayerId){
-  const list = $('lbList');
+// listEl 생략 시 게임오버 화면의 리더보드(#lbList). 홈 리더보드는 #lbHomeList 를 넘긴다.
+function renderLeaderboardList(rows, myPlayerId, listEl){
+  const list = listEl || $('lbList');
   if(!rows.length){ list.innerHTML = '<div class="lbEmpty">아직 기록이 없어요</div>'; return; }
   list.innerHTML = rows.map((r,i)=>{
     const nick = (r.players && r.players.nickname) || '익명';

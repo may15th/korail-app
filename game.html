@@ -56,6 +56,33 @@
     88%{opacity:1}
     100%{opacity:0;transform:translate(240px,168px) rotate(35deg) scaleX(1)}
   }
+  /* ══════════ 홈 진입 연출: 화면이 켜지듯 ══════════
+     스플래시가 불투명 전면 이미지라, 뒤의 배경·캔버스는 어차피 가려진다.
+     그래서 연출 대상은 스플래시 두 겹뿐이다 — 주변 발광(blur)이 먼저 올라오고,
+     아트워크가 살짝 축소되며 밝아진다.
+
+     body.booted 는 페이지가 "실제로 보이는" 시점(pageshow)에 붙는다.
+     transition.js 가 body 를 투명하게 잡고 있다가 pageshow 에 드러내므로,
+     그 전에 재생하면 안 보이는 사이에 다 끝나버린다.
+     fill-mode 는 backwards — 끝나면 원래 CSS 상태로 돌아가므로
+     .splash-stage 의 중앙정렬 transform 이나 .splash-blur 의 blur 를 잠그지 않는다. */
+  body:not(.booted) .splash-blur,
+  body:not(.booted) .splash-stage{opacity:0}
+  @keyframes bootBlur { from{opacity:0} to{opacity:1} }
+  @keyframes bootStage{
+    from{opacity:0; transform:translate(-50%,-50%) scale(1.03); filter:brightness(.4) saturate(.7)}
+    to  {opacity:1; transform:translate(-50%,-50%) scale(1);    filter:none}
+  }
+  body.booted .splash-blur { animation:bootBlur .7s ease-out backwards }
+  body.booted .splash-stage{ animation:bootStage .9s cubic-bezier(.2,.8,.2,1) .12s backwards }
+
+  @media (prefers-reduced-motion: reduce){
+    body:not(.booted) .splash-blur,
+    body:not(.booted) .splash-stage{opacity:1}
+    body.booted .splash-blur,
+    body.booted .splash-stage{animation:none}
+  }
+
   /* ══════════ 부스터 ══════════ */
   /* 다이나믹 비네트: 주변시야 자극 완화 (모션 아님 → reduced-motion 에서도 유지) */
   #vignette{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0;
@@ -571,6 +598,14 @@ let bonusKm=0;      // 부스터 중 획득한 추가 거리(점수 배율 x2 �
 let streaks=[];     // 부스터 스피드라인 파티클
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id=>document.getElementById(id);
+
+/* 홈 진입 연출 시작 신호.
+   transition.js 가 pageshow 에서 body 를 드러내므로 같은 시점에 맞춘다.
+   (pageshow 는 load 이후라 에셋이 다 준비된 뒤 켜진다)
+   어떤 이유로든 pageshow 가 안 오는 경우를 대비해 타임아웃으로도 한 번 더 건다. */
+const boot = ()=> document.body.classList.add('booted');
+addEventListener('pageshow', boot);
+setTimeout(boot, 4000);
 
 const kmNow = ()=> pos*KM_PER_STEP + bonusKm;
 function stationAt(km){ let n=STATIONS[0][0]; for(const [a,d] of STATIONS) if(km>=d) n=a; return n; }

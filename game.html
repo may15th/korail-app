@@ -139,6 +139,14 @@
     color:#eef2ff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
   #devAds.off{border-color:var(--signal-yellow);color:var(--signal-yellow)}
+  /* DEV: 손맛 비교 스위치 — 광고 토글 바로 위 */
+  #devFeel{position:fixed;right:12px;bottom:58px;z-index:99;
+    padding:9px 14px;border-radius:999px;
+    background:rgba(11,18,38,.72);border:1px dashed rgba(255,255,255,.35);
+    color:#eef2ff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #devFeel.off{border-color:var(--signal-yellow);color:var(--signal-yellow)}
+  body.go-open #devFeel{top:58px;bottom:auto}
   /* ═══════════ DEV 끝 ═══════════ */
 
   /* 주행 중 설정 버튼 — 누르면 일시정지 + 설정 패널. 홈·결과 화면에선 오버레이에 가려진다 */
@@ -339,6 +347,9 @@
 
   #banner{position:fixed;top:20%;left:50%;transform:translate(-50%,0) scale(.85);opacity:0;background:var(--korail-blue);color:#fff;font-weight:800;font-size:21px;padding:13px 30px;border-radius:30px;pointer-events:none;transition:all .28s cubic-bezier(.2,1.4,.4,1);box-shadow:0 8px 34px rgba(47,107,255,.5);z-index:8}
   #banner.show{opacity:1;transform:translate(-50%,0) scale(1)}
+  /* 주행 중 등급 돌파 배너 — 금색 */
+  #banner.tier{background:linear-gradient(135deg,#FFE58A,#F5B324);color:#3A2600;
+    box-shadow:0 8px 34px rgba(245,179,36,.55)}
 
   /* ══════════ 리워드 광고 (app.css --primary / PGov 톤) ══════════ */
   @font-face{font-family:'PGov';src:url('fonts/pgov-regular.woff2')format('woff2');font-weight:400;font-display:swap;}
@@ -446,6 +457,8 @@
 </button>
 <!-- DEV: 광고 토글 버튼 (최종 빌드 전 삭제) -->
 <button id="devAds" type="button">광고 ON</button>
+<!-- DEV: 손맛 비교 스위치 (최종 빌드 전 삭제) -->
+<button id="devFeel" type="button">손맛 ON</button>
 
 <div id="hud">
   <div>
@@ -721,6 +734,26 @@ const BOOST_RAMP_MS     = 320;              // 배율 전환 보간(250~400ms, �
 const BOOST_STREAKS     = 10;               // 스피드라인 파티클 수(8~12)
 const RING_C = 2*Math.PI*20;                // 카운트다운 링 둘레(r=20)
 
+/* ══════════ 손맛 상수 (여기 숫자만 바꿔서 조정) ══════════
+   DEV "손맛 ON/OFF" 스위치로 켜고 끈다. OFF 면 예전 동작(부드럽게 따라가는 열차 · 충전음 음계 · 멈춤 없음). */
+const HOP_MS        = 80;    // 탭 → 다음 칸 도착 시간. 부스터 중엔 배율만큼 더 빠름
+const HOP_LIFT      = 6;     // 점프 높이(px) — 통통 튀는 느낌
+const HOP_STRETCH   = .06;   // 공중에서 세로로 늘어나는 정도
+const LAND_SQUASH   = .09;   // 착지 순간 찌그러지는 정도 (5~10% 권장, 그 이상은 멀미)
+const LAND_MS       = 110;   // 찌그러짐이 풀리는 시간
+const HITSTOP_MS    = 60;    // 역 통과·등급 돌파 때 화면만 멈추는 시간 (입력·판정은 계속 받는다)
+/* 콤보 멜로디 — 부스터 충전 탭(1~BOOST_NEED_TAPS)마다 한 음씩. 마지막 음 = 부스터 발동.
+   값은 G4 기준 반음 수. 0~4 는 switch_L(G4), 5 이상은 switch_R(C5) 샘플을 올려서 낸다.
+   C major 아르페지오로 올라갔다 숨 고르고 높은 도(C6)로 끝난다. */
+const COMBO_MELODY  = [0, 5, 9, 12,  9, 5, 7, 10,  9, 12, 16, 17];
+//                     G4 C5 E5 G5  E5 C5 D5 F5  E5 G5 B5 C6
+const FEVER_MELODY  = [12, 16, 17, 16];      // 부스터 중엔 윗음 4개를 돌며 신나게
+const NOTE_PAN      = .35;                   // 좌/우 탭은 음 대신 좌우 위치로 구분
+// 손맛 ON 여부 — 매 프레임 불리므로 저장값을 한 번만 읽어 둔다(DEV 스위치가 갱신)
+let feelFlag = true;
+try{ feelFlag = localStorage.getItem('railrun_dev_feel_off') !== '1'; }catch(e){}
+function feelOn(){ return feelFlag; }
+
 /* ══════════ 선로 스프라이트 (img/rail-*.png) ══════════
    에셋의 선로는 완만한 호(arc)라서 그대로 잘라 쓰면 조각마다 레일 수직 위치가 어긋나
    이음매가 꺾여 보인다. → 로드할 때 중심선을 실측해서 "곧게 편" 띠(strip)로 한 번
@@ -766,6 +799,12 @@ let boosting=false, boostStart=0, boostEnd=0, cooldownEnd=0;
 let speedMult=1, rampFrom=1, rampTo=1, rampStart=0;   // 속도 배율 + 보간
 let bonusKm=0;      // 부스터 중 획득한 추가 거리(점수 배율 x2 반영분)
 let streaks=[];     // 부스터 스피드라인 파티클
+// 손맛: 열차 점프는 월드 좌표에서 보간한다(화면 좌표로 하면 카메라 이동에 끌려 굼떠 보인다).
+// vClock 은 "화면 시계" — 순간 멈춤 동안엔 흐르지 않고, 게임 판정은 실제 시계로 계속 돈다.
+let vClock=0, freezeUntil=0;
+let trainWX=0, trainWY=0, hopFromX=0, hopFromY=0, hopToX=0, hopToY=0, hopT0=-1e9;
+let lastChargeIdx=-1, feverNoteI=0;   // 이번 탭의 멜로디 음 번호 / 부스터 중 순환 음
+let runTierIdx=0;                     // 이번 판에서 도달한 등급 — 넘는 순간 "달성!" 배너
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id=>document.getElementById(id);
 
@@ -839,7 +878,15 @@ function tap(dir){
     // 입력 피드백은 기울기·스파크·사운드로. 화면 흔들림은 충돌 전용이라 여기선 쓰지 않는다
     // (연타 중 계속 흔들리면 부스터 충전 구간 내내 화면이 떨려 멀미를 유발함)
     spawnSparks();
-    RRAudio.sfx(dir < 0 ? 'switch_L' : 'switch_R');   // 좌 G4 · 우 C5 — 엮으면 선율이 된다
+    if(feelOn()){
+      // 충전 중엔 멜로디 n번째 음(12번째 = 부스터 발동과 동시에 높은 도), 부스터 중엔 윗음 순환,
+      // 쿨다운 중엔 기본음
+      if(lastChargeIdx >= 0) playNote(COMBO_MELODY[Math.min(lastChargeIdx, COMBO_MELODY.length-1)], dir);
+      else if(boosting)      playNote(FEVER_MELODY[feverNoteI++ % FEVER_MELODY.length], dir);
+      else                   playNote(dir < 0 ? 0 : 5, dir);
+    } else {
+      RRAudio.sfx(dir < 0 ? 'switch_L' : 'switch_R');   // 좌 G4 · 우 C5 — 엮으면 선율이 된다
+    }
     checkMilestone(); updateHUD();
   } else {
     if(inBoostGrace()) return;   // 부스터 발동 직후 그레이스 타임: 충돌 판정 무시
@@ -855,6 +902,7 @@ function easeInOutCubic(p){ return p<.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2,3)/2; }
 
 // 시간 창 안에 목표 입력수를 채우면 발동. 부스터 중·쿨다운 중엔 충전되지 않는다.
 function registerChargeTap(now){
+  lastChargeIdx = -1;
   if(boosting || onCooldown()){ chargeTaps = 0; return; }
   if(chargeTaps === 0 || now - chargeStart > BOOST_WINDOW_MS){
     if(chargeTaps > 0) failCharge();      // 직전 창을 못 채운 채 넘겼으면 실패 처리
@@ -862,8 +910,21 @@ function registerChargeTap(now){
   } else {
     chargeTaps++;
   }
-  RRAudio.tap(chargeTaps - 1);            // 연타할수록 한 칸씩 올라가는 음 — 게이지를 귀로 읽게
+  // 연타할수록 한 칸씩 올라가는 음 — 게이지를 귀로 읽게.
+  // 손맛 ON: 선로 전환음 자체가 멜로디가 된다(tap() 에서 재생) / OFF: 예전 충전음 음계
+  if(feelOn()) lastChargeIdx = chargeTaps - 1;
+  else RRAudio.tap(chargeTaps - 1);
   if(chargeTaps >= BOOST_NEED_TAPS) startBoost(now);
+}
+// 콤보 멜로디 한 음 — G4 반음 수를 가까운 샘플의 재생 속도로 바꿔 낸다.
+// 높아질수록 날카롭게 들리므로 음량을 조금씩 낮추고, 좌/우는 스테레오 위치로 구분한다.
+function playNote(semi, dir){
+  const useR = semi >= 5;
+  const rate = Math.pow(2, (useR ? semi-5 : semi) / 12);
+  RRAudio.sfx(useR ? 'switch_R' : 'switch_L', {
+    rate, pan: dir * NOTE_PAN,
+    gain: RRAudio.VOL.switch * (1 - .25 * Math.min(1, semi/17)),
+  });
 }
 function failCharge(){
   chargeTaps = 0;
@@ -1069,23 +1130,43 @@ function checkMilestone(){
     if(d>0 && lastMilestone<d && km>=d){
       lastMilestone = d;
       showBanner(`${n}역 통과!`);
-      stationSound(); spawnRing();   // 역 통과 연출은 링+차임으로. 흔들림은 충돌 전용
+      stationSound(); spawnRing(); hitStop();   // 역 통과 연출은 링+차임+순간 멈춤. 흔들림은 충돌 전용
     }
   }
   if(km>=417 && km-lastMilestone>=100){
     lastMilestone = km;
     showBanner(`누적 ${Math.floor(km)}km 돌파!`);
-    stationSound(); spawnRing();
+    stationSound(); spawnRing(); hitStop();
   }
+  checkTierUp(km);
+}
+// 주행 중 등급 돌파 — 최고점수로 정해진 지금 등급보다 높은 컷을 이번 판에 넘는 순간.
+// 결과 화면의 승급 연출보다 먼저, 가장 신날 때 보상이 온다.
+function checkTierUp(km){
+  const idx = tierIndexOf(scoreOfKm(km));
+  if(idx <= runTierIdx) return;
+  runTierIdx = idx;
+  showBanner(`${TIERS[idx].name} 달성!`, 'tier');
+  RRAudio.sfx('record');
+  RRAudio.duck(0.4, 0.1, 1.0);
+  musicHoldUntil = performance.now() + 1200;
+  spawnRing(); hitStop();
+}
+// 순간 멈춤 — 화면 시계(vClock)만 잠깐 세운다. 연타 중이라 입력·게이지·판정까지 멈추면
+// 탭이 씹힌 것처럼 느껴지므로 그쪽은 실제 시계로 계속 돈다.
+function hitStop(){
+  if(!feelOn()) return;
+  freezeUntil = performance.now() + HITSTOP_MS;
 }
 function stationSound(){
   RRAudio.sfx('station');
   RRAudio.duck(0.45, 0.1, 0.8);            // 차임이 묻히지 않게 음악을 살짝 눌렀다 복구
   musicHoldUntil = performance.now() + 1000;
 }
-function showBanner(t){
+function showBanner(t, kind){
   const b=$('banner'); b.textContent=t; b.classList.add('show');
-  clearTimeout(bannerTO); bannerTO=setTimeout(()=>b.classList.remove('show'),1400);
+  b.classList.toggle('tier', kind === 'tier');
+  clearTimeout(bannerTO); bannerTO=setTimeout(()=>b.classList.remove('show'), kind === 'tier' ? 1800 : 1400);
 }
 // 탈선: BGM 을 페이드 없이 끊고 40ms 정적 뒤 충돌음 — 음악이 사라지는 것 자체가 피드백
 function derail(){ playing=false; crashT=0; shake=26; RRAudio.crash(); }
@@ -1216,6 +1297,9 @@ function start(){
   genSteps();
   pos=0; gauge=100; lastMilestone=0; crashT=-1;
   trainX=0; trainY=0; camX=0; camY=0;
+  trainWX=trainWY=hopFromX=hopFromY=hopToX=hopToY=0; hopT0=-1e9; freezeUntil=0;
+  lastChargeIdx=-1; feverNoteI=0;
+  runTierIdx = tierIndexOf(getBestScore());   // 이미 가진 등급은 다시 "달성" 띄우지 않는다
   speed=0; maxSpeed=0; combo=0; shake=0; tilt=0;
   speedTimeAcc=0; speedSampleAcc=0;
   sparks=[]; rings=[];
@@ -1438,6 +1522,23 @@ $('devAds').addEventListener('click', e=>{
   refreshGameOverButtons();       // 지금 떠 있는 게임오버 화면에 즉시 반영
 });
 renderDevAdsBtn();
+
+/* DEV: 손맛 비교 스위치 — OFF 면 즉시 반응·순간 멈춤·콤보 멜로디를 끄고 예전 동작으로.
+   삭제 시: <button id="devFeel">, #devFeel CSS, 이 블록. feelOn() 은 true 를 반환하도록 남긴다. */
+const DEV_FEEL_KEY = 'railrun_dev_feel_off';
+function renderDevFeelBtn(){
+  const b = $('devFeel'), off = !feelOn();
+  b.textContent = off ? '손맛 OFF' : '손맛 ON';
+  b.classList.toggle('off', off);
+}
+$('devFeel').addEventListener('pointerdown', e=> e.stopPropagation());
+$('devFeel').addEventListener('click', e=>{
+  e.stopPropagation();
+  feelFlag = !feelFlag;
+  try{ localStorage.setItem(DEV_FEEL_KEY, feelFlag ? '0' : '1'); }catch(err){}
+  renderDevFeelBtn();
+});
+renderDevFeelBtn();
 /* ═══════════════ DEV 블록 끝 ═══════════════ */
 
 function refreshGameOverButtons(){
@@ -2179,10 +2280,38 @@ function drawParticles(){
 }
 function drawTrain(boost){
   boost = boost||0;
-  const cur = scr(steps[pos]);
-  const ease = Math.min(.9, .38*speedMult);   // 열차 이동 속도도 배율을 따름
-  trainX += (cur.sx-trainX)*ease;
-  trainY += (cur.sy-trainY)*ease;
+  let lift = 0, sqx = 1, sqy = 1;               // 점프 높이 · 찌그러짐(손맛 ON 전용)
+  if(feelOn()){
+    // 즉시 반응: HOP_MS 안에 다음 칸 도착(ease-out) + 포물선 점프 + 착지 찌그러짐.
+    // 칸이 바뀌면(탭) 지금 열차가 있는 곳 — 점프 중이면 그 중간 — 에서 새 칸으로 다시 튄다.
+    const goalX = steps[pos].x*TILE*.62, goalY = steps[pos].y*TILE*.52;
+    if(goalX !== hopToX || goalY !== hopToY){
+      hopFromX = trainWX; hopFromY = trainWY; hopToX = goalX; hopToY = goalY; hopT0 = vClock;
+    }
+    const hopMs = HOP_MS / speedMult;
+    const p = Math.min(1, (vClock - hopT0) / hopMs);
+    const e = 1 - Math.pow(1 - p, 3);
+    trainWX = hopFromX + (hopToX - hopFromX) * e;
+    trainWY = hopFromY + (hopToY - hopFromY) * e;
+    trainX = W/2 + trainWX - camX;
+    trainY = H*.66 - trainWY + camY;
+    if(!reduceMotion){
+      if(p < 1){
+        const arc = Math.sin(Math.PI * p);
+        lift = arc * HOP_LIFT;
+        sqx = 1 - HOP_STRETCH*arc; sqy = 1 + HOP_STRETCH*arc;
+      } else {
+        const k = (vClock - hopT0 - hopMs) / LAND_MS;
+        if(k < 1){ const q = LAND_SQUASH * (1-k)*(1-k); sqx = 1 + q; sqy = 1 - q; }
+      }
+    }
+  } else {
+    const cur = scr(steps[pos]);
+    const ease = Math.min(.9, .38*speedMult);   // 열차 이동 속도도 배율을 따름
+    trainX += (cur.sx-trainX)*ease;
+    trainY += (cur.sy-trainY)*ease;
+    trainWX = trainX - W/2 + camX; trainWY = H*.66 - trainY + camY;   // 스위치 전환 시 튀지 않게 동기화
+  }
   let tx=trainX, ty=trainY, rot=tilt;
   const facing = steps[pos].dir;
   const bw=36,bh=21;
@@ -2213,10 +2342,12 @@ function drawTrain(boost){
     const segAng = (nxt===steps[pos]) ? geo.dir : Math.atan2(n2.sy-c2.sy, n2.sx-c2.sx);
     const s = TRAIN_LEN / TRAIN_ASSET_LEN;
     const spin = segAng - geo.dir + rot;
-    const put = (px,py,alpha)=>{
+    const put = (px,py,alpha,squash)=>{
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.translate(px, py); ctx.rotate(spin); ctx.scale(s,s);
+      ctx.translate(px, py);
+      if(squash) ctx.scale(sqx, sqy);          // 화면 기준 세로 찌그러짐 — 회전 전에 걸어야 "통통" 느낌
+      ctx.rotate(spin); ctx.scale(s,s);
       ctx.translate(-geo.cx, -geo.cy);
       ctx.drawImage(im, 0, 0);
       ctx.restore();
@@ -2229,7 +2360,7 @@ function drawTrain(boost){
         put(tx-bx*off, ty-TRAIN_LIFT-by*off, .22*boost*(1-(ghost-1)*.22));
       }
     }
-    put(tx, ty-TRAIN_LIFT, 1);
+    put(tx, ty-TRAIN_LIFT-lift, 1, true);
   } else {
     // 에셋 로드 전 폴백: 기존 절차적 열차
     if(boost>0){
@@ -2244,7 +2375,7 @@ function drawTrain(boost){
       }
     }
     ctx.save();
-    ctx.translate(tx, ty-12); ctx.rotate(rot);
+    ctx.translate(tx, ty-12-lift); ctx.scale(sqx, sqy); ctx.rotate(rot);
     ctx.fillStyle='#eef2ff'; roundRect(-bw/2,-bh/2,bw,bh,10); ctx.fill();
     ctx.fillStyle='#2f6bff'; roundRect(-bw/2,2,bw,7,3); ctx.fill();
     ctx.fillStyle='#1a2340'; roundRect(-bw/2+6,-6,bw-12,7,3); ctx.fill();
@@ -2260,6 +2391,8 @@ function loop(t){
   if(paused){ tPrev=t; requestAnimationFrame(loop); return; }
   const dt = Math.min(50, t-tPrev)/1000; tPrev=t;
   const now = performance.now();
+  const frozen = now < freezeUntil;            // 순간 멈춤: 화면 시계·카메라·열차 그림만 정지
+  if(!frozen) vClock += dt*1000;
 
   // ── 부스터 수명 관리 ──
   if(boosting && now >= boostEnd) endBoost();
@@ -2271,8 +2404,10 @@ function loop(t){
   updateStreaks(dt);
 
   const tgt = steps[pos];
-  camX += (tgt.x*TILE*.62 - camX)*Math.min(.9, .14*speedMult);   // 스크롤 속도 = 배율
-  camY += (tgt.y*TILE*.52 - camY)*Math.min(.9, .14*speedMult);
+  if(!frozen){
+    camX += (tgt.x*TILE*.62 - camX)*Math.min(.9, .14*speedMult);   // 스크롤 속도 = 배율
+    camY += (tgt.y*TILE*.52 - camY)*Math.min(.9, .14*speedMult);
+  }
 
   tilt *= .82;
   speed *= .975;

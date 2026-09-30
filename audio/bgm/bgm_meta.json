@@ -1,0 +1,13 @@
+{
+  "source": "Neon Funk Drive (Suno)",
+  "tempo_bpm": 129.2,
+  "key": "C major",
+  "bars": 16,
+  "beats": 64,
+  "cut_from_sec": 58.0267,
+  "cut_to_sec": 87.8527,
+  "loop_length_sec": 29.826,
+  "crossfade_ms": 35.0,
+  "sample_rate": 44100,
+  "note": "파일 전체가 루프입니다. loopStart=0, loopEnd=duration 으로 두고 AudioBufferSourceNode.loop=true."
+}

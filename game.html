@@ -450,79 +450,34 @@
   </div>
 </div>
 
+<script src="audio/audio.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (() => {
-/* ══════════ 사운드 (WebAudio, 파일 없이 합성) ══════════ */
-const Snd = (() => {
-  let ac = null, on = true, master = null;
-  function init(){
-    if (ac) return;
-    try{
-      ac = new (window.AudioContext || window.webkitAudioContext)();
-      master = ac.createGain();
-      master.gain.value = .55;
-      master.connect(ac.destination);
-    }catch(e){ ac = null; on = false; }
-  }
-  function ready(){ try{ if(ac && ac.state === 'suspended') ac.resume(); }catch(e){} }
-  function tone({freq=440, dur=.09, type='square', vol=.3, slide=0, delay=0}){
-    if(!on || !ac) return;
-    const t0 = ac.currentTime + delay;
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, t0);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), t0+dur);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(vol, t0+.008);
-    g.gain.exponentialRampToValueAtTime(.0001, t0+dur);
-    o.connect(g); g.connect(master);
-    o.start(t0); o.stop(t0+dur+.02);
-  }
-  function noise({dur=.18, vol=.3, lp=1400, delay=0}){
-    if(!on || !ac) return;
-    const t0 = ac.currentTime + delay;
-    const len = Math.floor(ac.sampleRate * dur);
-    const buf = ac.createBuffer(1, len, ac.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
-    const src = ac.createBufferSource(); src.buffer = buf;
-    const f = ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value = lp;
-    const g = ac.createGain(); g.gain.setValueAtTime(vol, t0);
-    g.gain.exponentialRampToValueAtTime(.0001, t0+dur);
-    src.connect(f); f.connect(g); g.connect(master);
-    src.start(t0);
-  }
-  return {
-    init, ready,
-    toggle(){ on = !on; return on; },
-    isOn(){ return on; },
-    /* 레일 이음매 통과: 짧은 클랙 + 톤 (콤보 오를수록 음이 높아짐) */
-    step(combo){
-      const p = Math.min(combo, 24);
-      tone({freq: 300 + p*16, dur:.055, type:'square', vol:.16, slide:-70});
-      noise({dur:.05, vol:.12, lp:2600});
-    },
-    /* 역 통과 팡파레 */
-    station(){
-      [0,.09,.18].forEach((d,i)=>tone({freq:[523,659,880][i], dur:.22, type:'triangle', vol:.26, delay:d}));
-    },
-    /* 신호 경고 삑 */
-    warn(){ tone({freq:880, dur:.1, type:'sine', vol:.2}); },
-    /* 탈선: 금속 마찰 + 저음 충돌 */
-    crash(){
-      noise({dur:.55, vol:.5, lp:900});
-      tone({freq:180, dur:.5, type:'sawtooth', vol:.3, slide:-140});
-      tone({freq:90, dur:.6, type:'square', vol:.25, slide:-50, delay:.05});
-    },
-    start(){ [262,392,523].forEach((f,i)=>tone({freq:f,dur:.16,type:'triangle',vol:.24,delay:i*.08})); },
-    /* 부스터 발동: 위로 솟는 상승음 + 바람 */
-    boost(){
-      [392,523,659,880].forEach((f,i)=>tone({freq:f,dur:.18,type:'triangle',vol:.22,delay:i*.05}));
-      noise({dur:.5, vol:.16, lp:3200, delay:.05});
-    }
-  };
-})();
+/* ══════════ 사운드 (audio/audio.js — RRAudio) ══════════
+   BGM·효과음은 파일 기반 Web Audio. 음소거 상태는 audio.js 가 localStorage 에 저장한다.
+   iOS 는 사용자 제스처 안에서 unlock() 해야 소리가 난다 → 아래 unlockAudio 를
+   pointerdown/pointerup/keydown 캡처 단계에 걸어 어떤 탭이든 첫 입력에서 풀리게 한다.
+   (터치에선 pointerdown 이 활성화 제스처로 인정되지 않는 브라우저가 있어 pointerup 도 건다) */
+RRAudio.preload();
+let musicHoldUntil = 0, lastIntensityT = 0;   // 페이드·덕킹 중엔 setIntensity 로 덮어쓰지 않는다
+function bgm(fade){
+  RRAudio.playBgm(fade);
+  musicHoldUntil = performance.now() + (fade==null ? 1.2 : fade)*1000 + 100;
+}
+function unlockAudio(){
+  // unlock() 은 제스처 안에서 즉시 resume() 을 호출한다. 반환 promise 는 음원 로드 완료라
+  // 게임 시작을 막지 않도록 await 하지 않고, 로드가 끝난 뒤 필요한 BGM 만 켠다.
+  RRAudio.unlock().then(()=>{
+    if(playing || !$('startOv').classList.contains('hidden')) bgm();   // 홈·주행 중에만
+  });
+}
+for(const ev of ['pointerdown','pointerup','keydown']) addEventListener(ev, unlockAudio, true);
+// 탭이 가려지면 소리도 멈춘다 (모바일에서 백그라운드 재생 방지)
+document.addEventListener('visibilitychange', ()=>{
+  const c = RRAudio.ctx; if(!c) return;
+  if(document.visibilityState === 'hidden') c.suspend(); else c.resume();
+});
 
 /* ══════════ 설정 ══════════ */
 const KM_PER_STEP = 2.0;
@@ -653,7 +608,6 @@ function pushStep(){
 /* ══════════ 입력 ══════════ */
 function tap(dir){
   if(!playing) return;
-  Snd.ready();
   if(dir === steps[pos].dir){
     pos++;
     if(steps.length-pos < 40) pushStep();
@@ -670,7 +624,7 @@ function tap(dir){
     // 입력 피드백은 기울기·스파크·사운드로. 화면 흔들림은 충돌 전용이라 여기선 쓰지 않는다
     // (연타 중 계속 흔들리면 부스터 충전 구간 내내 화면이 떨려 멀미를 유발함)
     spawnSparks();
-    Snd.step(combo);
+    RRAudio.sfx(dir < 0 ? 'switch_L' : 'switch_R');   // 좌 G4 · 우 C5 — 엮으면 선율이 된다
     checkMilestone(); updateHUD();
   } else {
     if(inBoostGrace()) return;   // 부스터 발동 직후 그레이스 타임: 충돌 판정 무시
@@ -693,6 +647,7 @@ function registerChargeTap(now){
   } else {
     chargeTaps++;
   }
+  RRAudio.tap(chargeTaps - 1);            // 연타할수록 한 칸씩 올라가는 음 — 게이지를 귀로 읽게
   if(chargeTaps >= BOOST_NEED_TAPS) startBoost(now);
 }
 function failCharge(){
@@ -714,10 +669,11 @@ function startBoost(now){
   setTimeout(()=> ui.classList.remove('success'), 600);
   if(!reduceMotion) $('bgArt').classList.add('boost');   // 배경 미세 줌(별 패럴랙스 대체)
   $('vignette').classList.add('on');                // 비네트(모션 아님 → 항상 적용)
-  Snd.boost();
+  RRAudio.boost(true);
 }
 function endBoost(){
   boosting = false;
+  if(playing) RRAudio.boost(false);       // 탈선 뒤(결과 화면)엔 종료음을 내지 않는다
   cooldownEnd = nowMs() + BOOST_COOLDOWN_MS;
   setSpeedMultTarget(1, nowMs());
   $('boostUI').classList.remove('boosting');
@@ -801,19 +757,23 @@ function updateBoostUI(now){
 }
 addEventListener('pointerdown', e=>{
   if(e.target.closest('#sound')) return;
-  Snd.init(); Snd.ready();
   if(playing) tap(e.clientX < W/2 ? -1 : 1);
 });
 addEventListener('keydown', e=>{
-  Snd.init();
   if(e.key==='ArrowLeft') tap(-1);
   if(e.key==='ArrowRight') tap(1);
 });
+function renderSoundBtn(){
+  $('sound').textContent = RRAudio.muted ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+}
 $('sound').addEventListener('click', e=>{
-  e.stopPropagation(); Snd.init();
-  const on = Snd.toggle();
-  $('sound').textContent = on ? '🔊 소리 켜짐' : '🔇 소리 꺼짐';
+  e.stopPropagation();
+  RRAudio.unlock();                       // 제스처 안에서 호출 (로드 완료는 기다리지 않음)
+  RRAudio.setMuted(!RRAudio.muted);
+  renderSoundBtn();
+  if(!RRAudio.muted) RRAudio.sfx('ui_tap');
 });
+renderSoundBtn();                         // 새로고침해도 음소거 상태 유지
 
 /* ══════════ 파티클 ══════════ */
 function spawnSparks(){
@@ -837,20 +797,26 @@ function checkMilestone(){
     if(d>0 && lastMilestone<d && km>=d){
       lastMilestone = d;
       showBanner(`${n}역 통과!`);
-      Snd.station(); spawnRing();   // 역 통과 연출은 링+팡파레로. 흔들림은 충돌 전용
+      stationSound(); spawnRing();   // 역 통과 연출은 링+차임으로. 흔들림은 충돌 전용
     }
   }
   if(km>=417 && km-lastMilestone>=100){
     lastMilestone = km;
     showBanner(`누적 ${Math.floor(km)}km 돌파!`);
-    Snd.station(); spawnRing();
+    stationSound(); spawnRing();
   }
+}
+function stationSound(){
+  RRAudio.sfx('station');
+  RRAudio.duck(0.45, 0.1, 0.8);            // 차임이 묻히지 않게 음악을 살짝 눌렀다 복구
+  musicHoldUntil = performance.now() + 1000;
 }
 function showBanner(t){
   const b=$('banner'); b.textContent=t; b.classList.add('show');
   clearTimeout(bannerTO); bannerTO=setTimeout(()=>b.classList.remove('show'),1400);
 }
-function derail(){ playing=false; crashT=0; shake=26; Snd.crash(); }
+// 탈선: BGM 을 페이드 없이 끊고 40ms 정적 뒤 충돌음 — 음악이 사라지는 것 자체가 피드백
+function derail(){ playing=false; crashT=0; shake=26; RRAudio.crash(); }
 function finishOver(){
   const km = kmNow();
   const prevBest = best;
@@ -868,6 +834,7 @@ function finishOver(){
   } else if(km>prevBest && prevBest>0){
     nm.textContent = '신기록 달성!';
     nm.style.display='block';
+    RRAudio.sfx('record');                 // 결과 화면은 BGM 없음 — 신기록일 때만 소리
   } else nm.style.display='none';
   $('ecoKg').textContent = (km*0.183).toFixed(1)+' kg';
   $('overTitle').textContent = gauge<=0 ? '신호 정지!' : '탈선!';
@@ -877,7 +844,9 @@ function finishOver(){
   saveRunAndShowLeaderboard(km, avgSpeedKmh);
 }
 function start(){
-  Snd.init(); Snd.ready(); Snd.start();
+  // 홈 BGM 은 끊지 않고 이어간다(이미 재생 중이면 playBgm 은 무시됨). 탈선 뒤 재도전이면 다시 페이드인
+  RRAudio.sfx('count_go');
+  bgm(0.8);
   genSteps();
   pos=0; gauge=100; lastMilestone=0; crashT=-1;
   trainX=0; trainY=0; camX=0; camY=0;
@@ -903,6 +872,21 @@ function attemptStart(){
 }
 $('startBtn').addEventListener('click', attemptStart);
 $('retryBtn').addEventListener('click', attemptStart);
+
+/* UI 버튼 효과음 — 일반 ui_tap · 확인/저장 ui_confirm · 닫기/뒤로 ui_back.
+   시작·재도전은 start() 의 count_go 가 대신한다. 광고 오버레이 안 버튼은 광고 중 게임 소리가
+   꺼져 있으므로 연결하지 않는다. */
+const UI_SFX = {
+  ui_tap:     ['lbOpenBtn','settingsBtn','adWatchBtn','lbEditBtn','lbRerollBtn'],
+  ui_confirm: ['lbConfirmBtn'],
+  ui_back:    ['lbHomeCloseBtn'],
+};
+for(const [name, ids] of Object.entries(UI_SFX)){
+  for(const id of ids){
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('click', ()=> RRAudio.sfx(name));
+  }
+}
 
 /* ══════════ 홈 리더보드 (게임 시작 전) ══════════
    게임오버 리더보드와 달리 '내 기록'이 없으므로 상위 20위만 보여준다. */
@@ -1043,6 +1027,7 @@ let ytPlayer=null, currentAd=null, adMuted=true, adRetryCount=0;
 let watch = { accumulated:0, duration:0, ended:false, paused:true, rewarded:false, timerId:null };
 
 function openAdOverlay(){
+  RRAudio.suspendForAd();                 // 광고엔 자체 소리가 있으므로 게임 소리는 완전히 끈다
   adRetryCount = 0;
   $('adConfirm').classList.add('hide');
   $('adFail').classList.add('hide');
@@ -1184,6 +1169,7 @@ function closeAdOverlay(){
   $('adOverlay').classList.add('hide');
   $('adConfirm').classList.add('hide');
   refreshGameOverButtons();
+  RRAudio.resumeFromAd();
 }
 $('adWatchBtn').addEventListener('click', openAdOverlay);
 $('adFailReturnBtn').addEventListener('click', closeAdOverlay);
@@ -1409,7 +1395,7 @@ function updateGaugeBar(){
   const bar=$('gaugebar');
   bar.style.transform=`scaleX(${Math.max(0,gauge)/100})`;
   bar.style.background = gauge>50?'#22c55e':(gauge>22?'#facc15':'#ef4444');
-  if(playing && gauge<=22 && performance.now()-lastWarnT>520){ lastWarnT=performance.now(); Snd.warn(); }
+  if(playing && gauge<=22 && performance.now()-lastWarnT>520){ lastWarnT=performance.now(); RRAudio.sfx('count', { gain:.5 }); }   // 게이지 경고 틱(전용 음원 없음 → 카운트 틱 재사용)
 }
 
 /* ══════════ 렌더 ══════════ */
@@ -1850,6 +1836,13 @@ function loop(t){
   if(playing){ speedTimeAcc += dt; speedSampleAcc += speed*dt; }
   if(playing && performance.now()-lastTapT>700 && combo){ combo=0; updateHUD(); }
   shake *= .86;
+
+  // 주행 속도 → 음악 강도(음량·밀도만, 템포는 그대로). 오디오 이벤트가 쌓이지 않게 200ms 간격으로만,
+  // 부스터·덕킹·페이드인 중엔 그쪽 레벨을 덮어쓰지 않도록 건너뛴다.
+  if(playing && !boosting && now >= musicHoldUntil && now - lastIntensityT > 200){
+    lastIntensityT = now;
+    RRAudio.setIntensity(speed / 320);         // speed 는 0~320 km/h
+  }
 
   if(playing && pos>=5){                       // 초반 5걸음은 게이지 동결(진입 장벽 완화)
     gauge -= (10 + Math.min(18, kmNow()*.04)) * dt;

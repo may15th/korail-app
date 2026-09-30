@@ -6,6 +6,7 @@
 <title>코레일플러스 — 홈</title>
 <link rel="stylesheet" href="app.css">
 <script src="fit.js"></script>
+<!-- minigame:start (탄소리포트 전용 빌드에서 제거되는 구간 — scripts/build-carbon.mjs) -->
 <style>
   /* ═══ 미니게임 폴더 오버레이 (갤럭시 앱 폴더 스타일) ═══ */
   .folder-overlay{position:fixed;inset:0;z-index:50;
@@ -67,6 +68,7 @@
     .folder-bg,.folder-container,.modal{transition:none;}
   }
 </style>
+<!-- minigame:end -->
 </head>
 <body data-demo="on">
 <script src="transition.js"></script>
@@ -135,11 +137,13 @@
       <a class="cell"><span class="ic"><img src="img/ic_lug.png"     style="width:22.76px"></span><span class="lb">짐배송</span></a>
       <a class="cell"><span class="ic"><img src="img/ic_parcel.png"  style="width:30.58px"></span><span class="lb">레일택배</span></a>
 
+      <!-- minigame:start -->
       <!-- ★ 신규 -->
       <a class="cell new" id="miniGameCell" href="game.html" data-transition="none">
         <span class="ic"><img src="img/ic_game.png" style="width:29.87px"></span>
         <span class="lb">미니게임</span>
       </a>
+      <!-- minigame:end -->
     </section>
 
     <!-- 하단 2카드 -->
@@ -170,6 +174,7 @@
 
 </div>
 
+<!-- minigame:start -->
 <!-- ═══ 미니게임 폴더 오버레이 ═══ -->
 <div id="folderOverlay" class="folder-overlay hidden">
   <div id="folderBg" class="folder-bg"></div>
@@ -295,5 +300,6 @@
   modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
 })();
 </script>
+<!-- minigame:end -->
 </body>
 </html>

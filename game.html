@@ -147,6 +147,13 @@
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
   #devFeel.off{border-color:var(--signal-yellow);color:var(--signal-yellow)}
   body.go-open #devFeel{top:58px;bottom:auto}
+  #devRabbit{position:fixed;right:12px;bottom:102px;z-index:99;
+    padding:9px 14px;border-radius:999px;
+    background:rgba(11,18,38,.72);border:1px dashed rgba(255,255,255,.35);
+    color:#eef2ff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #devRabbit.off{border-color:var(--signal-yellow);color:var(--signal-yellow)}
+  body.go-open #devRabbit{top:102px;bottom:auto}
   /* ═══════════ DEV 끝 ═══════════ */
 
   /* 주행 중 설정 버튼 — 누르면 일시정지 + 설정 패널. 홈·결과 화면에선 오버레이에 가려진다 */
@@ -459,6 +466,7 @@
 <button id="devAds" type="button">광고 ON</button>
 <!-- DEV: 손맛 비교 스위치 (최종 빌드 전 삭제) -->
 <button id="devFeel" type="button">손맛 ON</button>
+<button id="devRabbit" type="button">토끼 ON</button>
 
 <div id="hud">
   <div>
@@ -753,6 +761,10 @@ const NOTE_PAN      = .35;                   // 좌/우 탭은 음 대신 좌우
 let feelFlag = true;
 try{ feelFlag = localStorage.getItem('railrun_dev_feel_off') !== '1'; }catch(e){}
 function feelOn(){ return feelFlag; }
+// 기관사 토끼 ON 여부 (DEV "토끼 ON/OFF" 스위치)
+let rabbitFlag = true;
+try{ rabbitFlag = localStorage.getItem('railrun_dev_rabbit_off') !== '1'; }catch(e){}
+function rabbitOn(){ return rabbitFlag; }
 
 /* ══════════ 선로 스프라이트 (img/rail-*.png) ══════════
    에셋의 선로는 완만한 호(arc)라서 그대로 잘라 쓰면 조각마다 레일 수직 위치가 어긋나
@@ -764,7 +776,7 @@ const RAIL_TIE_PITCH   = 84;   // 침목 주기(에셋 px) — 에셋을 새로 
 const RAIL_TIES_PER_SEG= 4;    // 세그먼트 1칸이 쓰는 침목 수 (밀도 결정)
 const RAIL_END_MARGIN  = 90;   // 레일 마감면(끝단, 침목 없는 구간) 회피 여백
 const RAIL_BANDS       = 24;   // 호를 펼 때 쪼개는 띠 개수 (많을수록 정확)
-const RAIL_STRIP_PX    = 160;  // 띠의 가로 해상도(화면 37px×DPR2 대비 2배 여유)
+const RAIL_STRIP_PX    = 240;  // 띠의 가로 해상도(확대 1.5배 × 화면 37px × DPR3 ≈ 167px 대비 여유)
 const RAIL_JOINT_OVER  = 3;    // 꺾이는 지점 빈틈 메우기용 겹침(px). 키우면 침목이 겹쳐 보임
 const RAIL_PASSED_A    = .45;  // 이미 지나온 구간 투명도
 const RAIL_ACTIVE_A    = .45;  // 밟을 차례 구간에 덧씌우는 발광 세기
@@ -780,6 +792,36 @@ const TRAIN_GEO = {
 const TRAIN_ASSET_LEN = 516;   // 주축 방향 길이(에셋 px)
 const TRAIN_LEN       = 46;    // 화면상 열차 길이(px) — 크기는 이 값으로 조절
 const TRAIN_LIFT      = 12;    // 선로 위로 띄우는 높이(px)
+// 지붕 창(선루프) 중심 — 기관사 토끼가 여기로 머리를 내민다. 에셋 실측(어두운 창 픽셀 중심)
+const TRAIN_WINDOW = { '-1': { x:303, y:361 }, '1': { x:520, y:361 } };
+
+/* ══════════ 월드 확대 ══════════
+   선로·기차·불빛·파티클을 한 배율로 같이 키운다(균형 유지). 배경 하늘·속도선·HUD 는 그대로.
+   기준점은 열차가 서는 화면 위치(W/2, H*.66). 1.5배에서도 앞쪽 선로가 약 15칸 보인다. */
+const WORLD_ZOOM = 1.5;
+
+/* ══════════ 기관사 토끼 (img/rabbit_head_*.png) ══════════
+   18종 캐릭터 에셋에서 머리만 잘라낸 것. 작은 화면에선 눈·입보다 실루엣(선글라스·처진 귀·
+   반짝이·느낌표)으로 읽히므로 상태마다 실루엣이 확실히 다른 표정을 골랐다.
+   ax = 얼굴(모자) 중심의 가로 비율 — 소품 때문에 이미지 가운데와 다르다. 실측값. */
+const RABBIT_HEADS = {
+  idle:      { src:'img/rabbit_head_idle.png',      ax:.480 },   // 기본
+  clap:      { src:'img/rabbit_head_clap.png',      ax:.471 },   // 콤보 15+
+  confetti:  { src:'img/rabbit_head_confetti.png',  ax:.479 },   // 콤보 30+
+  cool:      { src:'img/rabbit_head_cool.png',      ax:.506 },   // 부스터
+  cry:       { src:'img/rabbit_head_cry.png',       ax:.494 },   // 위기
+  sad:       { src:'img/rabbit_head_sad.png',       ax:.558 },   // 절체절명
+  cheer:     { src:'img/rabbit_head_cheer.png',     ax:.674 },   // 역 통과 · 등급 돌파
+  wink:      { src:'img/rabbit_head_wink.png',      ax:.435 },   // 위기 탈출 "휴~"
+  surprised: { src:'img/rabbit_head_surprised.png', ax:.539 },   // 탈선
+};
+const HEAD_H          = 30;    // 머리 높이(확대 전 px) → 화면에선 × WORLD_ZOOM = 45px
+const HEAD_SINK       = .12;   // 머리 아래쪽이 창 안으로 들어가는 비율
+const COMBO_CLAP      = 15, COMBO_CONFETTI = 30;
+const DANGER_IN = 22, DANGER_OUT = 28;   // 위기 진입/해제 게이지(%) — 경계에서 표정이 깜빡이지 않게 간격을 둔다
+const PANIC_IN  = 10, PANIC_OUT  = 14;   // 절체절명
+const CHEER_MS = 800, PHEW_MS = 500;
+const HEAD_POP_MS = 180;       // 표정이 바뀔 때 머리가 뽕 커졌다 돌아오는 시간
 
 /* ══════════ 상태 ══════════ */
 // 침목만 따로 그려야 부스터 중 그 레이어에만 CSS blur 를 걸 수 있다.
@@ -1147,6 +1189,7 @@ function checkTierUp(km){
   if(idx <= runTierIdx) return;
   runTierIdx = idx;
   showBanner(`${TIERS[idx].name} 달성!`, 'tier');
+  rabbitCheer();
   RRAudio.sfx('record');
   RRAudio.duck(0.4, 0.1, 1.0);
   musicHoldUntil = performance.now() + 1200;
@@ -1159,6 +1202,7 @@ function hitStop(){
   freezeUntil = performance.now() + HITSTOP_MS;
 }
 function stationSound(){
+  rabbitCheer();                           // 기관사 토끼 만세
   RRAudio.sfx('station');
   RRAudio.duck(0.45, 0.1, 0.8);            // 차임이 묻히지 않게 음악을 살짝 눌렀다 복구
   musicHoldUntil = performance.now() + 1000;
@@ -1299,6 +1343,7 @@ function start(){
   trainX=0; trainY=0; camX=0; camY=0;
   trainWX=trainWY=hopFromX=hopFromY=hopToX=hopToY=0; hopT0=-1e9; freezeUntil=0;
   lastChargeIdx=-1; feverNoteI=0;
+  inDanger=false; inPanic=false; cheerUntil=0; phewUntil=0;
   runTierIdx = tierIndexOf(getBestScore());   // 이미 가진 등급은 다시 "달성" 띄우지 않는다
   speed=0; maxSpeed=0; combo=0; shake=0; tilt=0;
   speedTimeAcc=0; speedSampleAcc=0;
@@ -1539,6 +1584,22 @@ $('devFeel').addEventListener('click', e=>{
   renderDevFeelBtn();
 });
 renderDevFeelBtn();
+
+/* DEV: 기관사 토끼 비교 스위치. 삭제 시 <button id="devRabbit">, #devRabbit CSS, 이 블록.
+   rabbitOn() 은 true 를 반환하도록 남긴다. */
+function renderDevRabbitBtn(){
+  const b = $('devRabbit'), off = !rabbitFlag;
+  b.textContent = off ? '토끼 OFF' : '토끼 ON';
+  b.classList.toggle('off', off);
+}
+$('devRabbit').addEventListener('pointerdown', e=> e.stopPropagation());
+$('devRabbit').addEventListener('click', e=>{
+  e.stopPropagation();
+  rabbitFlag = !rabbitFlag;
+  try{ localStorage.setItem('railrun_dev_rabbit_off', rabbitFlag ? '0' : '1'); }catch(err){}
+  renderDevRabbitBtn();
+});
+renderDevRabbitBtn();
 /* ═══════════════ DEV 블록 끝 ═══════════════ */
 
 function refreshGameOverButtons(){
@@ -2162,6 +2223,68 @@ const trainImg = {};
   }
 })();
 
+/* ══════════ 기관사 토끼 ══════════ */
+const headImg = {};
+(function loadHeads(){
+  for(const [k, h] of Object.entries(RABBIT_HEADS)){
+    const im = new Image();
+    im.onload = ()=> headImg[k] = im;
+    im.src = h.src;
+  }
+})();
+let headState='idle', headPopT=-1e9, inDanger=false, inPanic=false, cheerUntil=0, phewUntil=0;
+// 게이지 경계에 간격(히스테리시스)을 둬서 21↔23% 를 오갈 때 표정이 깜빡이지 않게 한다
+function updateDangerFlags(now){
+  const was = inDanger;
+  inPanic  = inPanic  ? gauge <= PANIC_OUT  : gauge <= PANIC_IN;
+  inDanger = inDanger ? gauge <= DANGER_OUT : gauge <= DANGER_IN;
+  if(was && !inDanger && playing) phewUntil = now + PHEW_MS;   // 위기 탈출 "휴~"
+}
+function rabbitCheer(){ cheerUntil = performance.now() + CHEER_MS; }
+// 우선순위: 탈선 > 절체절명 > 위기 > 부스터 > 역 통과 > 휴~ > 콤보 30+ > 콤보 15+ > 기본
+function pickHead(now){
+  if(crashT >= 0)       return 'surprised';
+  if(!playing)          return 'idle';
+  if(inPanic)           return 'sad';
+  if(inDanger)          return 'cry';
+  if(boosting)          return 'cool';
+  if(now < cheerUntil)  return 'cheer';
+  if(now < phewUntil)   return 'wink';
+  if(combo >= COMBO_CONFETTI) return 'confetti';
+  if(combo >= COMBO_CLAP)     return 'clap';
+  return 'idle';
+}
+// 지붕 창 위에 똑바로 선 머리(열차와 같이 돌지 않는다 — 기울면 표정이 안 읽힌다).
+// wx, wy = 창의 화면 위치, sqx/sqy = 열차 점프 찌그러짐(같이 통통), facing = 탈선 방향
+function drawRabbit(wx, wy, sqx, sqy, facing){
+  const now = performance.now();
+  const st = pickHead(now);
+  if(st !== headState){ headState = st; headPopT = vClock; }
+  const im = headImg[st] || headImg.idle;
+  if(!im) return;
+  const meta = RABBIT_HEADS[headImg[st] ? st : 'idle'];
+  const h = HEAD_H, w = h * im.width / im.height;
+  let ox = 0, oy = 0, rot = 0, sc = 1;
+  if(!reduceMotion){
+    const k = (vClock - headPopT) / HEAD_POP_MS;           // 표정 전환 팝
+    if(k < 1) sc = 1 + .18 * (1-k) * (1-k);
+    if(st === 'sad')      ox = Math.sin(vClock * .11) * 1.6;   // 떨림 — 땀방울만으론 약해서 움직임으로 보강
+    else if(st === 'cry') ox = Math.sin(vClock * .08) * 1.0;
+    if(crashT >= 0){                                        // 탈선: 머리가 튕겨 날아간다
+      const c = crashT;
+      ox += -facing * c * 1.3;
+      oy += -c * 3.2 + c * c * .16;
+      rot = -facing * c * .09;
+    }
+  }
+  ctx.save();
+  ctx.translate(wx + ox, wy + oy);
+  ctx.rotate(rot);
+  ctx.scale(sqx * sc, sqy * sc);                         // 발밑(창) 기준으로 커지고 찌그러진다
+  ctx.drawImage(im, -w * meta.ax, -h * (1 - HEAD_SINK), w, h);
+  ctx.restore();
+}
+
 (function loadRails(){
   let left = 2;
   for(const key of ['-1','1']){
@@ -2178,7 +2301,7 @@ const trainImg = {};
 
 /* 곧게 편 띠를 세그먼트마다 회전·배치만 한다(왜곡·꺾임 없음) */
 function drawTrackSprite(){
-  const from=Math.max(0,pos-6), to=Math.min(steps.length-1,pos+26);
+  const from=Math.max(0,pos-10), to=Math.min(steps.length-1,pos+26);   // 확대 1.5배 기준 화면 아래까지 채움
   const g = tieCtx;                      // 선로 전용 레이어(기차·파티클보다 아래)
   for(let i=from;i<to;i++){
     const a=scr(steps[i]), b=scr(steps[i+1]);
@@ -2207,7 +2330,7 @@ function drawTrack(){ railsReady ? drawTrackSprite() : drawTrackProc(); }
 
 /* 에셋 로드 전(또는 실패 시) 폴백으로 쓰는 절차적 선로 */
 function drawTrackProc(){
-  const from=Math.max(0,pos-6), to=Math.min(steps.length-1,pos+26);
+  const from=Math.max(0,pos-10), to=Math.min(steps.length-1,pos+26);   // 확대 1.5배 기준 화면 아래까지 채움
   for(let i=from;i<to;i++){
     const a=scr(steps[i]), b=scr(steps[i+1]);
     const dx=b.sx-a.sx, dy=b.sy-a.sy, len=Math.hypot(dx,dy);
@@ -2361,6 +2484,13 @@ function drawTrain(boost){
       }
     }
     put(tx, ty-TRAIN_LIFT-lift, 1, true);
+    if(rabbitOn()){
+      // 지붕 창의 화면 위치 = put() 과 같은 변환(찌그러짐 → 회전 → 축척)을 창 좌표 한 점에 적용
+      const win = TRAIN_WINDOW[key];
+      const vx = (win.x - geo.cx) * s, vy = (win.y - geo.cy) * s;
+      const c = Math.cos(spin), sn = Math.sin(spin);
+      drawRabbit(tx + sqx*(c*vx - sn*vy), ty-TRAIN_LIFT-lift + sqy*(sn*vx + c*vy), sqx, sqy, facing);
+    }
   } else {
     // 에셋 로드 전 폴백: 기존 절차적 열차
     if(boost>0){
@@ -2382,6 +2512,7 @@ function drawTrain(boost){
     ctx.fillStyle='#ffe9a3';
     ctx.beginPath(); ctx.arc(facing*(bw/2-3),0,3.2,0,6.283); ctx.fill();
     ctx.restore();
+    if(rabbitOn()) drawRabbit(tx, ty-12-lift-4, sqx, sqy, facing);
   }
 }
 
@@ -2434,13 +2565,19 @@ function loop(t){
   // 배경은 #bgArt(CSS)가 깔아주므로 세 캔버스 모두 투명하게 비우고 시작한다
   bgCtx.clearRect(0,0,W,H); tieCtx.clearRect(0,0,W,H); ctx.clearRect(0,0,W,H);
   for(const c of [bgCtx,tieCtx,ctx]){ c.save(); c.translate(shx,shy); }
+  if(playing) updateDangerFlags(now);
 
   drawSky(t);                          // 고도에 따라 변하는 하늘 + 구름·별·성운
   if(speed>40) drawSpeedLines(t);
+  // 월드 확대 — 선로·기차·파티클만. 기준점은 열차가 서는 화면 위치
+  for(const c of [tieCtx,ctx]){
+    c.save(); c.translate(W/2, H*.66); c.scale(WORLD_ZOOM, WORLD_ZOOM); c.translate(-W/2, -H*.66);
+  }
   drawTrack();            // 침목 → tieCtx / 레일 → ctx
   drawTrain(boostVis);
   drawParticles();
-  drawStreaks();          // 부스터 전용 방사형 스피드라인
+  for(const c of [tieCtx,ctx]) c.restore();
+  drawStreaks();          // 부스터 전용 방사형 스피드라인(화면 기준 — 확대하지 않음)
 
   for(const c of [bgCtx,tieCtx,ctx]) c.restore();
 

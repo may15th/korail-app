@@ -141,10 +141,138 @@
   #devAds.off{border-color:var(--signal-yellow);color:var(--signal-yellow)}
   /* ═══════════ DEV 끝 ═══════════ */
 
-  #sound{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:auto;
-    background:rgba(28,37,71,.7);border:1px solid #2c3766;color:var(--dim);border-radius:20px;
-    padding:7px 14px;font-size:12px;font-family:inherit;cursor:pointer}
-  #sound:active{transform:translateX(-50%) scale(.96)}
+  /* 주행 중 설정 버튼 — 누르면 일시정지 + 설정 패널. 홈·결과 화면에선 오버레이에 가려진다 */
+  #gameSetBtn{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:auto;
+    width:38px;height:38px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(28,37,71,.7);border:1px solid #2c3766;color:var(--dim);cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  #gameSetBtn svg{width:19px;height:19px}
+  #gameSetBtn:active{transform:translateX(-50%) scale(.94)}
+
+  /* ══════════ 설정 패널 (홈 리더보드 패널 스타일 공유) ══════════ */
+  .setRows{margin-top:16px;display:flex;flex-direction:column;gap:18px}
+  .setRow{display:grid;grid-template-columns:22px 1fr 34px;grid-template-rows:auto auto;
+    column-gap:10px;row-gap:8px;align-items:center}
+  .setIc{grid-row:1/3;font-size:17px;line-height:1;text-align:center}
+  .setLbl{font-size:13.5px;font-weight:700;color:var(--text)}
+  .setVal{grid-row:1;grid-column:3;font-size:13px;font-weight:700;color:#8fc0ff;
+    text-align:right;font-variant-numeric:tabular-nums}
+  .setRow input[type=range]{grid-column:2/4;width:100%;height:22px;margin:0;background:none;
+    -webkit-appearance:none;appearance:none;cursor:pointer;--p:100%}
+  .setRow input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--korail-blue) var(--p),rgba(255,255,255,.14) var(--p))}
+  .setRow input[type=range]::-moz-range-track{height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--korail-blue) var(--p),rgba(255,255,255,.14) var(--p))}
+  .setRow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;
+    margin-top:-7px;border-radius:50%;background:#fff;border:none;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+  .setRow input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+    background:#fff;border:none;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+  .setRow input[type=range]:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:4px}
+  .setResume{margin-top:20px;width:100%;background:var(--kp-primary);color:#fff;border:none;
+    border-radius:12px;padding:13px 0;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer}
+  .setResume:active{transform:scale(.98)}
+
+  /* ══════════ 게임오버 결과 카드 ══════════
+     토큰: 배경 #0A0E27 · 시안 #3DE0FF/#7DE8FF · 파랑 #0056D1/#3EA0FF · 보조 #91939A · 금 #FFD970
+     크기는 384px 폭 기준. 세로가 짧은 기기에선 뱃지·토끼만 vh 로 줄여 버튼이 화면 밖으로 밀리지 않게 한다.
+     [다시 달리기]가 엄지 닿는 하단에 오도록 카드를 아래쪽에 붙인다. */
+  .overlay.goOv{justify-content:flex-end;gap:0;background:rgba(5,8,22,.45);
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    padding:16px 16px max(16px, env(safe-area-inset-bottom));
+    font-family:'PGov',Pretendard,-apple-system,sans-serif}
+  .goCard{--badge:min(140px,16vh);--rabbit:min(180px,19vh);
+    width:100%;max-width:352px;flex:none;display:flex;flex-direction:column;align-items:center;
+    padding:16px 16px 16px;border-radius:24px;background:rgba(13,20,48,.82);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 60px rgba(0,0,0,.5);
+    animation:goIn .3s cubic-bezier(.2,.8,.2,1)}
+  @keyframes goIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  .goHead{display:flex;align-items:center;gap:10px;width:100%;font-size:12.5px;font-weight:600;color:#91939A}
+  .goHead::before,.goHead::after{content:'';flex:1;height:1px}
+  .goHead::before{background:linear-gradient(90deg,transparent,rgba(125,232,255,.35))}
+  .goHead::after{background:linear-gradient(90deg,rgba(125,232,255,.35),transparent)}
+  .goScoreBlk{text-align:center}
+  .goLbl{margin-top:10px;font-size:12px;font-weight:700;letter-spacing:4px;color:#91939A;padding-left:4px}
+  .goScore{font-family:Pretendard,-apple-system,'PGov',sans-serif;font-size:58px;font-weight:900;line-height:1.05;
+    color:#fff;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;text-shadow:0 0 24px rgba(61,224,255,.35)}
+  .goTier{margin-top:8px;display:flex;flex-direction:column;align-items:center}
+  .goBadgeWrap{position:relative;width:var(--badge);height:var(--badge)}
+  .goBadge{display:block;width:100%;height:100%;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
+  /* 리본 — 뱃지 이미지엔 방패만 있다. 금색 테두리 = 바깥 금색 도형 위에 2px 안쪽으로 남색 도형을 겹쳐 만든다.
+     양끝은 제비꼬리(안쪽으로 파인 V) — clip-path 로 자른다. */
+  .goRibbon{position:relative;z-index:1;margin-top:-16px;min-width:150px;height:32px;padding:0 30px;
+    display:flex;align-items:center;justify-content:center;background:#FFD970;
+    clip-path:polygon(0 0,100% 0,calc(100% - 12px) 50%,100% 100%,0 100%,12px 50%)}
+  .goRibbon::before{content:'';position:absolute;inset:2px;background:linear-gradient(#24487F,#1B3A6B);
+    clip-path:polygon(0 0,100% 0,calc(100% - 11px) 50%,100% 100%,0 100%,11px 50%)}
+  .goRibbon span{position:relative;font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;white-space:nowrap}
+  .goRabbit{display:block;margin-top:6px;width:var(--rabbit);height:var(--rabbit);object-fit:contain}
+  .goStatus{margin-top:4px;font-size:16px;font-weight:700;color:#fff;text-align:center;line-height:1.35}
+  .goStatus.up{color:#FFD970}
+  .goProg{width:100%;margin-top:12px}
+  .goBar{height:8px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
+  .goBar i{display:block;height:100%;width:0;border-radius:4px;
+    background:linear-gradient(90deg,#3DE0FF,#0056D1);transition:width .4s cubic-bezier(.2,.8,.2,1)}
+  .goGoal{margin-top:7px;font-size:12.5px;font-weight:600;color:#7DE8FF;text-align:center}
+  .goBest{margin-top:12px;width:100%;display:flex;align-items:center;gap:6px;
+    padding:9px 9px 9px 14px;border-radius:18px;background:rgba(255,255,255,.06);font-size:13px}
+  .goCrown{width:18px;height:18px;flex:none;color:#FFD970}
+  .goBestK{color:#91939A}
+  .goBestV{margin-left:auto;font-size:15px;color:#fff;font-variant-numeric:tabular-nums}
+  .goRankBtn{margin-left:6px;border:none;border-radius:12px;padding:6px 10px;cursor:pointer;
+    background:rgba(61,224,255,.12);color:#7DE8FF;font-family:inherit;font-size:12px;font-weight:700}
+  .goBtns{margin-top:14px;width:100%;display:flex;gap:10px}
+  .goBtns button{height:56px;border:none;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    gap:7px;color:#fff;font-family:inherit;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .goBtns svg{width:20px;height:20px;flex:none}
+  .goHome{flex:0 0 calc(40% - 5px);background:rgba(255,255,255,.08);font-size:15px}
+  .goRetry{flex:1;background:linear-gradient(135deg,#3EA0FF,#0056D1);font-size:17px;
+    box-shadow:0 8px 24px rgba(0,86,209,.45)}
+  .goCnt{font-size:12px;font-weight:600;opacity:.75}
+  .goBtns button:active{transform:scale(.97)}
+  .goBtns button:focus-visible,.goRankBtn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  /* 결과 화면엔 자체 [홈으로]가 있으므로 좌하단 공용 버튼은 숨긴다. DEV 광고 토글은 버튼과 겹치지 않게 위로 */
+  body.go-open #backHome{display:none!important}   /* #backHome 은 인라인 display:flex 라 !important 필요 */
+  body.go-open #devAds{top:14px;bottom:auto}
+
+  /* 승급 연출(A 상태 전용, 2초 이내): 뱃지 0.6→1 튀어오름 + 방사 파티클 + 리본 뒤따라 등장 */
+  .goOv.promo .goBadge{animation:goPop .7s cubic-bezier(.2,1.6,.4,1) .15s backwards}
+  @keyframes goPop{0%{transform:scale(.6);opacity:0}50%{opacity:1}100%{transform:scale(1)}}
+  .goOv.promo .goRibbon{animation:goIn .35s ease-out .55s backwards}
+  .goBurst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}
+  .goBurst i{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;
+    background:var(--c);opacity:0;animation:goSpark 1.1s cubic-bezier(.1,.7,.3,1) var(--d) forwards}
+  @keyframes goSpark{
+    0%{opacity:1;transform:rotate(var(--a)) translateX(12px) scale(1)}
+    100%{opacity:0;transform:rotate(var(--a)) translateX(var(--r)) scale(.3)}}
+
+  /* ══════════ 게임 종료 확인 팝업 ══════════
+     토끼(rabbit_exit_sad)가 카드 윗변 위로 얼굴만 빼꼼 — 카드 배경을 ::before 로 깔고
+     토끼를 그 "뒤"에 두면 윗변 아래 몸통은 카드 배경에 가려진다. */
+  .exOv{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:rgba(5,8,22,.72);font-family:'PGov',Pretendard,-apple-system,sans-serif;
+    animation:lbHomeIn .15s ease-out}
+  .exCard{position:relative;isolation:isolate;width:100%;max-width:300px;margin-top:96px;
+    padding:22px 18px 18px;overflow:visible}
+  .exCard::before{content:'';position:absolute;inset:0;z-index:1;border-radius:28px;
+    background:#1B2150;border:1px solid rgba(255,255,255,.08);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .exRabbit{position:absolute;z-index:0;left:50%;top:-104px;width:170px;transform:translateX(-50%);
+    pointer-events:none;-webkit-user-drag:none}
+  .exBubble{position:relative;z-index:2;background:#fff;color:#1B2150;border-radius:16px;
+    padding:16px 12px;text-align:center;font-size:17px;font-weight:700}
+  .exBtns{position:relative;z-index:2;display:flex;gap:10px;margin-top:16px}
+  .exBtns button{flex:1;height:50px;border:none;border-radius:14px;color:#fff;cursor:pointer;
+    font-family:inherit;font-size:15px;font-weight:700}
+  .exCancel{background:rgba(255,255,255,.10)}
+  .exOk{background:#F2789F}
+  .exBtns button:active{transform:scale(.97)}
+  .exBtns button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+  @media (prefers-reduced-motion: reduce){
+    .goCard,.goOv.promo .goBadge,.goOv.promo .goRibbon,.exOv{animation:none}
+    .goBurst{display:none}
+    .goBar i{transition:none}
+  }
 
   #controls{position:fixed;bottom:0;left:0;right:0;height:34%;display:flex;pointer-events:none;z-index:4}
   .zone{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:30px;opacity:.45}
@@ -189,9 +317,6 @@
   .hot-play{left:35.39%;top:36.30%;width:29.33%;height:14.41%}
   .hot-lb  {left:11.05%;top:40.79%;width:21.04%;height:8.73%}
   .hot-set {left:70.56%;top:40.79%;width:15.94%;height:8.73%}
-  /* settings 는 아직 동작 없음 — 눌리는 피드백을 주지 않는다 */
-  .hot-set{cursor:default}
-  .hot-set:active{transform:none}
   @media (prefers-reduced-motion: reduce){ .hot,.hot:active{transition:none;transform:none} }
 
   /* ══════════ 홈 리더보드 패널 ══════════ */
@@ -211,20 +336,6 @@
   .lbHomeSub{margin-top:4px;font-size:11.5px;color:var(--dim)}
   /* .lbList 가 뒤에서 max-height 를 다시 잡으므로 특이도를 한 단계 올린다 */
   .lbList.lbHomeList{margin-top:12px;max-height:46vh}
-  .brand{font-size:13px;letter-spacing:4px;color:var(--korail-blue);font-weight:700}
-  h1{font-size:44px;font-weight:800;letter-spacing:-1.5px}
-  h1 em{font-style:normal;color:var(--korail-blue)}
-  .sub{font-size:14px;color:var(--dim);line-height:1.75;max-width:310px}
-  .btn{pointer-events:auto;margin-top:8px;background:var(--korail-blue);color:#fff;border:none;border-radius:14px;padding:16px 46px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer}
-  .btn:active{transform:scale(.97)}
-  .btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
-  .stats{display:flex;flex-direction:column;gap:10px;background:#141c3d;border:1px solid #2c3766;border-radius:16px;padding:18px 26px;min-width:280px}
-  .stats .row{display:flex;justify-content:space-between;gap:30px;font-size:14px}
-  .stats .row .k{color:var(--dim)}
-  .stats .row .v{font-weight:700;font-variant-numeric:tabular-nums}
-  .stats .row.eco .v{color:var(--signal-green)}
-  .foot{font-size:11px;color:#5a6690;margin-top:2px;line-height:1.6}
-  #nearMiss{display:none;font-size:14px;font-weight:700;color:var(--signal-yellow)}
 
   #banner{position:fixed;top:20%;left:50%;transform:translate(-50%,0) scale(.85);opacity:0;background:var(--korail-blue);color:#fff;font-weight:800;font-size:21px;padding:13px 30px;border-radius:30px;pointer-events:none;transition:all .28s cubic-bezier(.2,1.4,.4,1);box-shadow:0 8px 34px rgba(47,107,255,.5);z-index:8}
   #banner.show{opacity:1;transform:translate(-50%,0) scale(1)}
@@ -305,7 +416,6 @@
     border-radius:12px;padding:11px 18px;cursor:pointer;border:none}
   #adConfirmStay{background:var(--kp-primary);color:#fff}
   #adConfirmLeave{background:transparent;border:1px solid rgba(255,255,255,.3);color:#eef2ff}
-  .btn.ad-btn{background:var(--kp-primary);font-family:'PGov',inherit}
 
   /* ── 페이지 전환 애니메이션 (transition.js 가 body 에 토글) ── */
   .fade-leave{opacity:0;transition:opacity .15s ease}
@@ -328,7 +438,12 @@
 <div id="vignette" aria-hidden="true"></div>
 <div id="meteors" aria-hidden="true"></div>
 <div id="gaugebar"></div>
-<button id="sound">🔊 소리 켜짐</button>
+<button id="gameSetBtn" type="button" aria-label="일시정지 및 설정">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
 <!-- DEV: 광고 토글 버튼 (최종 빌드 전 삭제) -->
 <button id="devAds" type="button">광고 ON</button>
 
@@ -382,19 +497,82 @@
   </div>
 </div>
 
-<div class="overlay hidden" id="overOv">
-  <div class="brand">운행 종료</div>
-  <h1 id="overTitle">탈선!</h1>
-  <div class="stats">
-    <div class="row"><span class="k">운행 거리</span><span class="v" id="finalKm">0 km</span></div>
-    <div class="row"><span class="k">최종 도달</span><span class="v" id="finalSt">서울</span></div>
-    <div class="row"><span class="k">최고 속도</span><span class="v" id="finalSpd">0 km/h</span></div>
-    <div class="row"><span class="k">최고 기록</span><span class="v" id="bestKm">0 km</span></div>
-    <div class="row eco"><span class="k">자가용 대비 탄소절감</span><span class="v" id="ecoKg">0 kg</span></div>
+<!-- 설정: 홈(⚙ SETTINGS)과 주행 중(상단 ⚙)에서 같은 패널을 연다. 주행 중엔 일시정지 상태로 열린다. -->
+<div class="lbHome hide" id="setOv" role="dialog" aria-modal="true" aria-label="설정">
+  <div class="lbHomePanel">
+    <div class="lbHomeHead">
+      <span class="lbHomeTitle" id="setTitle">SETTINGS</span>
+      <button class="lbHomeClose" id="setCloseBtn" type="button" aria-label="닫기">✕</button>
+    </div>
+    <p class="lbHomeSub" id="setSub">소리 크기를 조절할 수 있어요</p>
+    <div class="setRows">
+      <div class="setRow">
+        <span class="setIc" aria-hidden="true">🎵</span>
+        <label class="setLbl" for="volMusic">배경음악</label>
+        <input type="range" id="volMusic" min="0" max="100" step="1">
+        <span class="setVal" id="volMusicVal">100</span>
+      </div>
+      <div class="setRow">
+        <span class="setIc" aria-hidden="true">🔔</span>
+        <label class="setLbl" for="volSfx">효과음</label>
+        <input type="range" id="volSfx" min="0" max="100" step="1">
+        <span class="setVal" id="volSfxVal">100</span>
+      </div>
+    </div>
+    <button class="setResume hide" id="setResumeBtn" type="button">계속 운행</button>
   </div>
-  <div id="nearMiss"></div>
+</div>
 
-  <div class="lbWrap hide" id="lbWrap">
+<!-- ═══ 게임오버 결과 카드 — showGameOver(score) 가 채운다 ═══ -->
+<div class="overlay hidden goOv" id="overOv">
+  <div class="goCard" id="goCard" role="dialog" aria-modal="true" aria-labelledby="goHead">
+    <div class="goHead" id="goHead">게임 결과</div>
+    <div class="goScoreBlk" id="goScoreBlk">
+      <div class="goLbl">SCORE</div>
+      <div class="goScore" id="goScore">0</div>
+    </div>
+    <div class="goTier">
+      <div class="goBadgeWrap">
+        <img class="goBadge" id="goBadge" alt="" draggable="false">
+        <div class="goBurst" id="goBurst" aria-hidden="true"></div>
+      </div>
+      <div class="goRibbon"><span id="goTierName">견습 기관사</span></div>
+    </div>
+    <img class="goRabbit" id="goRabbit" alt="" draggable="false">
+    <p class="goStatus" id="goStatus"></p>
+    <div class="goProg">
+      <div class="goBar"><i id="goBarFill"></i></div>
+      <p class="goGoal" id="goGoal"></p>
+    </div>
+    <div class="goBest">
+      <svg class="goCrown" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z" fill="currentColor"/></svg>
+      <span class="goBestK">최고 기록</span>
+      <b class="goBestV" id="goBestV">0</b>
+      <button class="goRankBtn" id="goRankBtn" type="button">순위 <span aria-hidden="true">›</span></button>
+    </div>
+    <div class="goBtns">
+      <button class="goHome" id="goHomeBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 9.5V20h5v-6h4v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        홈으로
+      </button>
+      <button class="goRetry" id="retryBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        다시 달리기 <small class="goCnt" id="retryCnt"></small>
+      </button>
+      <button class="goRetry goAd hide" id="adWatchBtn" type="button">영상 보고 5회 더</button>
+    </div>
+  </div>
+</div>
+
+<!-- 게임오버 리더보드 — 결과 카드의 [순위] 로 연다. 기록 저장·닉네임 변경 로직은 기존 그대로 -->
+<div class="lbHome hide" id="lbResultOv" role="dialog" aria-modal="true" aria-label="리더보드">
+  <div class="lbHomePanel">
+    <div class="lbHomeHead">
+      <span class="lbHomeTitle">LEADERBOARD</span>
+      <button class="lbHomeClose" id="lbResultCloseBtn" type="button" aria-label="닫기">✕</button>
+    </div>
+    <p class="lbHomeSub">최고 운행 거리 상위 20위</p>
+  <div class="lbWrap hide" id="lbWrap" style="max-width:none;margin-top:12px">
     <div class="lbStatus" id="lbStatus">기록 저장 중…</div>
     <div class="lbMe hide" id="lbMe">
       <span id="lbMeNick"></span>
@@ -408,10 +586,19 @@
     <div class="lbList" id="lbList"></div>
     <div class="lbMyRank hide" id="lbMyRank"></div>
   </div>
+  </div>
+</div>
 
-  <button class="btn" id="retryBtn">다시 운행</button>
-  <button class="btn ad-btn hide" id="adWatchBtn">영상 보고 5회 더 도전</button>
-  <p class="foot">탄소절감량 = 거리 × 183g/km<br>(승용차 210g − KTX 27g, gCO₂/인·km)</p>
+<!-- ═══ 게임 종료 확인 — showExitConfirm() ═══ -->
+<div class="exOv hide" id="exitOv" role="alertdialog" aria-modal="true" aria-labelledby="exMsg">
+  <div class="exCard">
+    <img class="exRabbit" src="img/rabbit_exit_sad.png" alt="" draggable="false">
+    <p class="exBubble" id="exMsg">정말 떠나시게요?</p>
+    <div class="exBtns">
+      <button class="exCancel" id="exCancelBtn" type="button">취소</button>
+      <button class="exOk" id="exOkBtn" type="button">확인</button>
+    </div>
+  </div>
 </div>
 
 <div class="ad-overlay hide" id="adOverlay" role="dialog" aria-modal="true" aria-label="홍보영상 시청">
@@ -479,6 +666,34 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === 'hidden') c.suspend(); else c.resume();
 });
 
+/* ══════════ 기관사 등급 (게임오버 결과 화면) ══════════
+   ⚠️ 파일명 숫자와 등급 순서가 반대다(rank3 이 가장 낮고 rank1 이 가장 높다).
+      등급 순서는 아래 배열 순서만 신뢰할 것 — 파일명으로 정렬/추론 금지.
+   · 기준 지표는 점수(score) = 운행거리(km) × SCORE_PER_KM.
+   · 등급은 이번 판이 아니라 최고점수(bestScore, localStorage)로 정한다. 갱신만 되고 강등 없음.
+   · 컷은 2026.09.30 리더보드 전체 1,488판의 거리 분포에서 목표 비율
+     (견습 40% · 3급 30% · 2급 20% · 1급 7% · 명예 3%)에 맞춰 잡은 값(22·104·214·390km → 반올림).
+     한 판 기준 분포라 "기기별 최고점수" 분포와는 다르다 → 실제 플레이 데이터로 재조정 예정. */
+const SCORE_PER_KM = 10;
+const BEST_SCORE_KEY = 'railrun.bestScore';
+const TIER_CUTS_ARE_PLACEHOLDER = true; // 실제 플레이 데이터로 재조정 예정
+const TIERS = [
+  { key:'apprentice', name:'견습 기관사', cut:0,
+    badge:'img/badge_apprentice.png', rabbit:'img/rabbit_apprentice.png' },
+  { key:'rank3', name:'3급 기관사', cut:200,
+    badge:'img/badge_rank3.png',      rabbit:'img/rabbit_rank3.png' },
+  { key:'rank2', name:'2급 기관사', cut:1000,
+    badge:'img/badge_rank2.png',      rabbit:'img/rabbit_rank2.png' },
+  { key:'rank1', name:'1급 기관사', cut:2000,
+    badge:'img/badge_rank1.png',      rabbit:'img/rabbit_rank1.png' },
+  { key:'honor', name:'명예 기관사', cut:4000,
+    badge:'img/badge_honor.png',      rabbit:'img/rabbit_rank_honor.png' },
+];
+const NEAR_GOAL_RATIO  = 0.30;   // 다음 등급까지 남은 점수가 최고점수의 30% 이내면 등급을 목표로 제시
+const CLOSE_CALL_RATIO = 0.70;   // 최고점수의 70% 이상이면 "아깝다"
+const EARLY_DEATH_RATIO= 0.30;   // 최고점수의 30% 미만이면 "초반 사망"
+const RABBIT_SAD = 'img/rabbit_exit_sad.png';
+
 /* ══════════ 설정 ══════════ */
 const KM_PER_STEP = 2.0;
 const STATIONS = [["서울",0],["광명",22],["천안아산",96],["오송",128],["대전",166],
@@ -539,7 +754,7 @@ const bgCv = document.getElementById('cvBg'), bgCtx = bgCv.getContext('2d');
 const tieCv = document.getElementById('cvTies'), tieCtx = tieCv.getContext('2d');
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 let W,H,DPR;
-let steps=[], pos=0, gauge=100, playing=false, best=0;
+let steps=[], pos=0, gauge=100, playing=false;
 let camX=0, camY=0, trainX=0, trainY=0, crashT=-1;
 let lastMilestone=0, tPrev=0;
 let shake=0, tilt=0, speed=0, maxSpeed=0, combo=0, lastTapT=0;
@@ -607,7 +822,7 @@ function pushStep(){
 
 /* ══════════ 입력 ══════════ */
 function tap(dir){
-  if(!playing) return;
+  if(!playing || paused) return;
   if(dir === steps[pos].dir){
     pos++;
     if(steps.length-pos < 40) pushStep();
@@ -756,24 +971,81 @@ function updateBoostUI(now){
   if(lbl!==lastBoostLbl){ $('boostLbl').textContent = lbl; lastBoostLbl = lbl; }
 }
 addEventListener('pointerdown', e=>{
-  if(e.target.closest('#sound')) return;
+  // 설정 버튼·패널, 좌하단 홈으로 버튼 조작이 열차 이동으로 새지 않게
+  if(e.target.closest('#gameSetBtn, #setOv, #backHome')) return;
   if(playing) tap(e.clientX < W/2 ? -1 : 1);
 });
 addEventListener('keydown', e=>{
   if(e.key==='ArrowLeft') tap(-1);
   if(e.key==='ArrowRight') tap(1);
 });
-function renderSoundBtn(){
-  $('sound').textContent = RRAudio.muted ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+
+/* ══════════ 일시정지 ══════════
+   부스터·쿨다운·충전 창·콤보는 performance.now() 절대 시각으로 관리되므로,
+   재개할 때 멈춰 있던 시간만큼 전부 뒤로 민다(안 그러면 정지 중에 부스터가 끝나 버림). */
+let paused = false, pauseAt = 0;
+function pauseGame(){
+  if(!playing || paused) return;
+  paused = true; pauseAt = performance.now();
 }
-$('sound').addEventListener('click', e=>{
-  e.stopPropagation();
-  RRAudio.unlock();                       // 제스처 안에서 호출 (로드 완료는 기다리지 않음)
-  RRAudio.setMuted(!RRAudio.muted);
-  renderSoundBtn();
-  if(!RRAudio.muted) RRAudio.sfx('ui_tap');
+function resumeGame(){
+  if(!paused) return;
+  const d = performance.now() - pauseAt;
+  boostStart += d; boostEnd += d; cooldownEnd += d;
+  chargeStart += d; rampStart += d; lastTapT += d;
+  musicHoldUntil += d;
+  paused = false;
+}
+
+/* ══════════ 설정 패널 ══════════ */
+const volEls = { music: $('volMusic'), sfx: $('volSfx') };
+function renderVol(el, v){
+  const n = Math.round(v*100);
+  el.value = n;
+  el.style.setProperty('--p', n+'%');
+  $(el.id+'Val').textContent = n;
+}
+function openSettings(){
+  renderVol(volEls.music, RRAudio.musicVolume);
+  renderVol(volEls.sfx, RRAudio.sfxVolume);
+  const inGame = playing;
+  if(inGame) pauseGame();
+  $('setTitle').textContent = inGame ? 'PAUSED' : 'SETTINGS';
+  $('setSub').textContent = inGame ? '일시정지 중 · 소리 크기를 조절할 수 있어요' : '소리 크기를 조절할 수 있어요';
+  $('setResumeBtn').classList.toggle('hide', !inGame);
+  $('setOv').classList.remove('hide');
+}
+function closeSettings(){
+  if($('setOv').classList.contains('hide')) return;
+  $('setOv').classList.add('hide');
+  RRAudio.sfx('ui_back');
+  resumeGame();
+}
+$('gameSetBtn').addEventListener('click', ()=>{ RRAudio.sfx('ui_tap'); openSettings(); });
+$('settingsBtn').addEventListener('click', openSettings);   // 홈 ⚙ (ui_tap 은 UI_SFX 에서)
+$('setCloseBtn').addEventListener('click', closeSettings);
+$('setResumeBtn').addEventListener('click', closeSettings);
+// 바깥(딤) 탭으로 닫기는 홈에서만. 주행 중엔 연타하던 손가락이 스쳐 준비 없이 재개되지 않도록
+// [계속 운행]·✕ 로만 재개한다.
+$('setOv').addEventListener('click', e=>{ if(e.target === $('setOv') && !paused) closeSettings(); });
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && !$('setOv').classList.contains('hide')) closeSettings();
 });
-renderSoundBtn();                         // 새로고침해도 음소거 상태 유지
+volEls.music.addEventListener('input', ()=>{
+  RRAudio.setMusicVolume(volEls.music.value/100);
+  renderVol(volEls.music, RRAudio.musicVolume);
+});
+let sfxPreviewT = 0;
+volEls.sfx.addEventListener('input', ()=>{
+  RRAudio.setSfxVolume(volEls.sfx.value/100);
+  renderVol(volEls.sfx, RRAudio.sfxVolume);
+  const now = performance.now();                 // 끌면서 바뀐 크기를 바로 들려준다(과하게 겹치지 않게 간격 둠)
+  if(now - sfxPreviewT > 140){ sfxPreviewT = now; RRAudio.sfx('switch_R'); }
+});
+// 앱 전환·화면 꺼짐으로 탭이 가려지면 주행을 자동으로 일시정지(돌아왔을 때 이미 탈선해 있지 않게)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden' && playing && !paused) openSettings();
+});
 
 /* ══════════ 파티클 ══════════ */
 function spawnSparks(){
@@ -819,34 +1091,128 @@ function showBanner(t){
 function derail(){ playing=false; crashT=0; shake=26; RRAudio.crash(); }
 function finishOver(){
   const km = kmNow();
-  const prevBest = best;
-  best = Math.max(best, km);
-  $('finalKm').textContent = km.toFixed(1)+' km';
-  $('finalSt').textContent = stationAt(km) + (km>=417?' (완주+)':'');
-  $('finalSpd').textContent = Math.round(maxSpeed)+' km/h';
-  $('bestKm').textContent = best.toFixed(1)+' km';
-  // 아차상: 신기록에 근접했으면 안타까움 표시
-  const gap = prevBest - km;
-  const nm = $('nearMiss');
-  if(prevBest>0 && gap>0 && gap<=10){
-    nm.textContent = `${gap.toFixed(1)}km만 더 갔으면 신기록!`;
-    nm.style.display='block';
-  } else if(km>prevBest && prevBest>0){
-    nm.textContent = '신기록 달성!';
-    nm.style.display='block';
-    RRAudio.sfx('record');                 // 결과 화면은 BGM 없음 — 신기록일 때만 소리
-  } else nm.style.display='none';
-  $('ecoKg').textContent = (km*0.183).toFixed(1)+' kg';
-  $('overTitle').textContent = gauge<=0 ? '신호 정지!' : '탈선!';
-  $('overOv').classList.remove('hidden');
-  refreshGameOverButtons();
+  showGameOver(scoreOfKm(km));
   const avgSpeedKmh = speedTimeAcc>0 ? speedSampleAcc/speedTimeAcc : 0;
-  saveRunAndShowLeaderboard(km, avgSpeedKmh);
+  saveRunAndShowLeaderboard(km, avgSpeedKmh);   // 리더보드는 기존대로 km 기준 저장
+}
+
+/* ══════════ 게임오버 결과 카드 ══════════ */
+const scoreOfKm = km => Math.round(km * SCORE_PER_KM);
+const fmtScore  = n  => Math.round(n).toLocaleString('ko-KR');
+function tierIndexOf(score){               // 역순으로 돌며 score >= cut 인 첫 등급
+  for(let i=TIERS.length-1; i>=0; i--) if(score >= TIERS[i].cut) return i;
+  return 0;
+}
+const tierOf = score => TIERS[tierIndexOf(score)];
+function getBestScore(){
+  try{ return Math.max(0, parseInt(localStorage.getItem(BEST_SCORE_KEY)||'0',10) || 0); }catch(e){ return 0; }
+}
+function setBestScore(n){ try{ localStorage.setItem(BEST_SCORE_KEY, String(n)); }catch(e){} }
+const goVisible = ()=> !$('overOv').classList.contains('hidden');
+
+// 등급 뱃지·리본·게이지·최고기록 pill. goalText 는 상태별로 호출부가 정한다.
+function renderTier(tierIdx, best, goalText){
+  const tier = TIERS[tierIdx], next = TIERS[tierIdx+1];
+  $('goBadge').src = tier.badge;
+  $('goBadge').alt = tier.name + ' 뱃지';
+  $('goTierName').textContent = tier.name;
+  const pct = next ? Math.min(1, Math.max(0, (best - tier.cut) / (next.cut - tier.cut))) : 1;
+  const fill = $('goBarFill');
+  fill.style.transition = 'none'; fill.style.width = '0%';
+  void fill.offsetWidth; fill.style.transition = '';
+  fill.style.width = (pct*100).toFixed(1) + '%';
+  $('goGoal').textContent = goalText;
+  $('goBestV').textContent = fmtScore(best);
+}
+// "아직 멀었다"는 인상을 주지 않는 목표 문구 — 다음 등급이 멀면 최고기록을 중간 목표로 제시
+function goalTextFor(tierIdx, best, score){
+  const next = TIERS[tierIdx+1];
+  if(!next) return '최고 등급 달성! 이제 기록에 도전하세요';
+  const remain = next.cut - best;
+  if(best === 0 || remain <= best * NEAR_GOAL_RATIO) return `${next.name}까지 ${fmtScore(remain)}점!`;
+  const gap = best - score;
+  return gap > 0 ? `최고 기록 갱신까지 ${fmtScore(gap)}점` : '지금이 최고 기록! 다음 판도 이 기세로';
+}
+function openGameOverCard(){
+  const ov = $('overOv');
+  // 애니메이션을 매번 처음부터 — 클래스·노드를 다시 붙여 재생시킨다
+  const card = $('goCard'); card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  ov.classList.remove('hidden');
+  document.body.classList.add('go-open');
+  refreshGameOverButtons();
+  armBackGuard();
+}
+
+function showGameOver(score){
+  const prevBest    = getBestScore();
+  const prevTierIdx = tierIndexOf(prevBest);
+  const isNewBest   = score > prevBest;
+  const newBest     = Math.max(score, prevBest);
+  const newTierIdx  = tierIndexOf(newBest);
+  const promoted    = newTierIdx > prevTierIdx;
+  setBestScore(newBest);
+
+  // 상태: A 승급 > B 신기록 > D 초반 사망 > C 아깝다 (C·D 사이 구간은 C — 즉 CLOSE_CALL_RATIO 미만도 C)
+  const state = promoted ? 'promo'
+    : isNewBest ? 'best'
+    : (prevBest === 0 || score < prevBest * EARLY_DEATH_RATIO) ? 'early'
+    : 'close';
+  const tier = TIERS[newTierIdx];
+  const status = {
+    promo: `${tier.name}로 승급했어요!`,
+    best:  '최고 기록 갱신!',
+    close: prevBest - score > 0 ? `아깝다! 최고 기록까지 ${fmtScore(prevBest - score)}점` : '최고 기록과 동점이에요!',
+    early: '이번엔 출발이 아쉬웠어요. 한 번 더!',
+  }[state];
+
+  $('goScoreBlk').classList.remove('hide');
+  $('goScore').textContent = fmtScore(score);
+  $('goRabbit').src = state === 'early' ? RABBIT_SAD : tier.rabbit;
+  $('goStatus').textContent = status;
+  $('goStatus').classList.toggle('up', state === 'promo' || state === 'best');
+  renderTier(newTierIdx, newBest, goalTextFor(newTierIdx, newBest, score));
+
+  const ov = $('overOv');
+  ov.classList.remove('promo'); void ov.offsetWidth;
+  ov.classList.toggle('promo', state === 'promo');
+  $('goBurst').innerHTML = '';
+  if(state === 'promo' && !reduceMotion) spawnPromoBurst();
+  if((state === 'promo' || state === 'best') && prevBest > 0) RRAudio.sfx('record');
+  openGameOverCard();
+}
+// 기회가 0인 채로 페이지에 들어온 경우 — 이번 판 점수 없이 현재 등급과 광고 버튼만 보여준다
+function showGameOverIdle(){
+  const best = getBestScore(), idx = tierIndexOf(best), next = TIERS[idx+1];
+  $('goScoreBlk').classList.add('hide');
+  $('goRabbit').src = TIERS[idx].rabbit;
+  $('goStatus').textContent = '오늘의 기회를 다 썼어요. 영상 보고 이어서 달려요!';
+  $('goStatus').classList.remove('up');
+  $('overOv').classList.remove('promo');
+  renderTier(idx, best, next ? `${next.name}까지 ${fmtScore(next.cut - best)}점` : '최고 등급 달성! 이제 기록에 도전하세요');
+  openGameOverCard();
+}
+// 승급 파티클 — 금·시안 점들이 뱃지 중심에서 방사 (1.1s + 최대 지연 .25s → 2초 이내)
+function spawnPromoBurst(){
+  const box = $('goBurst'), n = 16, cols = ['#FFD970','#7DE8FF','#3DE0FF','#ffffff'];
+  for(let i=0;i<n;i++){
+    const s = document.createElement('i');
+    s.style.setProperty('--a', (i/n*360 + Math.random()*12) + 'deg');
+    s.style.setProperty('--r', (70 + Math.random()*40) + 'px');
+    s.style.setProperty('--d', (.2 + Math.random()*.05) + 's');
+    s.style.setProperty('--c', cols[i % cols.length]);
+    box.appendChild(s);
+  }
+}
+function closeGameOverCard(){
+  $('overOv').classList.add('hidden');
+  document.body.classList.remove('go-open');
+  $('lbResultOv').classList.add('hide');
 }
 function start(){
   // 홈 BGM 은 끊지 않고 이어간다(이미 재생 중이면 playBgm 은 무시됨). 탈선 뒤 재도전이면 다시 페이드인
   RRAudio.sfx('count_go');
   bgm(0.8);
+  paused = false;
   genSteps();
   pos=0; gauge=100; lastMilestone=0; crashT=-1;
   trainX=0; trainY=0; camX=0; camY=0;
@@ -855,16 +1221,17 @@ function start(){
   sparks=[]; rings=[];
   resetBoost();
   $('startOv').classList.add('hidden');
-  $('overOv').classList.add('hidden');
+  closeGameOverCard();
+  hideExitConfirm();
   playing=true; updateHUD();
+  armBackGuard();
 }
 // 최초 진입("운행 시작")도 재도전과 동일하게 기회 1개를 소모한다.
 // 그래야 새로고침/뒤로가기로 startOv 를 다시 띄워도 기회 카운트를 우회할 수 없다.
 function attemptStart(){
   if(getChances()<=0){
     $('startOv').classList.add('hidden');
-    $('overOv').classList.remove('hidden');
-    refreshGameOverButtons();
+    showGameOverIdle();
     return;
   }
   setChances(getChances()-1);
@@ -877,9 +1244,9 @@ $('retryBtn').addEventListener('click', attemptStart);
    시작·재도전은 start() 의 count_go 가 대신한다. 광고 오버레이 안 버튼은 광고 중 게임 소리가
    꺼져 있으므로 연결하지 않는다. */
 const UI_SFX = {
-  ui_tap:     ['lbOpenBtn','settingsBtn','adWatchBtn','lbEditBtn','lbRerollBtn'],
-  ui_confirm: ['lbConfirmBtn'],
-  ui_back:    ['lbHomeCloseBtn'],
+  ui_tap:     ['lbOpenBtn','settingsBtn','adWatchBtn','lbEditBtn','lbRerollBtn','goRankBtn','goHomeBtn'],
+  ui_confirm: ['lbConfirmBtn','exOkBtn'],
+  ui_back:    ['lbHomeCloseBtn','lbResultCloseBtn','exCancelBtn'],
 };
 for(const [name, ids] of Object.entries(UI_SFX)){
   for(const id of ids){
@@ -887,6 +1254,81 @@ for(const [name, ids] of Object.entries(UI_SFX)){
     if(el) el.addEventListener('click', ()=> RRAudio.sfx(name));
   }
 }
+
+/* ══════════ 결과 카드 버튼 · 게임오버 리더보드 ══════════ */
+$('goHomeBtn').addEventListener('click', showExitConfirm);
+function closeResultLeaderboard(){ $('lbResultOv').classList.add('hide'); }
+$('goRankBtn').addEventListener('click', ()=> $('lbResultOv').classList.remove('hide'));
+$('lbResultCloseBtn').addEventListener('click', closeResultLeaderboard);
+$('lbResultOv').addEventListener('click', e=>{ if(e.target === $('lbResultOv')) closeResultLeaderboard(); });
+
+/* ══════════ 게임 종료 확인 ══════════
+   트리거: 결과 카드 [홈으로] · 주행/결과 중 좌하단 "‹ 홈으로" · 브라우저 뒤로가기.
+   [확인] → 코레일 앱 홈(index.html). 이동은 #backHome 링크를 눌러 transition.js 페이드를 그대로 탄다. */
+let exitPausedByMe = false, exitConfirmed = false;
+const exitOpen = ()=> !$('exitOv').classList.contains('hide');
+// 주행 중 + 탈선 연출(crashT) 중 + 결과 화면 — 이 구간에서 나가려 하면 확인을 받는다
+const inRun = ()=> playing || crashT >= 0 || goVisible();
+function showExitConfirm(){
+  if(exitOpen()) return;
+  if(playing && !paused){ pauseGame(); exitPausedByMe = true; }   // 고민하는 동안 게이지가 닳지 않게
+  $('exitOv').classList.remove('hide');
+  $('exCancelBtn').focus({ preventScroll:true });                  // 기본 포커스는 [취소] — 실수로 나가기 방지
+}
+function hideExitConfirm(){
+  if(!exitOpen()) return;
+  $('exitOv').classList.add('hide');
+  if(exitPausedByMe){ exitPausedByMe = false; resumeGame(); }
+}
+function confirmExit(){
+  exitConfirmed = true;
+  $('exitOv').classList.add('hide');
+  const home = $('backHome');
+  if(home) home.click(); else location.href = 'index.html';
+}
+$('exCancelBtn').addEventListener('click', hideExitConfirm);
+$('exOkBtn').addEventListener('click', confirmExit);
+$('exitOv').addEventListener('click', e=>{ if(e.target === $('exitOv')) hideExitConfirm(); });   // 딤 탭 = 취소
+$('exitOv').addEventListener('pointerdown', e=> e.stopPropagation());   // 팝업 조작이 열차 입력으로 새지 않게
+// "‹ 홈으로"(#backHome) — 주행 중·결과 화면에선 바로 나가지 않고 확인부터. 캡처 단계에서 막아야
+// transition.js(버블 단계)가 defaultPrevented 를 보고 페이드 이동을 건너뛴다.
+document.addEventListener('click', e=>{
+  const a = e.target.closest && e.target.closest('#backHome');
+  if(!a || exitConfirmed) return;
+  if(inRun()){ e.preventDefault(); showExitConfirm(); }
+}, true);
+// 브라우저 뒤로가기 가로채기 — 주행/결과 화면에 들어서면 가드 항목을 하나 쌓아 두고,
+// 뒤로가기로 그 항목이 빠지면 다시 쌓은 뒤 확인 팝업을 띄운다.
+let backGuardOn = false;
+function armBackGuard(){
+  if(backGuardOn) return;
+  history.pushState({ railrunGuard:true }, '');
+  backGuardOn = true;
+}
+addEventListener('popstate', ()=>{
+  if(!backGuardOn || exitConfirmed) return;
+  backGuardOn = false;
+  if(inRun()){ armBackGuard(); showExitConfirm(); }
+});
+// 떠나는 순간 팝업을 닫아 둔다 — bfcache 로 돌아왔을 때 팝업이 떠 있는 스냅샷이 보이지 않게
+addEventListener('pagehide', ()=>{ $('exitOv').classList.add('hide'); exitPausedByMe = false; exitConfirmed = false; });
+
+/* 키보드 — ESC: 팝업 취소 / 스페이스·엔터: 결과 화면에서 다시 달리기(재도전 마찰 최소화) */
+document.addEventListener('keydown', e=>{
+  if(exitOpen()){
+    if(e.key === 'Escape'){ e.preventDefault(); hideExitConfirm(); }
+    return;
+  }
+  if(e.key === 'Escape' && !$('lbResultOv').classList.contains('hide')){ closeResultLeaderboard(); return; }
+  if(e.key !== ' ' && e.key !== 'Enter') return;
+  if(!goVisible() || !$('lbResultOv').classList.contains('hide')) return;
+  if(!$('adOverlay').classList.contains('hide') || !$('setOv').classList.contains('hide')) return;
+  // 버튼·입력칸에 포커스가 있으면 그 요소의 기본 동작을 존중(홈으로 버튼에서 엔터 = 홈으로)
+  if(e.target.closest && e.target.closest('button, input, a, textarea')) return;
+  e.preventDefault();
+  const btn = $('retryBtn').classList.contains('hide') ? $('adWatchBtn') : $('retryBtn');
+  btn.click();
+});
 
 /* ══════════ 홈 리더보드 (게임 시작 전) ══════════
    게임오버 리더보드와 달리 '내 기록'이 없으므로 상위 20위만 보여준다. */
@@ -1001,7 +1443,7 @@ renderDevAdsBtn();
 function refreshGameOverButtons(){
   const n = getChances();
   if(n>0){
-    $('retryBtn').textContent = `다시 운행(${n})`;
+    $('retryCnt').textContent = n < 99 ? `(${n})` : '';   // DEV 광고 OFF(99)일 땐 숫자 생략
     $('retryBtn').classList.remove('hide');
     $('adWatchBtn').classList.add('hide');
   } else {
@@ -1814,6 +2256,8 @@ function drawTrain(boost){
 
 /* ══════════ 루프 ══════════ */
 function loop(t){
+  // 일시정지: 갱신도 그리기도 건너뛴다(캔버스엔 마지막 프레임이 그대로 남는다)
+  if(paused){ tPrev=t; requestAnimationFrame(loop); return; }
   const dt = Math.min(50, t-tPrev)/1000; tPrev=t;
   const now = performance.now();
 
@@ -1873,9 +2317,7 @@ genSteps(); updateHUD();
 // 페이지를 새로 열었을 때도 기회가 0이면 무료 "운행 시작" 화면 대신 광고 유도 화면을 바로 띄운다
 if(getChances()<=0){
   $('startOv').classList.add('hidden');
-  $('overOv').classList.remove('hidden');
-  $('overTitle').textContent = '운행 종료';
-  refreshGameOverButtons();
+  showGameOverIdle();
 }
 requestAnimationFrame(t=>{ tPrev=t; requestAnimationFrame(loop); });
 })();

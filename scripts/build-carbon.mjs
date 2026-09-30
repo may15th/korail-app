@@ -31,6 +31,8 @@ const GAME_ASSETS = [
   'img/ic_game.png', 'img/ic_railrun.png', 'img/game_home.png', 'img/bg_night.png',
   'img/rail-left.png', 'img/rail-right.png', 'img/train-left.png', 'img/train-right.png',
 ];
+// 레일런 등급 뱃지·토끼 마스코트 (img/badge_*.png, img/rabbit_*.png) — 접두어로 한 번에 제외
+const GAME_ASSET_PREFIXES = ['badge_', 'rabbit_'];
 
 const MARKER = /[ \t]*<!-- minigame:start[\s\S]*?<!-- minigame:end -->[ \t]*\r?\n?/g;
 
@@ -43,6 +45,9 @@ for (const name of INCLUDE) {
   cpSync(src, join(OUT, name), { recursive: true });
 }
 for (const f of GAME_ASSETS) rmSync(join(OUT, f), { force: true });
+for (const f of readdirSync(join(OUT, 'img'))) {
+  if (GAME_ASSET_PREFIXES.some(p => f.startsWith(p))) rmSync(join(OUT, 'img', f));
+}
 
 const htmlFiles = readdirSync(OUT).filter(f => f.endsWith('.html'));
 for (const f of htmlFiles) {

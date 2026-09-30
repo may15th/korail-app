@@ -44,13 +44,35 @@
     ui: 0.5
   };
 
-  var ctx = null, master = null, musicBus = null, sfxBus = null, comp = null;
+  var ctx = null, master = null, musicBus = null, musicUser = null, sfxBus = null, comp = null;
   var buffers = {}, loading = null, ready = false;
   var bgmSrc = null, bgmPlaying = false;
   var muted = false;
   var intensity = 0, musicBase = VOL.music;
 
-  try { muted = localStorage.getItem(LS_KEY) === "1"; } catch (e) {}
+  /* 사용자 음량 (설정 슬라이더) 0~1. VOL 믹스 위에 곱해진다.
+     musicBus 는 페이드·덕킹·부스터 자동화가 걸리는 노드라, 사용자 음량은
+     그 뒤의 별도 노드(musicUser)에 걸어 서로 덮어쓰지 않게 한다. */
+  var LS_MUSIC = "railrun.vol.music", LS_SFX = "railrun.vol.sfx";
+  var userMusic = 1, userSfx = 1;
+  function readVol(k) {
+    var v = parseFloat(localStorage.getItem(k));
+    return isNaN(v) ? 1 : Math.max(0, Math.min(1, v));
+  }
+  try {
+    muted = localStorage.getItem(LS_KEY) === "1";
+    userMusic = readVol(LS_MUSIC);
+    userSfx = readVol(LS_SFX);
+    // 예전 전체 음소거 버튼으로 꺼 둔 사용자 → 슬라이더 0 으로 옮긴다(음소거 UI 가 사라졌으므로)
+    if (muted) {
+      userMusic = 0; userSfx = 0; muted = false;
+      localStorage.setItem(LS_KEY, "0");
+      localStorage.setItem(LS_MUSIC, "0");
+      localStorage.setItem(LS_SFX, "0");
+    }
+  } catch (e) {}
+  /* 슬라이더 값 → 게인. 귀는 로그 스케일이라 선형 그대로면 윗부분이 거의 차이가 안 난다 */
+  function curve(v) { return v * v; }
 
   /* ── 포맷 선택 ─────────────────────────── */
   function bgmFile() {
@@ -92,12 +114,16 @@
     master.gain.value = muted ? 0 : VOL.master;
     master.connect(comp);
 
+    musicUser = ctx.createGain();
+    musicUser.gain.value = curve(userMusic);
+    musicUser.connect(master);
+
     musicBus = ctx.createGain();
     musicBus.gain.value = VOL.music;
-    musicBus.connect(master);
+    musicBus.connect(musicUser);
 
     sfxBus = ctx.createGain();
-    sfxBus.gain.value = VOL.sfx;
+    sfxBus.gain.value = VOL.sfx * curve(userSfx);
     sfxBus.connect(master);
   }
 
@@ -246,6 +272,18 @@
     master.gain.setTargetAtTime(muted ? 0 : VOL.master, ctx.currentTime, 0.05);
   }
 
+  /* ── 사용자 음량 (설정 슬라이더) ───────── */
+  function setMusicVolume(v) {
+    userMusic = Math.max(0, Math.min(1, +v || 0));
+    try { localStorage.setItem(LS_MUSIC, String(userMusic)); } catch (e) {}
+    if (ctx) musicUser.gain.setTargetAtTime(curve(userMusic), ctx.currentTime, 0.03);
+  }
+  function setSfxVolume(v) {
+    userSfx = Math.max(0, Math.min(1, +v || 0));
+    try { localStorage.setItem(LS_SFX, String(userSfx)); } catch (e) {}
+    if (ctx) sfxBus.gain.setTargetAtTime(VOL.sfx * curve(userSfx), ctx.currentTime, 0.03);
+  }
+
   /* 광고 재생 중 완전 정지 */
   function suspendForAd() { if (ctx) master.gain.setTargetAtTime(0, ctx.currentTime, 0.08); }
   function resumeFromAd() {
@@ -264,6 +302,10 @@
     duck: duck,
     crash: crash,
     setMuted: setMuted,
+    setMusicVolume: setMusicVolume,
+    setSfxVolume: setSfxVolume,
+    get musicVolume() { return userMusic; },
+    get sfxVolume() { return userSfx; },
     suspendForAd: suspendForAd,
     resumeFromAd: resumeFromAd,
     get muted() { return muted; },

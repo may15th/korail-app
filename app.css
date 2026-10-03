@@ -198,10 +198,13 @@ body[data-demo="on"] .carbon::before{
 .svchead .more{display:flex;align-items:center;gap:8px;
                font-size:var(--fs-sm);line-height:var(--lh-sm);font-weight:500;color:var(--dim2);}
 .svchead .more img{width:6.4px;}
-.svcgrid{margin-top:20.5px;display:grid;grid-template-columns:1fr 1fr;row-gap:28.35px;}
-.si{display:flex;align-items:center;gap:11.4px;
-    font-size:var(--fs-lg);line-height:var(--lh-lg);font-weight:600;}
-.si img{width:auto;flex:none;}
+.svcgrid{margin-top:20.5px;display:grid;grid-template-columns:1fr 1fr;row-gap:29.16px;}   /* 행 간격 실측 136px(dump) = 줄 19.2 + 29.16 */
+.si{display:flex;align-items:center;gap:0;
+    font-size:var(--fs-lg);line-height:var(--lh-lg);font-weight:500;}   /* 잉크량 비교: 500 오차 3~4% / 600 오차 17~19% */
+/* 아이콘 칸 — 실제 앱은 아이콘 자리 폭이 고정(칸 왼쪽 101 → 글자 225, 124px)이라 글자 시작선이 일정하다.
+   이미지는 그 자리 전체(124×108px, 행 중심 기준)를 잘라낸 것이라 아이콘 위치까지 원본 그대로.
+   위아래 음수 여백으로 행 높이는 글자 줄 높이(19.2px)를 유지 → row-gap 실측값 그대로 맞는다. */
+.si img{width:44.09px;height:38.4px;margin:-9.6px 0;flex:none;}
 
 .band{height:8.06px;background:#090B14;margin-top:19.91px;}
 .grp{margin:28.3px var(--gutter) 0;font-size:19.91px;line-height:24.18px;font-weight:700;}

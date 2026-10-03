@@ -2423,13 +2423,7 @@ function drawTrain(boost){
     if(crashT>44){ crashT=-1; finishOver(); }
   }
 
-  // 헤드라이트 빔
-  ctx.save();
-  ctx.globalAlpha = .16 + Math.min(.2, speed/900);
-  const grd = ctx.createRadialGradient(tx,ty-10,4, tx,ty-10, 90+speed*.2);
-  grd.addColorStop(0,'#ffe9a3'); grd.addColorStop(1,'rgba(255,233,163,0)');
-  ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(tx,ty-10,90+speed*.2,0,6.283); ctx.fill();
-  ctx.restore();
+  // (헤드라이트 빔 삭제 — 속도에 따라 커지는 연노랑 원이 기차 주변을 하얗게 덮었다)
 
   const key = facing<0 ? '-1' : '1';
   const im = trainImg[key];

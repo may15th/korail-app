@@ -43,11 +43,14 @@
     'tile_trainmap.png', 'tile_railplus.png',           // 홈 하단 타일(다크 바탕이 박혀 있어 라이트 스크린샷에서 재추출)
   ]);
 
+  // 이미지 버전 — 교체한 이미지는 이 값을 올려 주소를 바꾼다. 폰에 남은 옛 캐시를 무시하게 하기 위함.
+  // (이미지 캐시가 길던 시절, 새 HTML + 옛 이미지가 섞여 아이콘이 깨진 적이 있다)
+  const IMG_VER = '20261004';
   function swapImages(t) {
     document.querySelectorAll('img[src]').forEach(im => {
-      const m = im.getAttribute('src').match(/^img\/(?:light\/)?([^/]+)$/);
+      const m = im.getAttribute('src').match(/^img\/(?:light\/)?([^/?]+)(?:\?.*)?$/);
       if (!m || !LIGHT_IMGS.has(m[1])) return;
-      im.setAttribute('src', (t === 'light' ? 'img/light/' : 'img/') + m[1]);
+      im.setAttribute('src', (t === 'light' ? 'img/light/' : 'img/') + m[1] + '?v=' + IMG_VER);
     });
   }
   // 테마에 따라 문구가 바뀌는 곳 — 예: 전체메뉴 "화면 모드 설정  어두운 모드/밝은 모드"

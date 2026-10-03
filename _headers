@@ -1,6 +1,8 @@
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+# 이미지·오디오는 프로토타입 작업 중 자주 교체된다 → 매번 ETag 로 변경 여부만 확인(안 바뀌었으면 304, 재다운로드 없음).
+# 1주 캐시였을 때 폰이 새 HTML + 옛 이미지를 섞어 써서 아이콘이 깨진 적이 있다.
 /img/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=0, must-revalidate
 /audio/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=0, must-revalidate

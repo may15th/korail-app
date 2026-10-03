@@ -282,7 +282,7 @@ body[data-demo="on"] .cue-row::after{left:0;right:0;top:0;bottom:0;}
 /* 홈: 하늘 그라데이션 배경 — 라이트 스크린샷에서 로고·아이콘·제목·카드를 지우고 상태바(96px)를
    잘라낸 것. 실제 앱처럼 헤더와 "어디로 떠나볼까요?" 줄이 한 장의 배경으로 이어지도록
    홈 헤더는 투명하게 둔다(다크는 헤더 단색 유지). */
-[data-theme="light"] .app.home{background-image:url('img/light/bg_home.png');background-color:#EAEFF9;}
+[data-theme="light"] .app.home{background-image:url('img/light/bg_home.png?v=20261004');background-color:#EAEFF9;}
 [data-theme="light"] .app.home .appbar{background:transparent;}
 [data-theme="light"] .app.menu .appbar{background:var(--bg);}
 /* 검색 카드 세로 그라데이션 — 실제 카드 좌측 여백 열을 40px 간격으로 잰 값.

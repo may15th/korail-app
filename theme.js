@@ -19,10 +19,24 @@
   try { theme = localStorage.getItem(KEY) === 'light' ? 'light' : 'dark'; } catch (e) {}
   root.dataset.theme = theme;
 
+  // 브라우저 강제 다크 차단 — 폰이 다크모드면 안드로이드 크롬·삼성 인터넷이 밝은 페이지를
+  // 자동으로 어둡게 칠해서(흰 카드 → 검정, 파랑 → 탁한 파랑, 배경 이미지는 그대로) 라이트 화면이 깨진다.
+  // 페이지가 직접 색 체계를 선언하면 손대지 않는다: 라이트 = "only light", 다크 = "dark".
+  const scheme = document.createElement('meta');
+  scheme.name = 'color-scheme';
+  document.head.appendChild(scheme);
+  function setScheme(t) {
+    const v = t === 'light' ? 'only light' : 'dark';
+    scheme.content = v;
+    root.style.colorScheme = v;
+  }
+  setScheme(theme);
+
   // img/light/ 에 라이트 버전이 있는 파일
   const LIGHT_IMGS = new Set([
     'am_lang.png', 'am_bell.png', 'am_cart.png',        // 전체메뉴 헤더 아이콘(흰색 → 검정)
     'arrow.png',                                        // 출발/도착역 옆 삼각형(흰색 → 검정)
+    'ic_swap.png',                                      // 교환 버튼(71% 반투명 원 → 불투명 #1E68F3)
     'ic_phone.png', 'ic_chat.png',                      // 상담 버튼 아이콘(흰색 → 검정, 바탕 얼룩 제거)
     'sv_ticket.png', 'sv_pass.png', 'sv_map.png',       // 전체 서비스 아이콘(바탕에 깔린 다크 카드색 제거)
     'sv_railplus.png', 'sv_nav.png', 'sv_region.png',
@@ -59,6 +73,7 @@
   function apply(t, save) {
     theme = t;
     root.dataset.theme = t;
+    setScheme(t);
     if (save) { try { localStorage.setItem(KEY, t); } catch (e) {} }
     swapImages(t); swapTexts(t); renderButton(t);
   }

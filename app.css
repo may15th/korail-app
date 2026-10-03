@@ -255,37 +255,47 @@ body[data-demo="on"] .cue-row::after{left:0;right:0;top:0;bottom:0;}
    색·배경만 바꾼다. 여백·크기·글꼴 등 레이아웃 값은 다크와 100% 동일.
    값은 asset/light_mode/ 실제 앱 스크린샷(1080×2340, JPG) 실측 —
    배경은 영역 중앙값, 글자는 획 픽셀 중앙값. 상태바·내비게이션바는 제외.
+   ⚠️ 스크린샷은 Display P3 색 공간으로 저장돼 있다. 숫자를 그대로 읽으면 채도 높은 색(파랑)이
+      탁하게 나오므로 반드시 sRGB 로 변환한 뒤 잰다(예: 버튼 P3 #3567EA → sRGB #1E68F3).
    테두리는 레이아웃에 영향이 없도록 border 대신 inset box-shadow 로 그린다.
    ════════════════════════════════════════════════════════════════ */
 [data-theme="light"]{
   --bg:#FFFFFF;        /* 전체메뉴·마이페이지 바탕 */
   --card:#FFFFFF;      /* 홈 카드 */
   --card-alt:#FFFFFF;  /* 검색 카드 (아래 .search 에서 위쪽 옅은 하늘색 그라데이션 추가) */
-  --field:#ECF5FE;     /* 가는날·인원·좌석 칸 */
+  --field:#EAF5FF;     /* 가는날·인원·좌석 칸 */
   --tabbar:#FDFDFD;
   --divider:#F6F6F6;   /* 마이페이지 섹션 구분 띠 */
-  --primary:#3567EA;   /* 간편 예매/열차 조회 버튼, 탭 표시줄 */
-  --txt:#101318;
-  --dim:#6A6E75;       /* 출발역·가는날 등 라벨 */
+  --primary:#1E68F3;   /* 간편 예매/열차 조회 버튼, 교환 원, 탭 표시줄 */
+  --txt:#0F131B;
+  --dim:#6A6E76;       /* 출발역·가는날 등 라벨 */
   --dim2:#707175;      /* 마이페이지 섹션 제목, 홈 타일 설명 */
   --tabdim:#717075;
 }
-[data-theme="light"] body{background:#EBEFF8;}
-/* 홈: 하늘 그라데이션 배경(라이트 스크린샷에서 내용물을 지워 만든 것) + 헤더 단색 */
-[data-theme="light"] .app.home{background-image:url('img/light/bg_home.png');background-color:#EBEFF8;}
-[data-theme="light"] .appbar{background:#3975EB;}
+[data-theme="light"] body{background:#EAEFF9;}
+/* 홈: 파란 하늘 위 제목과 버튼 글자는 흰색(실제 앱) — 다크의 --txt(흰색)를 그대로 쓰던 자리 */
+[data-theme="light"] .app.home .title,
+[data-theme="light"] .btns button{color:#FFFFFF;}
+/* 홈: 하늘 그라데이션 배경 — 라이트 스크린샷에서 로고·아이콘·제목·카드를 지우고 상태바(96px)를
+   잘라낸 것. 실제 앱처럼 헤더와 "어디로 떠나볼까요?" 줄이 한 장의 배경으로 이어지도록
+   홈 헤더는 투명하게 둔다(다크는 헤더 단색 유지). */
+[data-theme="light"] .app.home{background-image:url('img/light/bg_home.png');background-color:#EAEFF9;}
+[data-theme="light"] .app.home .appbar{background:transparent;}
 [data-theme="light"] .app.menu .appbar{background:var(--bg);}
-[data-theme="light"] .search{background:linear-gradient(180deg,#F3F8FC 0%,#FBFCFE 45%,#FFFFFF 100%);}
-[data-theme="light"] .fld{box-shadow:inset 0 0 0 1px #CCD3D9;}
+/* 검색 카드 세로 그라데이션 — 실제 카드 좌측 여백 열을 40px 간격으로 잰 값.
+   위치(%)는 버튼까지 포함한 카드 전체 높이 기준(버튼 영역은 버튼 색이 덮는다) */
+[data-theme="light"] .search{background:linear-gradient(180deg,#F2F8FF 0%,#F2F8FF 17%,#F4F8FE 34%,#F5F9FF 40%,#F6FAFF 46%,#F6FBFE 51%,#FAFBFF 57%,#FBFCFE 70%,#FCFDFF 80%);}
+[data-theme="light"] .fld .lb{color:#656E77;}   /* 입력칸 라벨은 출발역 라벨(--dim)보다 살짝 푸른 회색 */
+[data-theme="light"] .fld{box-shadow:inset 0 0 0 1px #CAD3DA;}
 /* 전체메뉴 */
 [data-theme="light"] .pid,
 [data-theme="light"] .pmy,
 [data-theme="light"] .stat .k{color:#414246;}
 [data-theme="light"] .pid .copy{border-color:#707176;box-shadow:2.5px -2.5px 0 -1.2px var(--bg),2.5px -2.5px 0 0 #707176;}
 [data-theme="light"] .stat .s+.s{border-left-color:#DBDCDE;}
-[data-theme="light"] .app.menu .svc{background:#F8F7FC;}   /* 홈 카드는 흰색, 전체 서비스 박스만 옅은 회색 */
+[data-theme="light"] .app.menu .svc{background:#F8F7FD;}   /* 홈 카드는 흰색, 전체 서비스 박스만 옅은 회색 */
 [data-theme="light"] .svchead .more{color:#3F4045;}
-[data-theme="light"] .band{background:#F8F7FC;}
+[data-theme="light"] .band{background:#F8F7FD;}
 [data-theme="light"] .row .sub{color:#414246;}
 [data-theme="light"] .row .sw{background:#D5D8DE;}
 [data-theme="light"] .row .sw.on{background:var(--primary);}
@@ -294,4 +304,4 @@ body[data-demo="on"] .cue-row::after{left:0;right:0;top:0;bottom:0;}
 [data-theme="light"] body[data-demo="on"] .cell.new::before,
 [data-theme="light"] body[data-demo="on"] .tab.cue::after,
 [data-theme="light"] body[data-demo="on"] .cue-row::after{
-  box-shadow:0 0 0 1.5px var(--primary),0 0 16px rgba(53,103,234,.35);background:rgba(53,103,234,.08);}
+  box-shadow:0 0 0 1.5px var(--primary),0 0 16px rgba(30,104,243,.35);background:rgba(30,104,243,.08);}

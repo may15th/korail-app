@@ -6,3 +6,5 @@ diff.png
 .DS_Store
 Thumbs.db
 dist/
+# 라이트 모드 실측 원본 — 회원 이름·번호가 찍혀 있어 커밋 금지
+asset/light_mode/

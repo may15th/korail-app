@@ -22,7 +22,7 @@ const OUT = join(ROOT, 'dist');
 
 const INCLUDE = [
   'index.html', 'allmenu.html', 'mypage.html', 'carbon.html',
-  'app.css', 'fit.js', 'transition.js', '_headers',
+  'app.css', 'fit.js', 'transition.js', 'theme.js', '_headers',
   'fonts', 'img',
 ];
 

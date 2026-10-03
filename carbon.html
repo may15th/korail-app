@@ -217,8 +217,55 @@ body[data-demo="on"] .share.cue::after{
 @media (prefers-reduced-motion: reduce){
   .fade-leave,.fade-enter,.fade-enter-active{transition:none}
 }
+
+/* ════════════════════════════════════════════════════════════════
+   라이트 모드 — <html data-theme="light"> (theme.js)
+   탄소리포트는 자체 제작 화면이라 원본 라이트 스크린샷이 없다.
+   → 코레일 앱 라이트 실측 팔레트(app.css 라이트 블록과 같은 값)를 가져다 쓰고,
+     다크 배경 전용으로 잡혀 있던 색(발광·짙은 그라데이션·반투명 흰색)만 라이트에 맞게 바꾼다.
+   레이아웃 값은 다크와 동일.
+   ════════════════════════════════════════════════════════════════ */
+[data-theme="light"]{
+  --bg:#EBEFF8;      /* 홈 카드 사이 바탕 */
+  --bg2:#F8F7FC;     /* 전체메뉴 '전체 서비스' 박스 · 구분 띠 */
+  --card:#FFFFFF;
+  --line:#DBDCDE;    /* 전체메뉴 구분선 */
+  --blue:#3567EA;    /* 앱 라이트 버튼 파랑 */
+  --green:#14955A;   /* 흰 바탕에서 읽히도록 다크(#2fbf71)보다 진하게 */
+  --text:#101318;
+  --dim:#6A6E75;
+  --dimmer:#9A9DA4;
+}
+[data-theme="light"] .card{border-color:transparent;box-shadow:0 1px 3px rgba(16,19,24,.05)}
+[data-theme="light"] .big{background:linear-gradient(180deg,#2DBE78,#118A52);-webkit-background-clip:text;background-clip:text}
+[data-theme="light"] .tree.half::after{border-bottom-color:#A6DDBF}
+[data-theme="light"] .tab.on{background:rgba(53,103,234,.10);border-color:rgba(53,103,234,.35)}
+[data-theme="light"] .bar .fill{background:linear-gradient(180deg,#5B87F2,#3567EA)}
+[data-theme="light"] .bar.peak .fill{background:linear-gradient(180deg,#3FCB87,#14955A)}
+[data-theme="light"] .bar-value{background:#FFFFFF;box-shadow:0 2px 8px rgba(16,19,24,.12)}
+[data-theme="light"] .metric{background:var(--bg2);border-color:transparent}
+/* 여름 캠페인 배너: 짙은 초록·남색 → 같은 계열의 옅은 색 */
+[data-theme="light"] .event{background:linear-gradient(134.26deg,#E3F6EC,#E2EEFB);border-color:#BFE3CF}
+[data-theme="light"] .event .tag{color:#FFFFFF}
+[data-theme="light"] .event p,
+[data-theme="light"] .counter .u{color:#4E7A66}
+[data-theme="light"] .progress{background:rgba(16,19,24,.08)}       /* 반투명 흰색은 흰 바탕에서 안 보임 → 반투명 검정 */
+[data-theme="light"] .progress-lab{color:#5E8C77}
+/* 인증서 모달 */
+[data-theme="light"] .modal{background:rgba(16,19,24,.45)}
+[data-theme="light"] .cert{background:linear-gradient(160deg,#EAF2FF,#F8FBFF);border-color:#C8D8F2}
+[data-theme="light"] .cert .certdesc{color:#4B5A70}
+[data-theme="light"] .cert .certroute{border-top-color:#C8D8F2;color:#6A7890}
+[data-theme="light"] .closebtn{border-color:#D5D9E0}
+/* 공유 바텀시트 · 토스트 */
+[data-theme="light"] .sheet-wrap.show{background:rgba(16,19,24,.32)}
+[data-theme="light"] .sheet{background:#FFFFFF;box-shadow:0 -8px 30px rgba(16,19,24,.12)}
+[data-theme="light"] .toast{background:rgba(16,19,24,.88);color:#FFFFFF}
+[data-theme="light"] body[data-demo="on"] .share.cue::after{
+  box-shadow:0 0 0 1.5px var(--blue),0 0 16px rgba(53,103,234,.35);background:rgba(53,103,234,.08)}
 </style>
 <script src="fit.js"></script>
+<script src="theme.js"></script>
 <!-- 카카오가 /latest/ 경로를 더 이상 지원하지 않아 버전을 명시해야 함.
      아래 버전은 이 코드 작성 시점 기준이며, 주기적으로 카카오 디벨로퍼스 문서에서
      최신 버전을 확인해 갱신 필요: https://developers.kakao.com/docs/latest/ko/getting-started/sdk-js -->

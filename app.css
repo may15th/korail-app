@@ -248,3 +248,50 @@ body[data-demo="on"] .cue-row::after{
 body[data-demo="on"] .tab.cue::after{left:2px;right:2px;top:4px;bottom:4px;}
 body[data-demo="on"] .cue-row{position:relative;}
 body[data-demo="on"] .cue-row::after{left:0;right:0;top:0;bottom:0;}
+
+
+/* ════════════════════════════════════════════════════════════════
+   라이트 모드 — <html data-theme="light"> (theme.js 가 토글)
+   색·배경만 바꾼다. 여백·크기·글꼴 등 레이아웃 값은 다크와 100% 동일.
+   값은 asset/light_mode/ 실제 앱 스크린샷(1080×2340, JPG) 실측 —
+   배경은 영역 중앙값, 글자는 획 픽셀 중앙값. 상태바·내비게이션바는 제외.
+   테두리는 레이아웃에 영향이 없도록 border 대신 inset box-shadow 로 그린다.
+   ════════════════════════════════════════════════════════════════ */
+[data-theme="light"]{
+  --bg:#FFFFFF;        /* 전체메뉴·마이페이지 바탕 */
+  --card:#FFFFFF;      /* 홈 카드 */
+  --card-alt:#FFFFFF;  /* 검색 카드 (아래 .search 에서 위쪽 옅은 하늘색 그라데이션 추가) */
+  --field:#ECF5FE;     /* 가는날·인원·좌석 칸 */
+  --tabbar:#FDFDFD;
+  --divider:#F6F6F6;   /* 마이페이지 섹션 구분 띠 */
+  --primary:#3567EA;   /* 간편 예매/열차 조회 버튼, 탭 표시줄 */
+  --txt:#101318;
+  --dim:#6A6E75;       /* 출발역·가는날 등 라벨 */
+  --dim2:#707175;      /* 마이페이지 섹션 제목, 홈 타일 설명 */
+  --tabdim:#717075;
+}
+[data-theme="light"] body{background:#EBEFF8;}
+/* 홈: 하늘 그라데이션 배경(라이트 스크린샷에서 내용물을 지워 만든 것) + 헤더 단색 */
+[data-theme="light"] .app.home{background-image:url('img/light/bg_home.png');background-color:#EBEFF8;}
+[data-theme="light"] .appbar{background:#3975EB;}
+[data-theme="light"] .app.menu .appbar{background:var(--bg);}
+[data-theme="light"] .search{background:linear-gradient(180deg,#F3F8FC 0%,#FBFCFE 45%,#FFFFFF 100%);}
+[data-theme="light"] .fld{box-shadow:inset 0 0 0 1px #CCD3D9;}
+/* 전체메뉴 */
+[data-theme="light"] .pid,
+[data-theme="light"] .pmy,
+[data-theme="light"] .stat .k{color:#414246;}
+[data-theme="light"] .pid .copy{border-color:#707176;box-shadow:2.5px -2.5px 0 -1.2px var(--bg),2.5px -2.5px 0 0 #707176;}
+[data-theme="light"] .stat .s+.s{border-left-color:#DBDCDE;}
+[data-theme="light"] .app.menu .svc{background:#F8F7FC;}   /* 홈 카드는 흰색, 전체 서비스 박스만 옅은 회색 */
+[data-theme="light"] .svchead .more{color:#3F4045;}
+[data-theme="light"] .band{background:#F8F7FC;}
+[data-theme="light"] .row .sub{color:#414246;}
+[data-theme="light"] .row .sw{background:#D5D8DE;}
+[data-theme="light"] .row .sw.on{background:var(--primary);}
+[data-theme="light"] .cs{background:#FFFFFF;box-shadow:inset 0 0 0 1px #DBDCDE;}
+/* 시연용 강조 — 라이트 파랑에 맞춤 */
+[data-theme="light"] body[data-demo="on"] .cell.new::before,
+[data-theme="light"] body[data-demo="on"] .tab.cue::after,
+[data-theme="light"] body[data-demo="on"] .cue-row::after{
+  box-shadow:0 0 0 1.5px var(--primary),0 0 16px rgba(53,103,234,.35);background:rgba(53,103,234,.08);}

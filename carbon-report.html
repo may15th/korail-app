@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="theme.js"></script>
+<title>나의 탄소 리포트 | KORAIL</title>
+<meta name="description" content="철도 이용에 따른 예상 탄소배출 차이를 확인하는 코레일 탄소리포트 시안" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2319a66f'/%3E%3Cpath d='M9 22V10h4v5l6-5h5l-8 6 8 6h-5l-6-5v5z' fill='white'/%3E%3C/svg%3E" />
+<style>
+:root{
+  --bg:#f4f6f8;
+  --card:#ffffff;
+  --text:#121820;
+  --muted:#74808d;
+  --line:#e8edf1;
+  --navy:#123b61;
+  --blue:#2779d7;
+  --green:#19a66f;
+  --green2:#0f8e5d;
+  --soft-green:#eaf8f2;
+  --soft-blue:#eef6ff;
+  --yellow:#ffcc4d;
+  --shadow:0 10px 30px rgba(21,45,68,.08);
+  --radius:24px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Noto Sans KR","Segoe UI",sans-serif;
+}
+button{font:inherit}
+.app{
+  width:min(100%, 520px);
+  margin:0 auto;
+  min-height:100vh;
+  padding:0 0 48px;
+}
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  height:64px; padding:0 20px;
+  background:rgba(244,246,248,.92);
+  backdrop-filter:blur(14px);
+}
+.topbar h1{
+  font-size:20px; margin:0; letter-spacing:-.4px;
+}
+.icon-btn{
+  width:38px;height:38px;border:0;border-radius:50%;
+  background:#fff;color:var(--navy);
+  box-shadow:0 2px 10px rgba(20,45,70,.06);
+  display:grid;place-items:center;cursor:pointer;
+}
+.content{padding:0 16px}
+.hero{
+  position:relative;
+  overflow:hidden;
+  border-radius:30px;
+  padding:28px 24px 24px;
+  background:
+    radial-gradient(circle at 90% 12%, rgba(255,255,255,.28) 0 70px, transparent 71px),
+    linear-gradient(145deg,#0f8e65 0%,#1da978 58%,#39bd8f 100%);
+  color:#fff;
+  box-shadow:var(--shadow);
+}
+.hero::after{
+  content:"";
+  position:absolute;right:-28px;bottom:-26px;
+  width:180px;height:90px;
+  background:rgba(255,255,255,.12);
+  border-radius:50% 50% 0 0;
+  transform:rotate(-9deg);
+}
+.eyebrow{
+  font-size:13px;font-weight:700;opacity:.84;letter-spacing:.1px
+}
+.hero-head{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hero-brand{flex-shrink:0;font-size:16px;line-height:1;font-weight:850;font-style:italic;letter-spacing:-.7px;color:rgba(255,255,255,.5);user-select:none}
+.distance{
+  margin-top:7px;font-size:18px;font-weight:700;letter-spacing:-.3px
+}
+.hero-main{
+  margin-top:24px;display:flex;align-items:flex-end;gap:8px
+}
+.hero-number{
+  font-size:58px;line-height:.95;font-weight:800;letter-spacing:-2.8px
+}
+.hero-unit{font-size:20px;font-weight:700;padding-bottom:5px}
+.hero-title{
+  margin-top:13px;font-size:17px;line-height:1.5;font-weight:700;letter-spacing:-.35px
+}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:12px;padding:7px 10px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  font-size:12px;font-weight:700
+}
+.tree-row{
+  margin-top:19px;padding-top:17px;border-top:1px solid rgba(255,255,255,.25);
+  display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600
+}
+.tree-icon{
+  width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.17);
+  display:grid;place-items:center;font-size:18px
+}
+.rail-garden{position:relative;z-index:1;margin-top:16px;width:100%;overflow:hidden}
+.rail-garden svg{display:block;width:100%;height:auto;max-height:86px;overflow:hidden}
+.garden-stage{opacity:0;transform:scaleY(.75);transform-origin:0 0;transition:opacity 200ms ease,transform 200ms ease}
+.garden-stage.is-current{opacity:1;transform:scaleY(1)}
+@media(prefers-reduced-motion:reduce){.garden-stage{transition:none}}
+.section{
+  margin-top:18px;background:var(--card);border-radius:var(--radius);
+  box-shadow:0 6px 24px rgba(26,45,63,.055);
+  overflow:hidden;
+}
+.section-pad{padding:22px 20px}
+.section-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px
+}
+.section-title{
+  font-size:18px;font-weight:800;letter-spacing:-.45px;margin:0
+}
+.section-sub{
+  margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.55
+}
+.text-btn{
+  border:0;background:none;color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;padding:2px
+}
+.segment{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+  margin-top:17px;padding:4px;background:#f1f4f6;border-radius:14px
+}
+.segment button{
+  border:0;background:transparent;border-radius:11px;padding:9px 0;
+  font-size:13px;color:#87919a;font-weight:700;cursor:pointer
+}
+.segment button.active{
+  background:#fff;color:var(--text);box-shadow:0 2px 8px rgba(17,39,59,.08)
+}
+.chart{
+  margin-top:42px;height:210px;display:flex;align-items:flex-end;gap:10px;
+  padding:0 2px 22px;border-bottom:1px dashed var(--line);position:relative
+}
+.bar-wrap{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px}
+.bar{
+  width:100%;max-width:28px;
+  background:linear-gradient(180deg,#4b88ff,#2165f5);
+  border-radius:8px 8px 3px 3px;min-height:8px;
+  transition:.3s ease;
+}
+.bar.is-max{background:linear-gradient(180deg,#43cc91,#11965c)}
+.bar-label{font-size:11px;color:#8c96a0}
+.chart-total{
+  margin-top:15px;display:flex;justify-content:space-between;align-items:center
+}
+.chart-total span{font-size:13px;color:var(--muted)}
+.chart-total strong{font-size:17px}
+.stats{
+  margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px
+}
+.stat{
+  background:#f7f7fd;border-radius:20px;padding:16px 8px;text-align:center;
+  box-shadow:none;
+  min-height:118px;
+}
+.stat .emoji{font-size:23px}
+.stat strong{display:block;margin-top:11px;font-size:21px;letter-spacing:-.4px}
+.stat span{display:block;margin-top:5px;font-size:12px;color:var(--muted);line-height:1.4}
+.accuracy{
+  margin-top:18px;border:1px solid #dbeee6;background:linear-gradient(180deg,#f8fffb,#f0fbf6);
+  border-radius:24px;padding:21px 18px
+}
+.accuracy .mini-badge{
+  display:inline-block;padding:5px 8px;border-radius:8px;background:#dff5eb;color:#128459;
+  font-size:11px;font-weight:800
+}
+.question{
+  margin-top:11px;font-size:17px;font-weight:800;line-height:1.45;letter-spacing:-.35px
+}
+.q-desc{font-size:12px;color:#73877f;line-height:1.55;margin-top:7px}
+.choice-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:15px
+}
+.choice{
+  border:1px solid #dfe8e3;background:#fff;border-radius:14px;padding:12px 10px;
+  text-align:center;cursor:pointer;font-weight:700;font-size:13px;color:#34433d;min-width:0;white-space:nowrap;
+}
+.choice.active{
+  border-color:#1ba571;background:#e9f8f1;color:#0e8258;box-shadow:inset 0 0 0 1px #1ba571
+}
+.passenger{display:none;margin-top:14px}
+.passenger.show{display:block}
+.passenger-label{font-size:12px;font-weight:700;color:#52665d;margin-bottom:8px}
+.person-row{display:flex;gap:7px}
+.person{
+  flex:1;border:1px solid #dfe8e3;background:#fff;border-radius:12px;padding:9px 4px;
+  cursor:pointer;font-weight:700;color:#5b6c65
+}
+.person.active{border-color:#1ba571;background:#e9f8f1;color:#0e8258}
+.result-note{
+  display:none;margin-top:15px;background:#fff;border-radius:14px;padding:13px 14px;
+  font-size:12px;line-height:1.6;color:#5f6d67
+}
+.result-note.show{display:block}
+.result-note strong{color:#0e8258}
+.trip-list{margin-top:10px}
+.trip{
+  display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;
+  padding:17px 0;border-top:1px solid var(--line)
+}
+.trip:first-child{border-top:0}
+.trip-date strong{display:block;font-size:14px}
+.trip-date span{font-size:11px;color:var(--muted)}
+.trip-route strong{display:block;font-size:15px}
+.trip-route span{display:block;margin-top:4px;font-size:12px;color:var(--muted)}
+.trip-save{text-align:right}
+.trip-save strong{display:block;font-size:15px;color:var(--green2)}
+.trip-save span{display:block;margin-top:3px;font-size:10px;color:var(--muted)}
+.campaign{
+  position:relative;
+  isolation:isolate;
+  background:linear-gradient(145deg,#143d63,#1a527e);
+  color:#fff;padding:24px 20px;border-radius:24px;overflow:hidden
+}
+.campaign::before,
+.campaign::after{
+  content:"";position:absolute;z-index:0;pointer-events:none;
+}
+.campaign::before{
+  width:190px;height:170px;right:-65px;top:-58px;
+  border-radius:46% 54% 62% 38% / 55% 40% 60% 45%;
+  background:rgba(125,206,234,.13);transform:rotate(-22deg);
+}
+.campaign::after{
+  width:270px;height:130px;right:-72px;bottom:-65px;
+  border-radius:63% 37% 48% 52% / 58% 65% 35% 42%;
+  background:rgba(100,215,182,.10);transform:rotate(-16deg);
+}
+.campaign-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.campaign-brand{flex-shrink:0;font-size:16px;line-height:1;font-weight:850;font-style:italic;letter-spacing:-.7px;color:rgba(255,255,255,.5);user-select:none}
+.campaign .tag{
+  display:inline-block;background:rgba(255,255,255,.14);padding:5px 8px;border-radius:8px;
+  font-size:11px;font-weight:700
+}
+.campaign h3{margin:11px 0 0;font-size:20px;line-height:1.35;letter-spacing:-.5px}
+.campaign p{margin:8px 0 0;font-size:12px;line-height:1.55;opacity:.78;max-width:310px}
+.progress{margin-top:20px;height:18px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}
+.progress i{position:relative;display:block;height:100%;width:0;background:linear-gradient(180deg,#81e7c4,#42c99a);border-radius:99px}
+.progress i::after{content:"";position:absolute;inset:3px 9px auto 8px;height:3px;border-radius:99px;background:rgba(255,255,255,.28);pointer-events:none}
+.progress-label{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;opacity:.76}
+.cta{
+  margin-top:18px;width:100%;border:0;border-radius:17px;padding:16px;
+  background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;
+  box-shadow:0 7px 20px rgba(25,166,111,.22)
+}
+.method{
+  width:100%;border:0;background:#fff;padding:18px 20px;display:flex;align-items:center;
+  justify-content:space-between;font-size:14px;font-weight:800;cursor:pointer;color:var(--text)
+}
+.method-body{
+  display:none;padding:0 20px 20px;border-top:1px solid var(--line)
+}
+.method-body.show{display:block}
+.method-table{margin-top:14px}
+.method-row{
+  display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid #eef1f3;
+  font-size:12px
+}
+.method-row span{color:var(--muted)}
+.method-row strong{text-align:right}
+.notice{
+  margin-top:13px;font-size:11px;color:#8a949d;line-height:1.65
+}
+.source{
+  margin-top:9px;font-size:10.5px;color:#9ba4ac;line-height:1.55
+}
+.modal{
+  position:fixed;inset:0;background:rgba(15,24,32,.54);display:none;align-items:flex-end;
+  justify-content:center;z-index:50
+}
+.modal.show{display:flex}
+.sheet{
+  width:min(100%,520px);background:#f4f6f8;border-radius:28px 28px 0 0;padding:14px 16px 30px;
+  max-height:92vh;overflow:auto
+}
+.handle{width:42px;height:4px;background:#ccd3d8;border-radius:9px;margin:0 auto 14px}
+.certificate{
+  background:linear-gradient(180deg,#fbfffd,#eef9f4);
+  border:1px solid #dceee5;border-radius:24px;padding:30px 22px;text-align:center;
+  box-shadow:0 7px 25px rgba(18,45,64,.07)
+}
+.cert-mark{
+  width:54px;height:54px;border-radius:50%;margin:0 auto;background:#dff4ea;
+  display:grid;place-items:center;font-size:28px
+}
+.cert-korail{margin-top:18px;font-size:11px;font-weight:800;color:#1c4e72;letter-spacing:1.8px}
+.certificate h2{font-size:22px;margin:9px 0 0}
+.cert-distance{margin-top:22px;color:var(--muted);font-size:12px}
+.cert-number{font-size:45px;font-weight:850;color:#11895b;margin-top:3px;letter-spacing:-2px}
+.cert-copy{font-size:14px;line-height:1.65;margin-top:12px;color:#35443e}
+.cert-user{margin-top:23px;padding-top:16px;border-top:1px solid #dfe9e4;color:#78847e;font-size:11px}
+.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.sheet-actions button{
+  border:0;border-radius:15px;padding:14px 10px;font-weight:800;cursor:pointer
+}
+.share{background:#ffe357;color:#312d12}
+.close{background:#fff;color:#49545d}
+.foot{
+  margin-top:18px;text-align:center;font-size:10.5px;color:#9aa3aa;line-height:1.6;padding:0 20px
+}
+@media(max-width:380px){
+  .hero-number{font-size:50px}
+  .stats{gap:7px}
+  .stat{padding:14px 9px}
+  .choice-grid{gap:6px}
+  .choice{padding:12px 4px;font-size:12px}
+}
+
+/* ver2의 카드와 색상을 유지하는 동작 스타일 */
+.hero-number,.stat strong,.chart-total strong,.cert-number,.trip-value{font-variant-numeric:tabular-nums}
+.bar{transition:none;transform-origin:center bottom;min-height:4px}
+.bar-wrap{position:relative;cursor:pointer;min-width:0;border-radius:7px;outline-offset:4px}
+.bar-wrap:hover .bar,.bar-wrap:focus-visible .bar{filter:brightness(1.08)}
+.chart-tooltip{position:absolute;z-index:3;white-space:nowrap;background:#123b61;color:#fff;font-size:11px;font-weight:700;padding:7px 9px;border-radius:9px;pointer-events:none;box-shadow:0 4px 12px #123b6122;transform:translateX(-50%)}
+.chart-tooltip[hidden]{display:none}
+.chart-tooltip::after{content:"";position:absolute;left:50%;top:100%;border:4px solid transparent;border-top-color:#123b61;transform:translateX(-50%)}
+.chart .bar-label{font-size:10px;white-space:nowrap}
+.source a{color:#60839b;text-underline-offset:3px}
+.method-row strong{max-width:65%;line-height:1.6}
+.source p{margin:9px 0}
+.fuel-picker{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:#52665d;margin-bottom:13px}
+.fuel-picker select{font:inherit;background:#fff;color:#34433d;border:1px solid #dfe8e3;border-radius:10px;padding:9px 10px;max-width:190px}
+.campaign> :not(.chart-tooltip){position:relative;z-index:1}
+.progress i{width:0;transform-origin:left;transition:none}
+button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important}
+}
+/* 홈·마이페이지의 공통 테마를 사용하고 기존 라이트 색상은 유지한다. */
+[data-theme="dark"]{
+  --bg:#11131c;
+  --card:#1d1f29;
+  --text:#f5f7fa;
+  --muted:#a5adba;
+  --line:#303442;
+  --navy:#b5d7fa;
+  --blue:#78b5ff;
+  --green:#27b980;
+  --green2:#65d9a8;
+  --soft-green:#203a31;
+  --soft-blue:#233449;
+  --shadow:0 10px 30px rgba(0,0,0,.24);
+}
+[data-theme="dark"] .topbar{background:rgba(17,19,28,.92)}
+[data-theme="dark"] .icon-btn,
+[data-theme="dark"] .stat,
+[data-theme="dark"] .method{background:var(--card)}
+[data-theme="dark"] .section,
+[data-theme="dark"] .stat{box-shadow:0 6px 24px rgba(0,0,0,.18)}
+[data-theme="dark"] .segment{background:#282e3c}
+[data-theme="dark"] .segment button{color:var(--muted)}
+[data-theme="dark"] .segment button.active{background:#3a4253;color:var(--text)}
+[data-theme="dark"] .bar-label,
+[data-theme="dark"] .notice,
+[data-theme="dark"] .source,
+[data-theme="dark"] .foot{color:var(--muted)}
+[data-theme="dark"] .accuracy,
+[data-theme="dark"] .certificate{
+  background:linear-gradient(180deg,#1d302b,#192620);border-color:#345347;
+}
+[data-theme="dark"] .accuracy .mini-badge,
+[data-theme="dark"] .cert-mark{background:#284d3d;color:#84e2b9}
+[data-theme="dark"] .q-desc,
+[data-theme="dark"] .passenger-label,
+[data-theme="dark"] .fuel-picker,
+[data-theme="dark"] .cert-user{color:#abbfb5}
+[data-theme="dark"] .choice,
+[data-theme="dark"] .person,
+[data-theme="dark"] .fuel-picker select{
+  background:var(--card);border-color:#42574d;color:#dce9e2;
+}
+[data-theme="dark"] .choice.active,
+[data-theme="dark"] .person.active{
+  background:#244b3b;border-color:#46ca93;color:#92edc3;
+}
+[data-theme="dark"] .result-note{background:var(--card);color:#c0cfc7}
+[data-theme="dark"] .result-note strong,
+[data-theme="dark"] .cert-number{color:#78e0b1}
+[data-theme="dark"] .method-row{border-bottom-color:var(--line)}
+[data-theme="dark"] .source a{color:#8cbce2}
+[data-theme="dark"] .sheet{background:var(--bg)}
+[data-theme="dark"] .handle{background:#566072}
+[data-theme="dark"] .cert-korail{color:#a5ceef}
+[data-theme="dark"] .cert-copy{color:#d1e0d8}
+[data-theme="dark"] .cert-user{border-top-color:#345347}
+[data-theme="dark"] .close{background:#303645;color:var(--text)}
+[data-theme="dark"] .chart-tooltip{background:#b5d7fa;color:#11131c}
+[data-theme="dark"] .chart-tooltip::after{border-top-color:#b5d7fa}
+[data-theme="dark"] button:focus-visible,
+[data-theme="dark"] select:focus-visible{outline-color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="icon-btn" aria-label="뒤로가기">‹</button>
+    <h1>나의 탄소 리포트</h1>
+    <button class="icon-btn" aria-label="도움말">?</button>
+  </header>
+
+  <main class="content">
+    <section class="hero">
+      <div class="hero-head">
+        <div class="eyebrow">2026년 나의 철도 이용</div>
+        <span class="hero-brand" aria-hidden="true">KORAIL</span>
+      </div>
+      <div class="distance">기차를 타고 <strong id="distanceValue">1,284km</strong> 이동했어요</div>
+
+      <div class="hero-main">
+        <div class="hero-number" id="heroValue">143.9</div>
+        <div class="hero-unit">kg CO₂e</div>
+      </div>
+      <div class="hero-title" id="heroTitle">다른 교통수단으로 이동했을 때보다<br>적게 배출한 것으로 추정돼요</div>
+      <div class="badge" id="basisBadge">🚙 🚌 자가용·버스 가중평균 기준</div>
+
+      <div class="rail-garden" id="railGarden" aria-hidden="true">
+        <svg viewBox="0 0 360 60" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <g id="gardenCar">
+              <rect x="2" y="4" width="31" height="17" rx="5" fill="#edf8ff"/>
+              <path d="M3 17H32" stroke="#2580c4" stroke-width="3"/>
+              <path d="M8 8H13V12H8ZM17 8H22V12H17ZM26 8H29V12H26Z" fill="#24618a"/>
+              <circle cx="9" cy="23" r="2.5" fill="#174365"/><circle cx="27" cy="23" r="2.5" fill="#174365"/>
+            </g>
+            <g id="gardenEngine">
+              <path d="M2 9Q2 4 7 4H22Q28 4 32 12L35 17Q37 21 31 21H2Z" fill="#edf8ff"/>
+              <path d="M3 17H34" stroke="#2580c4" stroke-width="3"/>
+              <path d="M8 8H13V12H8ZM17 8H22V12H17ZM25 8L29 13H25Z" fill="#24618a"/>
+              <circle cx="9" cy="23" r="2.5" fill="#174365"/><circle cx="27" cy="23" r="2.5" fill="#174365"/>
+            </g>
+          </defs>
+          <path d="M0 52H360" stroke="#ddfff1" stroke-opacity=".24" stroke-width="1"/>
+          <g id="gardenTrain" transform="translate(-144 26.5)">
+            <path d="M31 18H112" stroke="#d6e9ec" stroke-width="2"/>
+            <use href="#gardenCar" x="0"/><use href="#gardenCar" x="36"/><use href="#gardenCar" x="72"/><use href="#gardenEngine" x="108"/>
+          </g>
+          <g id="gardenPlants"></g>
+        </svg>
+      </div>
+      <div class="tree-row">
+        <div class="tree-icon">🌲</div>
+        <span>30년생 소나무 <strong id="treeCount">22그루</strong>가 1년간 흡수하는 양과 비슷해요</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-pad">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">나의 탄소 기록</h2>
+          </div>
+        </div>
+
+        <div class="segment" role="group" aria-label="탄소 기록 기간">
+          <button data-period="week" aria-pressed="false">주간</button>
+          <button class="active" data-period="month" aria-pressed="true">월간</button>
+          <button data-period="year" aria-pressed="false">연간</button>
+        </div>
+
+        <div class="chart" id="chart" role="group" aria-label="월간 예상 배출 차이 그래프"></div>
+        <div class="chart-total"><span id="chartSummary">기간 합계</span><strong id="chartTotal">143.9 kg</strong></div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="emoji">⛽</div>
+        <strong id="fuelStat">61L</strong>
+        <span>휘발유 연소 시<br>배출량 환산</span>
+      </div>
+      <div class="stat">
+        <div class="emoji">🌲</div>
+        <strong id="treeStat">22그루</strong>
+        <span>30년생 소나무<br>1년 흡수량 환산</span>
+      </div>
+      <div class="stat">
+        <div class="emoji">🚆</div>
+        <strong id="tripCount">6회</strong>
+        <span>2026년<br>기차 이용</span>
+      </div>
+    </div>
+      </div>
+    </section>
+
+    <section class="accuracy">
+      <span class="mini-badge">정확도 높이기</span>
+      <div class="question">기차가 아니었다면<br>어떻게 이동했을까요?</div>
+      <div class="q-desc">선택하지 않아도 기본값으로 계산해요. 선택한 조건은 전체 이용 내역에 적용돼요.</div>
+
+      <div class="choice-grid" id="modeChoices">
+        <button class="choice" data-mode="car">🚙 자가용</button>
+        <button class="choice" data-mode="bus">🚌 고속버스</button>
+        <button class="choice" data-mode="air">✈️ 항공</button>
+      </div>
+
+      <div class="passenger" id="passengerBox">
+        <label class="fuel-picker">자동차 종류
+          <select id="fuelChoice" aria-label="자동차 종류"><option value="average">평균 승용차</option><option value="gasoline">휘발유</option><option value="electric">전기차</option><option value="hybrid">하이브리드</option><option value="diesel">경유</option><option value="lpg">LPG</option><option value="hydrogen">수소차</option></select>
+        </label>
+        <div class="passenger-label">자가용에는 몇 명이 함께 탔을까요?</div>
+        <div class="person-row">
+          <button class="person active" data-people="1">1명</button>
+          <button class="person" data-people="2">2명</button>
+          <button class="person" data-people="3">3명</button>
+          <button class="person" data-people="4">4명</button>
+        </div>
+      </div>
+
+      <div class="result-note show" id="resultNote" aria-live="polite"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-pad">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">최근 이용 내역</h2>
+            <p class="section-sub">여행별 예상 배출 차이</p>
+          </div>
+          <button class="text-btn" id="allTripsBtn" aria-expanded="false">전체보기</button>
+        </div>
+
+        <div class="trip-list" id="tripList"></div>
+      </div>
+    </section>
+
+    <section class="section" style="background:transparent;box-shadow:none">
+      <div class="campaign">
+        <div class="campaign-head">
+          <span class="tag">여름 캠페인</span>
+          <span class="campaign-brand" aria-hidden="true">KORAIL</span>
+        </div>
+        <h3>기차로 떠난 여름,<br>함께 만든 저탄소 이동</h3>
+        <p>7~8월 코레일 고객이 함께 만든 감축량입니다.</p>
+        <div style="font-size:30px;font-weight:850;margin-top:16px;letter-spacing:-1px"><span id="campaignValue">479.7</span> <span style="font-size:14px">톤 CO₂e</span></div>
+        <div class="progress" role="progressbar" aria-label="여름 캠페인 목표 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80"><i id="campaignProgress"></i></div>
+        <div class="progress-label"><span>목표 600톤</span><span id="campaignRate">80.0% 달성</span></div>
+      </div>
+    </section>
+
+    <button class="cta" id="certificateBtn">🌱 탄소 리포트 인증서 만들기</button>
+
+    <section class="section">
+      <button class="method" id="methodBtn" aria-expanded="false" aria-controls="methodBody">
+        <span>산정 근거 보기</span><span id="methodArrow">⌄</span>
+      </button>
+      <div class="method-body" id="methodBody">
+        <div class="method-table">
+          <div class="method-row"><span>비교 기준</span><strong id="methodBasis">자가용·버스 가중평균</strong></div>
+          <div class="method-row"><span>KTX 배출원단위</span><strong>23.28 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span id="alternativeFactorLabel">기본 승용차 원단위</span><strong id="alternativeFactor">143.28 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span>나무 환산 기준</span><strong>6.6 kgCO₂/년·그루</strong></div>
+        </div>
+        <div class="notice">
+          평균 배출계수로 계산한 추정치입니다. 기본값은 자가용·버스 이용 비중을 반영하며, 선택한 교통수단과 탑승인원에 따라 달라집니다.
+        </div>
+        <div class="source">
+          산정체계 참고: 국가교통DB · 교통수단 배출량 연구 · 정부 온실가스 환산계수
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">
+      본 화면은 코레일 플러스 혁신제안용 UI 프로토타입이며 수치는 예시입니다.<br>
+      실제 도입 시 공인 산정기준 검토 및 최신 데이터 반영이 필요합니다.
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="나의 철도 탄소 리포트">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="certificate">
+      <div class="cert-mark">🌿</div>
+      <div class="cert-korail">KORAIL CARBON REPORT</div>
+      <h2>나의 철도 탄소 리포트</h2>
+      <div class="cert-distance">2026년 누적 철도 이용 1,284km</div>
+      <div class="cert-number"><span id="certValue">143.9</span><span style="font-size:17px;letter-spacing:-.2px"> kg CO₂e</span></div>
+      <div class="cert-copy" id="certCopy">
+        자가용·버스 가중평균과 비교한<br>
+        예상 배출 차이입니다.<br><br>
+        30년생 소나무 약 <strong id="certTrees">22그루</strong>가<br>
+        1년간 흡수하는 CO₂와 비슷합니다.
+      </div>
+      <div class="cert-user">고유한 님 · 2026.10.05<br>※ 평균 배출계수 기반 추정치</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="share">💬 공유하기</button>
+      <button class="close" id="closeModal">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>const $ = id => document.getElementById(id);
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const ease = t => t < .5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+const numberFormat = (n, digits=0) => n.toLocaleString('ko-KR', {minimumFractionDigits:digits,maximumFractionDigits:digits});
+const isVisible = el => {const r=el.getBoundingClientRect();return r.width>0 && r.height>0 && r.bottom>0 && r.top<innerHeight;};
+const numberObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+  if(entry.isIntersecting){numberObserver.unobserve(entry.target);runNumber(entry.target);}
+}), {threshold:.15});
+function setNumber(el, target, options={}) {
+  if(!el) return;
+  if(el._numberJob && el._numberJob.target===target && el._numberJob.digits===(options.digits||0) && el._numberJob.suffix===(options.suffix||''))return;
+  if(el._numberJob) cancelAnimationFrame(el._numberJob.frame);
+  el._numberJob = {target, digits:options.digits||0, suffix:options.suffix||'', duration:options.duration||1450, frame:0};
+  el.setAttribute('aria-label', numberFormat(target,options.digits||0)+(options.suffix||''));
+  el.textContent = numberFormat(reducedMotion.matches?target:0,options.digits||0)+(options.suffix||'');
+  if(reducedMotion.matches) return;
+  if(isVisible(el)) runNumber(el); else numberObserver.observe(el);
+}
+function runNumber(el) {
+  const job=el._numberJob;if(!job)return;
+  const start=performance.now();
+  const tick=now => {
+    if(el._numberJob!==job)return;
+    const t=reducedMotion.matches?1:Math.min(1,(now-start)/job.duration);
+    const n=t===1?job.target:job.target*ease(t);
+    el.textContent=numberFormat(n,job.digits)+job.suffix;
+    if(t<1)job.frame=requestAnimationFrame(tick);
+  };
+  job.frame=requestAnimationFrame(tick);
+}
+
+// WTW 비교값. 승용차 등록대수 비중은 실제 운행비중의 대용값이다.
+const fuels={gasoline:{count:12350120,ef:225},diesel:{count:4908158,ef:233},lpg:{count:1483810,ef:201},hybrid:{count:2538938,ef:159},electric:{count:713835,ef:109},hydrogen:{count:41725,ef:55}};
+const fleetEF=Object.values(fuels).reduce((s,f)=>s+f.count*f.ef,0)/Object.values(fuels).reduce((s,f)=>s+f.count,0);
+const carDefaultEF=fleetEF/1.49;
+const busEF=46.04;
+const railEF=33.96/1000*479.88/.7;
+// 영국 DESNZ 2026 full set (국내 시안의 대용값; 한국 공인/항공사 실측 계수가 아님).
+// https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2026
+// Business travel- air I23: Without RF, Domestic, Average passenger = 0.13552 kgCO₂e/인·km.
+// WTT- business travel- air F20: 같은 국내선 연료 생산·공급 = 0.03350 kgCO₂e/인·km.
+// RF 제외. 8% 거리 보정은 원단위에 포함되므로 1.08/ICAO 보정을 추가하지 않는다.
+// 공항·역 접근 이동과 차량·항공기 제조는 비교 범위에서 제외. 자동차 탑승인원도 적용하지 않는다.
+const airEF=0.13552+0.03350;
+// 대한민국 eAIP AD 2.2 ARP 좌표: 김포 373325N 1264751E, 김해 351050N 1285617E.
+// https://aim.koca.go.kr/eaipPub/Package/2026-07-23/html/eAIP/KR-AD-2.RKSS-en-GB.html
+// https://aim.koca.go.kr/eaipPub/Package/2026-08-05-AIRAC/html/eAIP/KR-AD-2.RKPK-en-GB.html
+const airports={GMP:{lat:37+33/60+25/3600,lon:126+47/60+51/3600},PUS:{lat:35+10/60+50/3600,lon:128+56/60+17/3600}};
+// 서울↔부산만 실제 김포↔김해 국내선에 대응한다. 대전/천안아산↔서울은 가상 항공편을 만들지 않는다.
+// 노선 확인: https://www.airport.co.kr/gimpo/index.do (부산/김해).
+const airRoutes={busan:['GMP','PUS']};
+function greatCircleDistance(a,b){
+  const radians=d=>d*Math.PI/180;
+  const h=Math.sin(radians(b.lat-a.lat)/2)**2+Math.cos(radians(a.lat))*Math.cos(radians(b.lat))*Math.sin(radians(b.lon-a.lon)/2)**2;
+  return 6371.0088*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));
+}
+function airDistance(trip){const pair=airRoutes[trip.key];return pair?greatCircleDistance(airports[pair[0]],airports[pair[1]]):null;}
+function airCoverage(){return trips.filter(t=>airDistance(t)!==null).length;}
+function comparisonLabel(){
+  if(currentMode==='car')return `${fuelLabels[fuel]} ${people}인 이용`;
+  if(currentMode==='air')return airCoverage()===0?modeLabels.default:airCoverage()<trips.length?'항공 · 비교 불가 구간은 기본값':modeLabels.air;
+  return modeLabels[currentMode];
+}
+const routes={busan:{rail:416,road:430,carShare:88/111},daejeon:{rail:148,road:165,carShare:156/171},cheonan:{rail:78,road:90,carShare:409/472}};
+const trips=[
+  {date:'09.22',day:'화',route:'부산 → 서울',key:'busan'},
+  {date:'08.09',day:'일',route:'서울 → 부산',key:'busan'},
+  {date:'07.28',day:'화',route:'대전 → 서울',key:'daejeon'},
+  {date:'06.16',day:'화',route:'서울 → 대전',key:'daejeon'},
+  {date:'05.10',day:'일',route:'천안아산 → 서울',key:'cheonan'},
+  {date:'04.19',day:'일',route:'서울 → 천안아산',key:'cheonan'}
+];
+let currentMode='default', people=1, fuel='average', currentPeriod='month', allTrips=false;
+let reportValue=0;
+function railEmission(trip){return routes[trip.key].rail*railEF/1000;}
+function alternative(trip, mode=currentMode){
+  const r=routes[trip.key];
+  if(mode==='default')return r.road*(r.carShare*carDefaultEF+(1-r.carShare)*busEF)/1000;
+  if(mode==='car')return r.road*(fuel==='average'?fleetEF:fuels[fuel].ef)/people/1000;
+  if(mode==='bus')return r.road*busEF/1000;
+  if(mode==='air'){const distance=airDistance(trip);return distance===null?alternative(trip,'default'):distance*airEF;}
+  throw new Error('지원하지 않는 이동방식');
+}
+// trips의 편도 기록을 각각 계산한다. 왕복도 두 기록의 합이며 별도 두 배 보정은 없다.
+function difference(trip,mode=currentMode){return alternative(trip,mode)-railEmission(trip);}
+function totals(mode=currentMode){return trips.reduce((s,t)=>({rail:s.rail+railEmission(t),alt:s.alt+alternative(t,mode),difference:s.difference+difference(t,mode)}),{rail:0,alt:0,difference:0});}
+const defaultTotal=totals('default').difference;
+const campaignTonnes=defaultTotal/trips.length*20000/1000;
+const modeLabels={default:'자가용·버스 가중평균',car:'자가용',bus:'고속버스',air:'항공'};
+const fuelLabels={average:'평균 승용차',gasoline:'휘발유',diesel:'경유',lpg:'LPG',hybrid:'하이브리드',electric:'전기차',hydrogen:'수소차'};
+function updateReport(){
+  const t=totals();reportValue=t.difference;
+  const magnitude=Math.abs(reportValue);
+  const trees=magnitude/6.6, litres=magnitude/2.35;
+  setNumber($('heroValue'),reportValue,{digits:1});
+  setNumber($('distanceValue'),1284,{suffix:'km'});
+  setNumber($('tripCount'),trips.length,{suffix:'회'});
+  setNumber($('treeStat'),trees,{suffix:'그루'});
+  setNumber($('fuelStat'),litres,{suffix:'L'});
+  const label=comparisonLabel();
+  const comparison=`${label}과 비교했을 때`;
+  $('heroTitle').innerHTML=`${comparison}<br>${reportValue<0?'더':'적게'} 배출한 것으로 추정돼요`;
+  $('basisBadge').textContent=`${currentMode==='default'?'🚙 🚌':currentMode==='car'?'🚙':currentMode==='bus'?'🚌':'✈️'} ${label} 기준`;
+  $('methodBasis').textContent=label;
+  $('alternativeFactorLabel').textContent=currentMode==='air'?'항공 원단위':currentMode==='bus'?'고속버스 원단위':currentMode==='car'?'승용차 원단위':'기본 승용차 원단위';
+  $('alternativeFactor').textContent=`${numberFormat(currentMode==='air'?airEF*1000:currentMode==='bus'?busEF:currentMode==='car'?(fuel==='average'?fleetEF:fuels[fuel].ef)/people:carDefaultEF,2)} gCO₂e/인·km`;
+  const airNote=airCoverage()===0?'이 구간은 비교할 항공편이 없어요':airCoverage()<trips.length?'항공 비교 가능한 구간만 반영했어요':'공항 간 거리로 항공 배출량을 비교해요.';
+  $('resultNote').innerHTML=currentMode==='default'?'<strong>응답이 없어도 합리적인 기본값으로</strong><br>거리대별 자가용·버스 비중과 평균 승용차 탑승인원 1.49명을 반영해요.':`<strong>${label} 대체 기준 추정치</strong><br>${currentMode==='air'?airNote:'도로와 철도 거리를 구분해 예상 배출량을 비교해요.'}<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">기본값으로 돌아가기</button>`;
+  $('resetDefault')?.addEventListener('click',()=>{currentMode='default';syncChoices();updateReport();});
+  $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 <strong id="treeCount">${numberFormat(trees)}그루</strong>가 1년간 흡수하는 양과 비슷해요${reportValue<0?' · 추가 배출 환산':''}`;
+  setNumber($('treeCount'),trees,{suffix:'그루'});
+  renderTrips();renderChart();updateCertificate();
+}
+function syncChoices(){
+  document.querySelectorAll('.choice').forEach(b=>{b.classList.toggle('active',b.dataset.mode===currentMode);b.setAttribute('aria-pressed',b.dataset.mode===currentMode?'true':'false');});
+  $('passengerBox').classList.toggle('show',currentMode==='car');
+}
+function renderTrips(){
+  $('tripList').innerHTML=trips.slice(0,allTrips?6:3).map((t,i)=>`<div class="trip"><div class="trip-date"><strong>${t.date}</strong><span>${t.day}</span></div><div class="trip-route"><strong>${t.route}</strong><span>KTX · ${routes[t.key].rail}km${currentMode==='air'?(airDistance(t)===null?' · 기본값':' · 항공 비교'):''}</span></div><div class="trip-save"><strong class="trip-value" id="tripValue${i}"></strong><span>${difference(t)<0?'추가 배출':'예상 차이'}</span></div></div>`).join('');
+  trips.slice(0,allTrips?6:3).forEach((t,i)=>setNumber($('tripValue'+i),difference(t),{digits:1,suffix:'kg',duration:1250+i*65}));
+  $('allTripsBtn').textContent=allTrips?'접기':'전체보기';$('allTripsBtn').setAttribute('aria-expanded',String(allTrips));
+}
+
+// 월간은 실제 예시 이용 내역 집계. 주간과 과거 연간은 시연용 분포입니다.
+function chartData(){
+  if(currentPeriod==='month')return ['4월','5월','6월','7월','8월','9월'].map((label,i)=>({label,value:difference(trips[5-i])}));
+  if(currentPeriod==='week')return ['월','화','수','목','금','토','일'].map((label,i)=>({label,value:reportValue*[.02,0,.07,.025,0,.095,.01][i]}));
+  return ['2021','2022','2023','2024','2025','2026'].map((label,i)=>({label,value:reportValue*[.48,.63,.78,.69,.9,1][i]}));
+}
+let chartFrame=0,chartPending=false;
+const chartObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&chartPending)animateChart();},{threshold:.3});
+chartObserver.observe($('chart'));
+function renderChart(){
+  cancelAnimationFrame(chartFrame);const data=chartData(), largest=Math.max(...data.map(d=>Math.abs(d.value))), max=Math.max(largest,1);
+  $('chart').setAttribute('aria-label',`${{week:'주간',month:'월간',year:'연간'}[currentPeriod]} 예상 배출 차이 그래프`);
+  $('chart').innerHTML=data.map((d,i)=>`<div class="bar-wrap" tabindex="0" data-index="${i}" aria-label="${d.label}, ${numberFormat(d.value,1)} kg CO₂e"><div class="bar${largest>0&&Math.abs(d.value)===largest?' is-max':''}" style="height:${Math.max(4,Math.abs(d.value)/max*160)}px;transform:scaleY(${reducedMotion.matches?1:0})"></div><div class="bar-label">${d.label}</div></div>`).join('')+'<div class="chart-tooltip" id="chartTooltip" role="tooltip" hidden></div>';
+  $('chartSummary').textContent='기간 합계';
+  const periodTotal=data.reduce((s,d)=>s+d.value,0);
+  setNumber($('chartTotal'),periodTotal,{digits:1,suffix:' kg'});
+  setNumber($('treeStat'),Math.abs(periodTotal)/6.6,{suffix:'그루'});
+  setNumber($('fuelStat'),Math.abs(periodTotal)/2.35,{suffix:'L'});
+  $('chart').querySelectorAll('.bar-wrap').forEach((wrap,i)=>{
+    const show=()=>{
+      const tip=$('chartTooltip');tip.textContent=`${numberFormat(data[i].value,1)} kg`;wrap.appendChild(tip);tip.hidden=false;
+      const bar=wrap.querySelector('.bar');
+      tip.style.left='50%';
+      tip.style.bottom=(wrap.clientHeight-bar.offsetTop+8)+'px';
+    };
+    const hide=()=>{$('chartTooltip').hidden=true;};
+    wrap.addEventListener('mouseenter',show);wrap.addEventListener('mouseleave',hide);
+    wrap.addEventListener('focus',show);wrap.addEventListener('blur',hide);wrap.addEventListener('click',show);
+    wrap.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+  });
+  chartPending=true;if(isVisible($('chart')))animateChart();
+}
+function animateChart(){
+  chartPending=false;cancelAnimationFrame(chartFrame);
+  const bars=[...$('chart').querySelectorAll('.bar')], start=performance.now();
+  const tick=now=>{
+    let done=true;
+    bars.forEach((bar,i)=>{const t=reducedMotion.matches?1:Math.max(0,Math.min(1,(now-start-i*55)/1150));bar.style.transform=`scaleY(${ease(t)})`;if(t<1)done=false;});
+    if(!done)chartFrame=requestAnimationFrame(tick);
+  };chartFrame=requestAnimationFrame(tick);
+}
+document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{currentMode=btn.dataset.mode;syncChoices();updateReport();}));
+document.querySelectorAll('.person').forEach(btn=>btn.addEventListener('click',()=>{
+  people=Number(btn.dataset.people);document.querySelectorAll('.person').forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-pressed',String(b===btn));});updateReport();
+}));
+$('fuelChoice').addEventListener('change',e=>{fuel=e.target.value;updateReport();});
+$('allTripsBtn').addEventListener('click',()=>{allTrips=!allTrips;renderTrips();});
+document.querySelectorAll('.segment button').forEach(btn=>btn.addEventListener('click',()=>{
+  currentPeriod=btn.dataset.period;document.querySelectorAll('.segment button').forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-pressed',String(b===btn));});renderChart();
+}));
+$('methodBtn').addEventListener('click',()=>{
+  const expanded=$('methodBody').classList.toggle('show');$('methodArrow').textContent=expanded?'⌃':'⌄';$('methodBtn').setAttribute('aria-expanded',String(expanded));
+});
+let previousFocus;
+function updateCertificate(){
+  const magnitude=Math.abs(reportValue),trees=magnitude/6.6;
+  setNumber($('certValue'),reportValue,{digits:1});
+  $('certCopy').innerHTML=`${$('methodBasis').textContent}과 비교해<br>${reportValue<0?'더':'적게'} 배출한 것으로 추정돼요.<br><br>소나무 약 <strong id="certTrees">${numberFormat(trees)}그루</strong>의<br>1년 흡수량과 비슷한 차이예요.`;
+  setNumber($('certTrees'),trees,{suffix:'그루'});
+}
+function closeCertificate(){ $('modal').classList.remove('show');document.body.style.overflow='';previousFocus?.focus(); }
+$('certificateBtn').addEventListener('click',()=>{previousFocus=document.activeElement;$('modal').classList.add('show');document.body.style.overflow='hidden';updateCertificate();$('closeModal').focus();});
+$('closeModal').addEventListener('click',closeCertificate);
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeCertificate();});
+$('modal').addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeCertificate();
+  if(e.key==='Tab'){const buttons=[...$('modal').querySelectorAll('button')],first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+});
+document.querySelector('.share').addEventListener('click',async e=>{
+  const text=`나의 철도 탄소 리포트: 1,284km, ${$('methodBasis').textContent} 대비 예상 배출 차이 ${numberFormat(reportValue,1)}kg CO₂e (비교용 예시)`;
+  try{if(navigator.share)await navigator.share({title:'나의 철도 탄소 리포트',text});else if(navigator.clipboard){await navigator.clipboard.writeText(text);e.target.textContent='✓ 리포트 내용 복사됨';}else{e.target.textContent='브라우저에서 공유를 지원하지 않아요';}}catch(err){if(err.name!=='AbortError')e.target.textContent='공유를 완료하지 못했어요';}
+});
+document.querySelector('[aria-label="도움말"]').addEventListener('click',()=>{if(!$('methodBody').classList.contains('show'))$('methodBtn').click();$('methodBtn').scrollIntoView({behavior:reducedMotion.matches?'instant':'smooth',block:'start'});});
+document.querySelector('[aria-label="뒤로가기"]').addEventListener('click',()=>{if($('modal').classList.contains('show'))closeCertificate();else if(history.length>1)history.back();else scrollTo({top:0,behavior:reducedMotion.matches?'instant':'smooth'});});
+syncChoices();updateReport();
+// 장식 전용: 실제 소나무 환산 수치 및 탄소 산정과 독립된 단일 시간축.
+const gardenSlotSpacing=52,gardenSlotCount=7,gardenStepMs=325,gardenTailStart=-144;
+function gardenStage(tailX,slotX){
+  return tailX<=slotX?0:Math.min(4,1+Math.floor((tailX-slotX)/gardenSlotSpacing));
+}
+function startRailGarden(){
+  const area=$('railGarden'),train=$('gardenTrain'),plants=$('gardenPlants');
+  const shapes=[
+    '<path d="M0 0V-9" stroke="#cbeab6" stroke-width="2"/><path d="M0-6Q-10-5-8-12Q-1-13 0-6M0-6Q10-5 8-12Q1-13 0-6" fill="#b9ec96"/>',
+    '<path d="M0 0V-16" stroke="#dbc796" stroke-width="2.5"/><path d="M0-23Q-11-16-8-10H8Q11-16 0-23Z" fill="#a3df87"/>',
+    '<path d="M0 0V-25" stroke="#dbc796" stroke-width="3"/><path d="M0-32L-10-17H10ZM0-23L-13-8H13Z" fill="#87d67e"/><path d="M0-32L-10-17H0Z" fill="#b1e895"/>',
+    '<path d="M0 0V-32" stroke="#dbc796" stroke-width="3"/><path d="M0-39L-9-25H9ZM0-30L-12-16H12ZM0-21L-16-6H16Z" fill="#78ce7e"/><path d="M0-39L-9-25H0ZM0-30L-12-16H0ZM0-21L-16-6H0Z" fill="#b1e895"/>'
+  ];
+  plants.innerHTML=Array.from({length:gardenSlotCount},(_,i)=>`<g transform="translate(${24+i*gardenSlotSpacing} 52)">${shapes.map(shape=>`<g class="garden-stage">${shape}</g>`).join('')}</g>`).join('');
+  const slots=[...plants.children].map((node,i)=>({x:24+i*gardenSlotSpacing,layers:[...node.children],stage:0}));
+  function paint(tailX){
+    train.setAttribute('transform',`translate(${tailX} 26.5)`);
+    slots.forEach(slot=>{
+      const stage=gardenStage(tailX,slot.x);
+      if(stage===slot.stage)return;
+      slot.layers.forEach((layer,i)=>layer.classList.toggle('is-current',i===stage-1));
+      slot.stage=stage;
+    });
+  }
+  const finishX=slots.at(-1).x+3*gardenSlotSpacing+1;
+  if(reducedMotion.matches){train.style.display='none';paint(finishX);return;}
+  const observer=new IntersectionObserver(entries=>{
+    if(!entries.some(entry=>entry.isIntersecting))return;
+    observer.disconnect();
+    const start=performance.now();
+    const tick=now=>{
+      // tailXは最後尾車両の左端。各位置を完全に通過するまでは植物を表示しない。
+      if(reducedMotion.matches){train.style.display='none';paint(finishX);return;}
+      const tailX=Math.min(finishX,gardenTailStart+(now-start)/gardenStepMs*gardenSlotSpacing);
+      paint(tailX);
+      if(tailX<finishX)requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  },{threshold:.25});
+  observer.observe(area);
+}
+startRailGarden();
+setNumber($('campaignValue'),campaignTonnes,{digits:1,duration:1650});
+setNumber($('campaignRate'),campaignTonnes/600*100,{digits:1,suffix:'% 달성'});
+const progressObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){
+  progressObserver.disconnect();
+  const fill=$('campaignProgress'),target=Math.min(100,campaignTonnes/600*100);
+  fill.parentElement.setAttribute('aria-valuenow',numberFormat(target,1));
+  const start=performance.now();
+  const tick=now=>{
+    const t=reducedMotion.matches?1:Math.min(1,(now-start)/1450);
+    fill.style.width=(target*ease(t))+'%';
+    if(t<1)requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}},{threshold:.3});progressObserver.observe($('campaignProgress').parentElement);
+</script>
+</body>
+</html>

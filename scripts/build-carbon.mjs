@@ -21,7 +21,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
 
 const INCLUDE = [
-  'index.html', 'allmenu.html', 'mypage.html', 'carbon.html',
+  'index.html', 'allmenu.html', 'mypage.html', 'carbon.html', 'carbon-report.html',
   'app.css', 'fit.js', 'transition.js', 'theme.js', '_headers',
   'fonts', 'img',
 ];

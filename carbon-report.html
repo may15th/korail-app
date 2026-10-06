@@ -78,7 +78,7 @@ button{font:inherit}
   font-size:13px;font-weight:700;opacity:.84;letter-spacing:.1px
 }
 .hero-head{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.hero-brand{flex-shrink:0;font-size:16px;line-height:1;font-weight:850;font-style:italic;letter-spacing:-.7px;color:rgba(255,255,255,.5);user-select:none}
+.hero-brand,.campaign-brand{display:block;flex-shrink:0;width:70px;height:auto;opacity:.5;user-select:none}
 .distance{
   margin-top:7px;font-size:18px;font-weight:700;letter-spacing:-.3px
 }
@@ -182,7 +182,7 @@ button{font:inherit}
 }
 .q-desc{font-size:12px;color:#73877f;line-height:1.55;margin-top:7px}
 .choice-grid{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:15px
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:15px
 }
 .choice{
   border:1px solid #dfe8e3;background:#fff;border-radius:14px;padding:12px 10px;
@@ -205,6 +205,14 @@ button{font:inherit}
   font-size:12px;line-height:1.6;color:#5f6d67
 }
 .result-note.show{display:block}
+.settings-dialog{width:min(calc(100% - 32px),480px);max-height:85vh;overflow:auto;border:1px solid var(--line);border-radius:24px;background:var(--card);color:var(--text);padding:22px}
+.settings-dialog::backdrop{background:rgba(10,18,28,.6)}
+.settings-dialog h2{margin:0;font-size:18px}
+.settings-dialog p{font-size:12px;line-height:1.6;color:var(--muted)}
+.settings-actions{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:12px;margin-top:20px}
+.settings-actions #cancelSettings{padding:12px;border:1px solid var(--line);border-radius:17px;color:var(--muted);font-weight:800}
+.settings-actions .cta{width:auto;flex:1;margin:0;padding:12px}
+.trip-setting{display:inline-block;margin-top:7px;max-width:100%;white-space:normal;text-align:left;line-height:1.5}
 .result-note strong{color:#0e8258}
 .trip-list{margin-top:10px}
 .trip{
@@ -240,7 +248,6 @@ button{font:inherit}
   background:rgba(100,215,182,.10);transform:rotate(-16deg);
 }
 .campaign-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.campaign-brand{flex-shrink:0;font-size:16px;line-height:1;font-weight:850;font-style:italic;letter-spacing:-.7px;color:rgba(255,255,255,.5);user-select:none}
 .campaign .tag{
   display:inline-block;background:rgba(255,255,255,.14);padding:5px 8px;border-radius:8px;
   font-size:11px;font-weight:700
@@ -248,8 +255,7 @@ button{font:inherit}
 .campaign h3{margin:11px 0 0;font-size:20px;line-height:1.35;letter-spacing:-.5px}
 .campaign p{margin:8px 0 0;font-size:12px;line-height:1.55;opacity:.78;max-width:310px}
 .progress{margin-top:20px;height:18px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}
-.progress i{position:relative;display:block;height:100%;width:0;background:linear-gradient(180deg,#81e7c4,#42c99a);border-radius:99px}
-.progress i::after{content:"";position:absolute;inset:3px 9px auto 8px;height:3px;border-radius:99px;background:rgba(255,255,255,.28);pointer-events:none}
+.progress i{position:relative;display:block;height:100%;width:0;background:linear-gradient(180deg,#43cc91,#11965c);border-radius:99px}
 .progress-label{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;opacity:.76}
 .cta{
   margin-top:18px;width:100%;border:0;border-radius:17px;padding:16px;
@@ -322,7 +328,8 @@ button{font:inherit}
 /* ver2의 카드와 색상을 유지하는 동작 스타일 */
 .hero-number,.stat strong,.chart-total strong,.cert-number,.trip-value{font-variant-numeric:tabular-nums}
 .bar{transition:none;transform-origin:center bottom;min-height:4px}
-.bar-wrap{position:relative;cursor:pointer;min-width:0;border-radius:7px;outline-offset:4px}
+.bar-wrap{position:relative;cursor:pointer;min-width:0;border-radius:7px;outline:none;-webkit-tap-highlight-color:transparent}
+.bar-wrap:focus,.bar-wrap:focus-visible{outline:none}
 .bar-wrap:hover .bar,.bar-wrap:focus-visible .bar{filter:brightness(1.08)}
 .chart-tooltip{position:absolute;z-index:3;white-space:nowrap;background:#123b61;color:#fff;font-size:11px;font-weight:700;padding:7px 9px;border-radius:9px;pointer-events:none;box-shadow:0 4px 12px #123b6122;transform:translateX(-50%)}
 .chart-tooltip[hidden]{display:none}
@@ -415,7 +422,8 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
     <section class="hero">
       <div class="hero-head">
         <div class="eyebrow">2026년 나의 철도 이용</div>
-        <span class="hero-brand" aria-hidden="true">KORAIL</span>
+        <!-- 공식 흰색 로고: https://info.korail.com/common/images/layout/footer_logo.png -->
+        <img class="hero-brand" src="img/korail-wordmark.png" width="105" height="26" alt="KORAIL" draggable="false">
       </div>
       <div class="distance">기차를 타고 <strong id="distanceValue">1,284km</strong> 이동했어요</div>
 
@@ -487,7 +495,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="stat">
         <div class="emoji">🚆</div>
         <strong id="tripCount">6회</strong>
-        <span>2026년<br>기차 이용</span>
+        <span><span id="tripPeriod" style="display:inline">최근 6개월</span><br>기차 이용</span>
       </div>
     </div>
       </div>
@@ -496,9 +504,11 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
     <section class="accuracy">
       <span class="mini-badge">정확도 높이기</span>
       <div class="question">기차가 아니었다면<br>어떻게 이동했을까요?</div>
-      <div class="q-desc">선택하지 않아도 기본값으로 계산해요. 선택한 조건은 전체 이용 내역에 적용돼요.</div>
+      <div class="q-desc">설정하지 않은 여행은 기본값으로 계산해요. 최근 이용 내역에서 여행마다 따로 설정할 수 있어요.</div>
+      <button class="text-btn" id="openAllSettings" style="margin-top:12px">전체 설정</button>
 
       <div class="choice-grid" id="modeChoices">
+        <button class="choice" data-mode="default">기본 추정</button>
         <button class="choice" data-mode="car">🚙 자가용</button>
         <button class="choice" data-mode="bus">🚌 고속버스</button>
         <button class="choice" data-mode="air">✈️ 항공</button>
@@ -538,7 +548,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="campaign">
         <div class="campaign-head">
           <span class="tag">여름 캠페인</span>
-          <span class="campaign-brand" aria-hidden="true">KORAIL</span>
+          <img class="campaign-brand" src="img/korail-wordmark.png" width="105" height="26" alt="KORAIL" draggable="false">
         </div>
         <h3>기차로 떠난 여름,<br>함께 만든 저탄소 이동</h3>
         <p>7~8월 코레일 고객이 함께 만든 감축량입니다.</p>
@@ -601,6 +611,16 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
   </div>
 </div>
 
+<dialog class="settings-dialog" id="travelSettings" aria-labelledby="settingsTitle">
+  <h2 id="settingsTitle">비교 기준 설정</h2>
+  <p id="settingsDescription"></p>
+  <div id="settingsControls"></div>
+  <p id="settingsFeedback" role="status"></p>
+  <div class="settings-actions">
+    <button class="text-btn" id="cancelSettings">취소</button>
+    <button class="cta" id="applySettings">적용</button>
+  </div>
+</dialog>
 <script>const $ = id => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const ease = t => t < .5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
@@ -660,9 +680,8 @@ function greatCircleDistance(a,b){
 function airDistance(trip){const pair=airRoutes[trip.key];return pair?greatCircleDistance(airports[pair[0]],airports[pair[1]]):null;}
 function airCoverage(){return trips.filter(t=>airDistance(t)!==null).length;}
 function comparisonLabel(){
-  if(currentMode==='car')return `${fuelLabels[fuel]} ${people}인 이용`;
-  if(currentMode==='air')return airCoverage()===0?modeLabels.default:airCoverage()<trips.length?'항공 · 비교 불가 구간은 기본값':modeLabels.air;
-  return modeLabels[currentMode];
+  const labels=trips.map(trip=>settingLabel(tripSetting(trip)));
+  return labels.every(label=>label===labels[0])?labels[0]:'여행별 비교 기준';
 }
 const routes={busan:{rail:416,road:430,carShare:88/111},daejeon:{rail:148,road:165,carShare:156/171},cheonan:{rail:78,road:90,carShare:409/472}};
 const trips=[
@@ -674,19 +693,39 @@ const trips=[
   {date:'04.19',day:'일',route:'서울 → 천안아산',key:'cheonan'}
 ];
 let currentMode='default', people=1, fuel='average', currentPeriod='month', allTrips=false;
+// 편도 여행마다 독립된 비교 설정. 팝업의 currentMode/people/fuel은 적용 전 임시값이다.
+const tripSettings=trips.map(()=>({mode:'default',people:1,fuel:'average'}));
+let settingsTarget=null,settingsNotice='';
+function tripSetting(trip){return tripSettings[trips.indexOf(trip)]||{mode:'default',people:1,fuel:'average'};}
+function settingLabel(setting){return setting.mode==='default'?'자가용·버스 가중평균':setting.mode==='car'?`${fuelLabels[setting.fuel]} · ${setting.people}인`:modeLabels[setting.mode];}
+function applyTravelSettings(target,setting){
+  const indices=target===null?trips.map((_,i)=>i):[target];
+  if(setting.mode==='air'&&indices.every(index=>airDistance(trips[index])===null))return '이 구간은 비교할 항공편이 없어요';
+  let unavailable=0;
+  indices.forEach(index=>{
+    if(setting.mode==='air'&&airDistance(trips[index])===null){
+      unavailable++;
+      // 개별 항공 비교 불가 시 이전 결과 유지. 전체 적용은 비교 불가 구간을 기본값으로 유지한다.
+      if(target===null)tripSettings[index]={mode:'default',people:1,fuel:'average'};
+    }else tripSettings[index]={...setting};
+  });
+  return unavailable===indices.length?'이 구간은 비교할 항공편이 없어요':unavailable?'항공 비교 가능한 구간만 반영했어요':'';
+}
 let reportValue=0;
 function railEmission(trip){return routes[trip.key].rail*railEF/1000;}
-function alternative(trip, mode=currentMode){
+function alternative(trip, override){
+  const setting=typeof override==='string'?{mode:override,people,fuel}:override||tripSetting(trip);
+  const {mode,people:occupants,fuel:carFuel}=setting;
   const r=routes[trip.key];
   if(mode==='default')return r.road*(r.carShare*carDefaultEF+(1-r.carShare)*busEF)/1000;
-  if(mode==='car')return r.road*(fuel==='average'?fleetEF:fuels[fuel].ef)/people/1000;
+  if(mode==='car')return r.road*(carFuel==='average'?fleetEF:fuels[carFuel].ef)/occupants/1000;
   if(mode==='bus')return r.road*busEF/1000;
   if(mode==='air'){const distance=airDistance(trip);return distance===null?alternative(trip,'default'):distance*airEF;}
   throw new Error('지원하지 않는 이동방식');
 }
 // trips의 편도 기록을 각각 계산한다. 왕복도 두 기록의 합이며 별도 두 배 보정은 없다.
-function difference(trip,mode=currentMode){return alternative(trip,mode)-railEmission(trip);}
-function totals(mode=currentMode){return trips.reduce((s,t)=>({rail:s.rail+railEmission(t),alt:s.alt+alternative(t,mode),difference:s.difference+difference(t,mode)}),{rail:0,alt:0,difference:0});}
+function difference(trip,override){return alternative(trip,override)-railEmission(trip);}
+function totals(override){return trips.reduce((s,t)=>({rail:s.rail+railEmission(t),alt:s.alt+alternative(t,override),difference:s.difference+difference(t,override)}),{rail:0,alt:0,difference:0});}
 const defaultTotal=totals('default').difference;
 const campaignTonnes=defaultTotal/trips.length*20000/1000;
 const modeLabels={default:'자가용·버스 가중평균',car:'자가용',bus:'고속버스',air:'항공'};
@@ -697,19 +736,22 @@ function updateReport(){
   const trees=magnitude/6.6, litres=magnitude/2.35;
   setNumber($('heroValue'),reportValue,{digits:1});
   setNumber($('distanceValue'),1284,{suffix:'km'});
-  setNumber($('tripCount'),trips.length,{suffix:'회'});
   setNumber($('treeStat'),trees,{suffix:'그루'});
   setNumber($('fuelStat'),litres,{suffix:'L'});
   const label=comparisonLabel();
   const comparison=`${label}과 비교했을 때`;
   $('heroTitle').innerHTML=`${comparison}<br>${reportValue<0?'더':'적게'} 배출한 것으로 추정돼요`;
-  $('basisBadge').textContent=`${currentMode==='default'?'🚙 🚌':currentMode==='car'?'🚙':currentMode==='bus'?'🚌':'✈️'} ${label} 기준`;
+  $('basisBadge').textContent=`${label} 기준`;
   $('methodBasis').textContent=label;
-  $('alternativeFactorLabel').textContent=currentMode==='air'?'항공 원단위':currentMode==='bus'?'고속버스 원단위':currentMode==='car'?'승용차 원단위':'기본 승용차 원단위';
-  $('alternativeFactor').textContent=`${numberFormat(currentMode==='air'?airEF*1000:currentMode==='bus'?busEF:currentMode==='car'?(fuel==='average'?fleetEF:fuels[fuel].ef)/people:carDefaultEF,2)} gCO₂e/인·km`;
-  const airNote=airCoverage()===0?'이 구간은 비교할 항공편이 없어요':airCoverage()<trips.length?'항공 비교 가능한 구간만 반영했어요':'공항 간 거리로 항공 배출량을 비교해요.';
-  $('resultNote').innerHTML=currentMode==='default'?'<strong>응답이 없어도 합리적인 기본값으로</strong><br>거리대별 자가용·버스 비중과 평균 승용차 탑승인원 1.49명을 반영해요.':`<strong>${label} 대체 기준 추정치</strong><br>${currentMode==='air'?airNote:'도로와 철도 거리를 구분해 예상 배출량을 비교해요.'}<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">기본값으로 돌아가기</button>`;
-  $('resetDefault')?.addEventListener('click',()=>{currentMode='default';syncChoices();updateReport();});
+  const hasAir=tripSettings.some(setting=>setting.mode==='air');
+  const uniform=tripSettings.every(setting=>JSON.stringify(setting)===JSON.stringify(tripSettings[0]));
+  const setting=tripSettings[0];
+  $('alternativeFactorLabel').textContent=hasAir?'항공 원단위':!uniform?'비교 원단위':setting.mode==='bus'?'고속버스 원단위':setting.mode==='car'?'승용차 원단위':'기본 승용차 원단위';
+  const factor=hasAir?airEF*1000:setting.mode==='bus'?busEF:setting.mode==='car'?(setting.fuel==='average'?fleetEF:fuels[setting.fuel].ef)/setting.people:carDefaultEF;
+  $('alternativeFactor').textContent=!uniform&&!hasAir?'여행별 설정 적용':`${numberFormat(factor,2)} gCO₂e/인·km`;
+  const changed=tripSettings.filter(setting=>setting.mode!=='default').length;
+  $('resultNote').innerHTML=`<strong>${changed?`${changed}개 여행에 개별 비교 기준 적용`:'자가용·버스 가중평균 기준'}</strong><br>${settingsNotice||'전체 설정 또는 최근 이용 내역의 설정 버튼으로 비교 기준을 변경하세요.'}${changed?'<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">전체 기본값으로 돌아가기</button>':''}`;
+  $('resetDefault')?.addEventListener('click',()=>{applyTravelSettings(null,{mode:'default',people:1,fuel:'average'});settingsNotice='';updateReport();});
   $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 <strong id="treeCount">${numberFormat(trees)}그루</strong>가 1년간 흡수하는 양과 비슷해요${reportValue<0?' · 추가 배출 환산':''}`;
   setNumber($('treeCount'),trees,{suffix:'그루'});
   renderTrips();renderChart();updateCertificate();
@@ -717,18 +759,26 @@ function updateReport(){
 function syncChoices(){
   document.querySelectorAll('.choice').forEach(b=>{b.classList.toggle('active',b.dataset.mode===currentMode);b.setAttribute('aria-pressed',b.dataset.mode===currentMode?'true':'false');});
   $('passengerBox').classList.toggle('show',currentMode==='car');
+  $('fuelChoice').value=fuel;
+  document.querySelectorAll('.person').forEach(b=>{b.classList.toggle('active',Number(b.dataset.people)===people);b.setAttribute('aria-pressed',String(Number(b.dataset.people)===people));});
+  $('settingsFeedback').textContent=currentMode==='default'?'자가용·버스 이용 비중으로 계산해요.':currentMode==='air'?(settingsTarget!==null&&airDistance(trips[settingsTarget])===null?'이 구간은 비교할 항공편이 없어요':settingsTarget===null&&airCoverage()<trips.length?'항공 비교 가능한 구간만 반영했어요':''):'';
 }
 function renderTrips(){
-  $('tripList').innerHTML=trips.slice(0,allTrips?6:3).map((t,i)=>`<div class="trip"><div class="trip-date"><strong>${t.date}</strong><span>${t.day}</span></div><div class="trip-route"><strong>${t.route}</strong><span>KTX · ${routes[t.key].rail}km${currentMode==='air'?(airDistance(t)===null?' · 기본값':' · 항공 비교'):''}</span></div><div class="trip-save"><strong class="trip-value" id="tripValue${i}"></strong><span>${difference(t)<0?'추가 배출':'예상 차이'}</span></div></div>`).join('');
+  $('tripList').innerHTML=trips.slice(0,allTrips?6:3).map((t,i)=>`<div class="trip"><div class="trip-date"><strong>${t.date}</strong><span>${t.day}</span></div><div class="trip-route"><strong>${t.route}</strong><span>KTX · ${routes[t.key].rail}km</span><button type="button" class="text-btn trip-setting" data-trip="${i}" aria-label="${t.route} 비교 기준 설정">${tripSetting(t).mode==='default'?'기본값':settingLabel(tripSetting(t))} · 설정</button></div><div class="trip-save"><strong class="trip-value" id="tripValue${i}"></strong><span>${difference(t)<0?'추가 배출':'예상 차이'}</span></div></div>`).join('');
   trips.slice(0,allTrips?6:3).forEach((t,i)=>setNumber($('tripValue'+i),difference(t),{digits:1,suffix:'kg',duration:1250+i*65}));
   $('allTripsBtn').textContent=allTrips?'접기':'전체보기';$('allTripsBtn').setAttribute('aria-expanded',String(allTrips));
 }
 
-// 월간은 실제 예시 이용 내역 집계. 주간과 과거 연간은 시연용 분포입니다.
+// 월간은 기존 이용 내역 집계. 주간/과거 연간은 시연용 편도 기록을 재사용한다.
+// 각 막대에 포함된 기록으로 배출 차이와 이용 횟수를 함께 집계한다.
+// 기록 인덱스는 시연용 구성일 뿐 실제 과거 여행이나 항공 노선 데이터가 아니다.
+const demoWeekTrips=[[5],[],[],[],[3],[1,0],[]];
+const demoYearTrips=[[5,4,3],[5,4,3,2],[5,4,3,2,1],[5,4,1,0],[5,3,2,1,0],[5,4,3,2,1,0]];
 function chartData(){
-  if(currentPeriod==='month')return ['4월','5월','6월','7월','8월','9월'].map((label,i)=>({label,value:difference(trips[5-i])}));
-  if(currentPeriod==='week')return ['월','화','수','목','금','토','일'].map((label,i)=>({label,value:reportValue*[.02,0,.07,.025,0,.095,.01][i]}));
-  return ['2021','2022','2023','2024','2025','2026'].map((label,i)=>({label,value:reportValue*[.48,.63,.78,.69,.9,1][i]}));
+  const aggregate=(label,indices)=>({label,value:indices.reduce((sum,index)=>sum+difference(trips[index]),0),count:indices.length});
+  if(currentPeriod==='month')return ['4월','5월','6월','7월','8월','9월'].map((label,i)=>aggregate(label,[5-i]));
+  if(currentPeriod==='week')return ['월','화','수','목','금','토','일'].map((label,i)=>aggregate(label,demoWeekTrips[i]));
+  return ['2021','2022','2023','2024','2025','2026'].map((label,i)=>aggregate(label,demoYearTrips[i]));
 }
 let chartFrame=0,chartPending=false;
 const chartObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&chartPending)animateChart();},{threshold:.3});
@@ -739,6 +789,8 @@ function renderChart(){
   $('chart').innerHTML=data.map((d,i)=>`<div class="bar-wrap" tabindex="0" data-index="${i}" aria-label="${d.label}, ${numberFormat(d.value,1)} kg CO₂e"><div class="bar${largest>0&&Math.abs(d.value)===largest?' is-max':''}" style="height:${Math.max(4,Math.abs(d.value)/max*160)}px;transform:scaleY(${reducedMotion.matches?1:0})"></div><div class="bar-label">${d.label}</div></div>`).join('')+'<div class="chart-tooltip" id="chartTooltip" role="tooltip" hidden></div>';
   $('chartSummary').textContent='기간 합계';
   const periodTotal=data.reduce((s,d)=>s+d.value,0);
+  setNumber($('tripCount'),data.reduce((sum,bar)=>sum+bar.count,0),{suffix:'회'});
+  $('tripPeriod').textContent={week:'최근 7일',month:'최근 6개월',year:'최근 6년'}[currentPeriod];
   setNumber($('chartTotal'),periodTotal,{digits:1,suffix:' kg'});
   setNumber($('treeStat'),Math.abs(periodTotal)/6.6,{suffix:'그루'});
   setNumber($('fuelStat'),Math.abs(periodTotal)/2.35,{suffix:'L'});
@@ -765,11 +817,29 @@ function animateChart(){
     if(!done)chartFrame=requestAnimationFrame(tick);
   };chartFrame=requestAnimationFrame(tick);
 }
-document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{currentMode=btn.dataset.mode;syncChoices();updateReport();}));
+// 기존 카드의 선택 컨트롤을 전체/개별 공용 설정창에서 재사용한다.
+$('settingsControls').append($('modeChoices'),$('passengerBox'));
+function openTravelSettings(target){
+  settingsTarget=target;
+  const setting=target===null?(tripSettings.every(s=>JSON.stringify(s)===JSON.stringify(tripSettings[0]))?tripSettings[0]:{mode:'default',people:1,fuel:'average'}):tripSettings[target];
+  currentMode=setting.mode;people=setting.people;fuel=setting.fuel;
+  $('settingsTitle').textContent=target===null?'전체 비교 기준 설정':'이 여행의 비교 기준';
+  $('settingsDescription').textContent=target===null?'적용하면 기존 개별 설정도 모두 변경됩니다. 항공 비교가 불가능한 구간은 기본 추정을 사용합니다.':`${trips[target].date} ${trips[target].route} · 이 여행에만 적용됩니다.`;
+  syncChoices();$('travelSettings').showModal();
+}
+$('openAllSettings').addEventListener('click',()=>openTravelSettings(null));
+$('tripList').addEventListener('click',e=>{const button=e.target.closest('[data-trip]');if(button)openTravelSettings(Number(button.dataset.trip));});
+$('cancelSettings').addEventListener('click',()=>$('travelSettings').close());
+$('applySettings').addEventListener('click',()=>{
+  settingsNotice=applyTravelSettings(settingsTarget,{mode:currentMode,people,fuel});
+  if(settingsTarget!==null&&currentMode==='air'&&airDistance(trips[settingsTarget])===null){$('settingsFeedback').textContent=settingsNotice;return;}
+  $('travelSettings').close();updateReport();
+});
+document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{currentMode=btn.dataset.mode;syncChoices();}));
 document.querySelectorAll('.person').forEach(btn=>btn.addEventListener('click',()=>{
-  people=Number(btn.dataset.people);document.querySelectorAll('.person').forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-pressed',String(b===btn));});updateReport();
+  people=Number(btn.dataset.people);syncChoices();
 }));
-$('fuelChoice').addEventListener('change',e=>{fuel=e.target.value;updateReport();});
+$('fuelChoice').addEventListener('change',e=>{fuel=e.target.value;syncChoices();});
 $('allTripsBtn').addEventListener('click',()=>{allTrips=!allTrips;renderTrips();});
 document.querySelectorAll('.segment button').forEach(btn=>btn.addEventListener('click',()=>{
   currentPeriod=btn.dataset.period;document.querySelectorAll('.segment button').forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-pressed',String(b===btn));});renderChart();

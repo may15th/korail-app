@@ -742,7 +742,9 @@ function updateReport(){
   const label=comparisonLabel();
   const comparison=`${label}과 비교했을 때`;
   $('heroTitle').innerHTML=`${comparison}<br>${reportValue<0?'더':'적게'} 배출한 것으로 추정돼요`;
-  $('basisBadge').textContent=`${label} 기준`;
+  const badgeModes=new Set(tripSettings.flatMap(setting=>setting.mode==='default'?['car','bus']:[setting.mode]));
+  const badgeIcons=[['car','🚙'],['bus','🚌'],['air','✈️']].filter(([mode])=>badgeModes.has(mode)).map(([,icon])=>icon).join(' ');
+  $('basisBadge').textContent=`${badgeIcons} ${label} 기준`;
   $('methodBasis').textContent=label;
   const hasAir=tripSettings.some(setting=>setting.mode==='air');
   const uniform=tripSettings.every(setting=>JSON.stringify(setting)===JSON.stringify(tripSettings[0]));

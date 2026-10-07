@@ -4,8 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="theme.js"></script>
+<!-- 카카오 Developers JavaScript 키를 입력하고 SDK 도메인 및 제품 링크 도메인을 등록한다. -->
+<meta name="kakao-javascript-key" content="" />
+<script defer src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.3/kakao.min.js" crossorigin="anonymous"></script>
 <title>나의 탄소 리포트 | KORAIL</title>
-<meta name="description" content="철도 이용에 따른 예상 탄소배출 차이를 확인하는 코레일 탄소리포트 시안" />
+<meta name="description" content="철도 이용에 따른 예상 탄소배출 차이를 확인하는 코레일 탄소 리포트" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2319a66f'/%3E%3Cpath d='M9 22V10h4v5l6-5h5l-8 6 8 6h-5l-6-5v5z' fill='white'/%3E%3C/svg%3E" />
 <style>
 :root{
@@ -55,6 +58,9 @@ button{font:inherit}
   display:grid;place-items:center;cursor:pointer;
 }
 .content{padding:0 16px}
+#reportShare{width:auto;flex-shrink:0;border-radius:999px;display:flex;gap:6px;padding:0 12px;font:inherit;font-size:12px;font-weight:700;white-space:nowrap}
+#reportShare svg{width:18px;height:18px}
+@media(max-width:380px){.topbar{padding:0 16px;gap:8px}.topbar h1{font-size:17px}#reportShare{padding:0 9px;gap:4px}}
 .hero{
   position:relative;
   overflow:hidden;
@@ -106,11 +112,33 @@ button{font:inherit}
   width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.17);
   display:grid;place-items:center;font-size:18px
 }
-.rail-garden{position:relative;z-index:1;margin-top:16px;width:100%;overflow:hidden}
-.rail-garden svg{display:block;width:100%;height:auto;max-height:86px;overflow:hidden}
-.garden-stage{opacity:0;transform:scaleY(.75);transform-origin:0 0;transition:opacity 200ms ease,transform 200ms ease}
-.garden-stage.is-current{opacity:1;transform:scaleY(1)}
-@media(prefers-reduced-motion:reduce){.garden-stage{transition:none}}
+.pine-forest{position:relative;margin-top:16px;padding:0 6px 4px;overflow:hidden}
+.forest-trees{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px 2px;align-items:end;min-height:44px}
+.forest-tree{width:100%;height:44px;display:block;transform-origin:50% 100%}
+.forest-stage{opacity:0;transition:opacity 140ms ease}
+.forest-stage.is-current{opacity:1}
+.forest-train{position:absolute;left:0;top:0;width:144px;height:32px;pointer-events:none;z-index:2}
+.forest-train[hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.forest-stage{transition:none}}
+.forest-more{text-align:right;margin-top:9px;font-size:12px;font-weight:700;color:#ddfff1}
+.forest-more[hidden]{display:none}
+.pine-forest:not(.is-visible) .forest-tree{opacity:0}
+.tree-icon{flex-shrink:0}
+.hero[data-season="spring"]{background:radial-gradient(circle at 90% 12%,#ffffff38 0 70px,transparent 71px),linear-gradient(145deg,#287959,#48a580 58%,#80bea0)}
+.hero[data-season="autumn"]{background:radial-gradient(circle at 90% 12%,#ffffff26 0 70px,transparent 71px),linear-gradient(145deg,#8b472c,#b66b36 58%,#ce9454)}
+.hero[data-season="winter"]{background:radial-gradient(circle at 90% 12%,#ffffff26 0 70px,transparent 71px),linear-gradient(145deg,#244867,#42708b 58%,#7097ac)}
+.season-tabs{position:relative;z-index:1;display:flex;justify-content:center;gap:4px;margin-top:15px}
+.season-tabs button{border:0;border-radius:999px;padding:8px 14px;background:transparent;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer;min-height:36px}
+.season-tabs button[aria-pressed="true"]{background:rgba(255,255,255,.24);box-shadow:inset 0 0 0 1px #ffffff30}
+.season-tabs button:hover{background:rgba(255,255,255,.16)}
+.season-decoration,.autumn-canopy{display:none}
+.hero[data-season="spring"] .spring-decoration,.hero[data-season="winter"] .winter-decoration{display:block}
+.hero[data-season="autumn"] .autumn-canopy{display:block}
+.hero[data-season="autumn"] .pine-canopy{display:none}
+.season-detail{opacity:0;transform:scale(.5);transform-box:fill-box;transform-origin:center}
+.forest-tree[data-stage="4"] .season-detail{animation:season-bloom 400ms ease both;animation-delay:var(--detail-delay,0ms)}
+@keyframes season-bloom{to{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.forest-tree[data-stage="4"] .season-detail{animation:none;opacity:1;transform:none}}
 .section{
   margin-top:18px;background:var(--card);border-radius:var(--radius);
   box-shadow:0 6px 24px rgba(26,45,63,.055);
@@ -208,7 +236,7 @@ button{font:inherit}
 .settings-dialog{width:min(calc(100% - 32px),480px);max-height:85vh;overflow:auto;border:1px solid var(--line);border-radius:24px;background:var(--card);color:var(--text);padding:22px}
 .settings-dialog::backdrop{background:rgba(10,18,28,.6)}
 .settings-dialog h2{margin:0;font-size:18px}
-.settings-dialog p{font-size:12px;line-height:1.6;color:var(--muted)}
+.settings-dialog p{font-size:12px;line-height:1.6;color:var(--muted);white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere}
 .settings-actions{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:12px;margin-top:20px}
 .settings-actions #cancelSettings{padding:12px;border:1px solid var(--line);border-radius:17px;color:var(--muted);font-weight:800}
 .settings-actions .cta{width:auto;flex:1;margin:0;padding:12px}
@@ -314,6 +342,8 @@ button{font:inherit}
   border:0;border-radius:15px;padding:14px 10px;font-weight:800;cursor:pointer
 }
 .share{background:#ffe357;color:#312d12}
+.share-status{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;width:max-content;max-width:calc(100% - 40px);padding:12px 16px;border-radius:14px;background:#243342;color:#fff;font-size:13px;line-height:1.5;box-shadow:0 5px 20px #0002;pointer-events:none}
+.share-status[hidden]{display:none}
 .close{background:#fff;color:#49545d}
 .foot{
   margin-top:18px;text-align:center;font-size:10.5px;color:#9aa3aa;line-height:1.6;padding:0 20px
@@ -416,7 +446,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
   <header class="topbar">
     <button class="icon-btn" aria-label="뒤로가기">‹</button>
     <h1>나의 탄소 리포트</h1>
-    <button class="icon-btn" aria-label="도움말">?</button>
+    <button type="button" class="icon-btn" id="reportShare" aria-label="카카오톡으로 공유하기" title="카카오톡으로 공유하기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg><span>공유하기</span></button>
   </header>
 
   <main class="content">
@@ -429,39 +459,25 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="distance">기차를 타고 <strong id="distanceValue">1,284km</strong> 이동했어요</div>
 
       <div class="hero-main">
-        <div class="hero-number" id="heroValue">143.9</div>
+        <div class="hero-number" id="heroValue">132.8</div>
         <div class="hero-unit">kg CO₂e</div>
       </div>
-      <div class="hero-title" id="heroTitle">다른 교통수단으로 이동했을 때보다<br>적게 배출한 것으로 추정돼요</div>
-      <div class="badge" id="basisBadge">🚙 🚌 자가용·버스 가중평균 기준</div>
+      <div class="hero-title" id="heroTitle">자가용·버스로 같은 거리를 이동할 때보다<br>탄소를 적게 배출한 것으로 추정해요</div>
+      <div class="badge" id="basisBadge">🚙 🚌 자가용·버스와 비교</div>
 
-      <div class="rail-garden" id="railGarden" aria-hidden="true">
-        <svg viewBox="0 0 360 60" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <g id="gardenCar">
-              <rect x="2" y="4" width="31" height="17" rx="5" fill="#edf8ff"/>
-              <path d="M3 17H32" stroke="#2580c4" stroke-width="3"/>
-              <path d="M8 8H13V12H8ZM17 8H22V12H17ZM26 8H29V12H26Z" fill="#24618a"/>
-              <circle cx="9" cy="23" r="2.5" fill="#174365"/><circle cx="27" cy="23" r="2.5" fill="#174365"/>
-            </g>
-            <g id="gardenEngine">
-              <path d="M2 9Q2 4 7 4H22Q28 4 32 12L35 17Q37 21 31 21H2Z" fill="#edf8ff"/>
-              <path d="M3 17H34" stroke="#2580c4" stroke-width="3"/>
-              <path d="M8 8H13V12H8ZM17 8H22V12H17ZM25 8L29 13H25Z" fill="#24618a"/>
-              <circle cx="9" cy="23" r="2.5" fill="#174365"/><circle cx="27" cy="23" r="2.5" fill="#174365"/>
-            </g>
-          </defs>
-          <path d="M0 52H360" stroke="#ddfff1" stroke-opacity=".24" stroke-width="1"/>
-          <g id="gardenTrain" transform="translate(-144 26.5)">
-            <path d="M31 18H112" stroke="#d6e9ec" stroke-width="2"/>
-            <use href="#gardenCar" x="0"/><use href="#gardenCar" x="36"/><use href="#gardenCar" x="72"/><use href="#gardenEngine" x="108"/>
-          </g>
-          <g id="gardenPlants"></g>
-        </svg>
-      </div>
       <div class="tree-row">
         <div class="tree-icon">🌲</div>
-        <span>30년생 소나무 <strong id="treeCount">22그루</strong>가 1년간 흡수하는 양과 비슷해요</span>
+        <span>30년생 소나무 약 <strong id="treeCount">20그루</strong>의<br>1년 탄소 흡수량에 해당해요</span>
+      </div>
+      <div class="season-tabs" id="seasonTabs" role="group" aria-label="숲의 계절">
+        <button type="button" data-season="spring" aria-pressed="false">봄</button>
+        <button type="button" data-season="summer" aria-pressed="true">여름</button>
+        <button type="button" data-season="autumn" aria-pressed="false">가을</button>
+        <button type="button" data-season="winter" aria-pressed="false">겨울</button>
+      </div>
+      <div class="pine-forest" id="pineForest" aria-hidden="true">
+        <div class="forest-trees" id="forestTrees"></div>
+        <div class="forest-more" id="forestMore" hidden></div>
       </div>
     </section>
 
@@ -479,47 +495,48 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
           <button data-period="year" aria-pressed="false">연간</button>
         </div>
 
+        <p class="section-sub" id="chartPeriod" aria-live="polite">2026년 4월~9월</p>
         <div class="chart" id="chart" role="group" aria-label="월간 예상 배출 차이 그래프"></div>
-        <div class="chart-total"><span id="chartSummary">기간 합계</span><strong id="chartTotal">143.9 kg</strong></div>
+        <div class="chart-total"><span id="chartSummary">기간 합계</span><strong id="chartTotal">132.8 kg</strong></div>
 
     <div class="stats">
       <div class="stat">
         <div class="emoji">⛽</div>
-        <strong id="fuelStat">61L</strong>
-        <span>휘발유 연소 시<br>배출량 환산</span>
+        <strong id="fuelStat">56.5L</strong>
+        <span>휘발유 연소 배출량으로<br>환산한 양</span>
       </div>
       <div class="stat">
         <div class="emoji">🌲</div>
-        <strong id="treeStat">22그루</strong>
-        <span>30년생 소나무<br>1년 흡수량 환산</span>
+        <strong id="treeStat">20그루</strong>
+        <span>30년생 소나무의<br>1년 탄소 흡수량과 비교</span>
       </div>
       <div class="stat">
         <div class="emoji">🚆</div>
         <strong id="tripCount">6회</strong>
-        <span><span id="tripPeriod" style="display:inline">최근 6개월</span><br>기차 이용</span>
+        <span><span id="tripPeriod" style="display:inline">표시 기간</span><br>기차 이용</span>
       </div>
     </div>
       </div>
     </section>
 
     <section class="accuracy">
-      <span class="mini-badge">정확도 높이기</span>
-      <div class="question">기차가 아니었다면<br>어떻게 이동했을까요?</div>
-      <div class="q-desc">설정하지 않은 여행은 기본값으로 계산해요. 최근 이용 내역에서 여행마다 따로 설정할 수 있어요.</div>
-      <button class="text-btn" id="openAllSettings" style="margin-top:12px">전체 설정</button>
+      <span class="mini-badge">비교 기준 바꾸기</span>
+      <div class="question">어떤 교통수단과<br>비교할까요?</div>
+      <div class="q-desc">처음에는 자가용·버스 이용 비중으로 계산해요.<br>여행마다 비교할 교통수단을 바꿀 수 있어요.</div>
+      <button class="text-btn" id="openAllSettings" style="margin-top:12px">모든 여행의 비교 기준 바꾸기</button>
 
       <div class="choice-grid" id="modeChoices">
-        <button class="choice" data-mode="default">기본 추정</button>
+        <button class="choice" data-mode="default">자가용·버스 기준</button>
         <button class="choice" data-mode="car">🚙 자가용</button>
         <button class="choice" data-mode="bus">🚌 고속버스</button>
-        <button class="choice" data-mode="air">✈️ 항공</button>
+        <button class="choice" data-mode="air">✈️ 비행기</button>
       </div>
 
       <div class="passenger" id="passengerBox">
         <label class="fuel-picker">자동차 종류
           <select id="fuelChoice" aria-label="자동차 종류"><option value="average">평균 승용차</option><option value="gasoline">휘발유</option><option value="electric">전기차</option><option value="hybrid">하이브리드</option><option value="diesel">경유</option><option value="lpg">LPG</option><option value="hydrogen">수소차</option></select>
         </label>
-        <div class="passenger-label">자가용에는 몇 명이 함께 탔을까요?</div>
+        <div class="passenger-label">나를 포함해 몇 명이 탔을까요?</div>
         <div class="person-row">
           <button class="person active" data-people="1">1명</button>
           <button class="person" data-people="2">2명</button>
@@ -536,9 +553,9 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
         <div class="section-head">
           <div>
             <h2 class="section-title">최근 이용 내역</h2>
-            <p class="section-sub">여행별 예상 배출 차이</p>
+            <p class="section-sub">다른 교통수단과 비교한<br>탄소 배출량 차이예요</p>
           </div>
-          <button class="text-btn" id="allTripsBtn" aria-expanded="false">전체보기</button>
+          <button class="text-btn" id="allTripsBtn" aria-expanded="false">전체 보기</button>
         </div>
 
         <div class="trip-list" id="tripList"></div>
@@ -553,38 +570,37 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
         </div>
         <h3>기차로 떠난 여름,<br>함께 만든 저탄소 이동</h3>
         <p>7~8월 코레일 고객이 함께 만든 감축량입니다.</p>
-        <div style="font-size:30px;font-weight:850;margin-top:16px;letter-spacing:-1px"><span id="campaignValue">479.7</span> <span style="font-size:14px">톤 CO₂e</span></div>
-        <div class="progress" role="progressbar" aria-label="여름 캠페인 목표 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80"><i id="campaignProgress"></i></div>
-        <div class="progress-label"><span>목표 600톤</span><span id="campaignRate">80.0% 달성</span></div>
+        <div style="font-size:30px;font-weight:850;margin-top:16px;letter-spacing:-1px"><span id="campaignValue">442.5</span> <span style="font-size:14px">톤 CO₂e</span></div>
+        <div class="progress" role="progressbar" aria-label="여름 캠페인 목표 달성률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="73.8"><i id="campaignProgress"></i></div>
+        <div class="progress-label"><span>목표 600톤</span><span id="campaignRate">73.8% 달성</span></div>
       </div>
     </section>
 
-    <button class="cta" id="certificateBtn">🌱 탄소 리포트 인증서 만들기</button>
+    <button class="cta" id="certificateBtn">🌱 내 탄소 리포트 보기</button>
 
     <section class="section">
       <button class="method" id="methodBtn" aria-expanded="false" aria-controls="methodBody">
-        <span>산정 근거 보기</span><span id="methodArrow">⌄</span>
+        <span>계산 방법 보기</span><span id="methodArrow">⌄</span>
       </button>
       <div class="method-body" id="methodBody">
         <div class="method-table">
-          <div class="method-row"><span>비교 기준</span><strong id="methodBasis">자가용·버스 가중평균</strong></div>
-          <div class="method-row"><span>KTX 배출원단위</span><strong>23.28 gCO₂e/인·km</strong></div>
-          <div class="method-row"><span id="alternativeFactorLabel">기본 승용차 원단위</span><strong id="alternativeFactor">143.28 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span>비교 기준</span><strong id="methodBasis">자가용·버스</strong></div>
+          <div class="method-row"><span>KTX 1인·1km당 배출량</span><strong>23.28 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span id="alternativeFactorLabel">기본 자가용 1인·1km당 배출량</span><strong id="alternativeFactor">143.28 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span>고속버스 1인·1km당 배출량</span><strong>46.04 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span>휘발유 환산 기준</span><strong>2.35 kgCO₂e/L</strong></div>
           <div class="method-row"><span>나무 환산 기준</span><strong>6.6 kgCO₂/년·그루</strong></div>
         </div>
         <div class="notice">
-          평균 배출계수로 계산한 추정치입니다. 기본값은 자가용·버스 이용 비중을 반영하며, 선택한 교통수단과 탑승인원에 따라 달라집니다.
+          다른 교통수단도 기차와 같은 거리를<br>이동한다고 가정해 계산해요.<br><br>
+          기본 비교에는 구간별 자가용·버스 이용 비중을 반영해요.
         </div>
         <div class="source">
-          산정체계 참고: 국가교통DB · 교통수단 배출량 연구 · 정부 온실가스 환산계수
+          계산에 참고한 자료: 국가교통DB · 교통수단 배출량 연구 · 정부 온실가스 환산계수
         </div>
       </div>
     </section>
 
-    <div class="foot">
-      본 화면은 코레일 플러스 혁신제안용 UI 프로토타입이며 수치는 예시입니다.<br>
-      실제 도입 시 공인 산정기준 검토 및 최신 데이터 반영이 필요합니다.
-    </div>
   </main>
 </div>
 
@@ -596,14 +612,14 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="cert-korail">KORAIL CARBON REPORT</div>
       <h2>나의 철도 탄소 리포트</h2>
       <div class="cert-distance">2026년 누적 철도 이용 1,284km</div>
-      <div class="cert-number"><span id="certValue">143.9</span><span style="font-size:17px;letter-spacing:-.2px"> kg CO₂e</span></div>
+      <div class="cert-number"><span id="certValue">132.8</span><span style="font-size:17px;letter-spacing:-.2px"> kg CO₂e</span></div>
       <div class="cert-copy" id="certCopy">
-        자가용·버스 가중평균과 비교한<br>
-        예상 배출 차이입니다.<br><br>
-        30년생 소나무 약 <strong id="certTrees">22그루</strong>가<br>
-        1년간 흡수하는 CO₂와 비슷합니다.
+        자가용·버스와 비교한<br>
+        예상 탄소 배출량 차이예요.<br><br>
+        30년생 소나무 약 <strong id="certTrees">20그루</strong>가<br>
+        1년 동안 흡수하는 탄소량과 비슷해요.
       </div>
-      <div class="cert-user">고유한 님 · 2026.10.05<br>※ 평균 배출계수 기반 추정치</div>
+      <div class="cert-user">고유한 님 · 2026.10.05<br>평균 배출량을 기준으로 계산한 추정치예요.</div>
     </div>
     <div class="sheet-actions">
       <button class="share">💬 공유하기</button>
@@ -618,10 +634,11 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
   <div id="settingsControls"></div>
   <p id="settingsFeedback" role="status"></p>
   <div class="settings-actions">
-    <button class="text-btn" id="cancelSettings">취소</button>
-    <button class="cta" id="applySettings">적용</button>
+    <button class="text-btn" id="cancelSettings">닫기</button>
+    <button class="cta" id="applySettings">적용하기</button>
   </div>
 </dialog>
+<div class="share-status" id="shareStatus" role="status" aria-live="polite" hidden></div>
 <script>const $ = id => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const ease = t => t < .5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
@@ -665,63 +682,162 @@ const railEF=33.96/1000*479.88/.7;
 // WTT- business travel- air F20: 같은 국내선 연료 생산·공급 = 0.03350 kgCO₂e/인·km.
 // RF 제외. 8% 거리 보정은 원단위에 포함되므로 1.08/ICAO 보정을 추가하지 않는다.
 // 공항·역 접근 이동과 차량·항공기 제조는 비교 범위에서 제외. 자동차 탑승인원도 적용하지 않는다.
-const airEF=0.13552+0.03350;
-// 대한민국 eAIP AD 2.2 ARP 좌표: 김포 373325N 1264751E, 김해 351050N 1285617E.
-// https://aim.koca.go.kr/eaipPub/Package/2026-07-23/html/eAIP/KR-AD-2.RKSS-en-GB.html
-// https://aim.koca.go.kr/eaipPub/Package/2026-08-05-AIRAC/html/eAIP/KR-AD-2.RKPK-en-GB.html
-const airports={GMP:{lat:37+33/60+25/3600,lon:126+47/60+51/3600},PUS:{lat:35+10/60+50/3600,lon:128+56/60+17/3600}};
-// 서울↔부산만 실제 김포↔김해 국내선에 대응한다. 대전/천안아산↔서울은 가상 항공편을 만들지 않는다.
-// 노선 확인: https://www.airport.co.kr/gimpo/index.do (부산/김해).
-const airRoutes={busan:['GMP','PUS']};
-function greatCircleDistance(a,b){
-  const radians=d=>d*Math.PI/180;
-  const h=Math.sin(radians(b.lat-a.lat)/2)**2+Math.cos(radians(a.lat))*Math.cos(radians(b.lat))*Math.sin(radians(b.lon-a.lon)/2)**2;
-  return 6371.0088*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));
-}
-function airDistance(trip){const pair=airRoutes[trip.key];return pair?greatCircleDistance(airports[pair[0]],airports[pair[1]]):null;}
-function airCoverage(){return trips.filter(t=>airDistance(t)!==null).length;}
+// 동일 거리 가상 비교: 항공 평균계수에도 철도 이용거리를 적용한다.
+const airEF=(0.13552+0.03350)*1000;
+const gasolineEmissionPerLitre=2.35;
+const treeAbsorptionPerYear=6.6;
 function comparisonLabel(){
   const labels=trips.map(trip=>settingLabel(tripSetting(trip)));
-  return labels.every(label=>label===labels[0])?labels[0]:'여행별 비교 기준';
+  return labels.every(label=>label===labels[0])?labels[0]:'여행별 교통수단';
 }
-const routes={busan:{rail:416,road:430,carShare:88/111},daejeon:{rail:148,road:165,carShare:156/171},cheonan:{rail:78,road:90,carShare:409/472}};
+function hasMixedComparison(){
+  const labels=trips.map(trip=>settingLabel(tripSetting(trip)));
+  return labels.some(label=>label!==labels[0]);
+}
+const routes={busan:{rail:416,carShare:88/111},daejeon:{rail:148,carShare:156/171},cheonan:{rail:78,carShare:409/472}};
 const trips=[
-  {date:'09.22',day:'화',route:'부산 → 서울',key:'busan'},
-  {date:'08.09',day:'일',route:'서울 → 부산',key:'busan'},
-  {date:'07.28',day:'화',route:'대전 → 서울',key:'daejeon'},
-  {date:'06.16',day:'화',route:'서울 → 대전',key:'daejeon'},
-  {date:'05.10',day:'일',route:'천안아산 → 서울',key:'cheonan'},
-  {date:'04.19',day:'일',route:'서울 → 천안아산',key:'cheonan'}
-];
+  {travelDate:'2026-09-22',route:'부산 → 서울',key:'busan'},
+  {travelDate:'2026-08-09',route:'서울 → 부산',key:'busan'},
+  {travelDate:'2026-07-28',route:'대전 → 서울',key:'daejeon'},
+  {travelDate:'2026-06-16',route:'서울 → 대전',key:'daejeon'},
+  {travelDate:'2026-05-10',route:'천안아산 → 서울',key:'cheonan'},
+  {travelDate:'2026-04-19',route:'서울 → 천안아산',key:'cheonan'}
+].map(trip=>({...trip,date:trip.travelDate.slice(5).replace('-','.'),day:['일','월','화','수','목','금','토'][new Date(trip.travelDate+'T00:00:00Z').getUTCDay()]}));
 let currentMode='default', people=1, fuel='average', currentPeriod='month', allTrips=false;
 // 편도 여행마다 독립된 비교 설정. 팝업의 currentMode/people/fuel은 적용 전 임시값이다.
 const tripSettings=trips.map(()=>({mode:'default',people:1,fuel:'average'}));
 let settingsTarget=null,settingsNotice='';
 function tripSetting(trip){return tripSettings[trips.indexOf(trip)]||{mode:'default',people:1,fuel:'average'};}
-function settingLabel(setting){return setting.mode==='default'?'자가용·버스 가중평균':setting.mode==='car'?`${fuelLabels[setting.fuel]} · ${setting.people}인`:modeLabels[setting.mode];}
+function settingLabel(setting){return setting.mode==='default'?'자가용·버스':setting.mode==='car'?`${fuelLabels[setting.fuel]} · ${setting.people}인`:modeLabels[setting.mode];}
 function applyTravelSettings(target,setting){
   const indices=target===null?trips.map((_,i)=>i):[target];
-  if(setting.mode==='air'&&indices.every(index=>airDistance(trips[index])===null))return '이 구간은 비교할 항공편이 없어요';
-  let unavailable=0;
-  indices.forEach(index=>{
-    if(setting.mode==='air'&&airDistance(trips[index])===null){
-      unavailable++;
-      // 개별 항공 비교 불가 시 이전 결과 유지. 전체 적용은 비교 불가 구간을 기본값으로 유지한다.
-      if(target===null)tripSettings[index]={mode:'default',people:1,fuel:'average'};
-    }else tripSettings[index]={...setting};
-  });
-  return unavailable===indices.length?'이 구간은 비교할 항공편이 없어요':unavailable?'항공 비교 가능한 구간만 반영했어요':'';
+  indices.forEach(index=>{tripSettings[index]={...setting};});
+  return setting.mode==='air'?'비행기로 같은 거리를 이동한다고 가정한 비교예요.':'';
 }
 let reportValue=0;
+let forestObserver=null,forestFrame=0;
+const seasonMonth=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',month:'numeric'}).format(new Date()));
+let forestSeason=seasonMonth>=3&&seasonMonth<=5?'spring':seasonMonth>=6&&seasonMonth<=8?'summer':seasonMonth>=9&&seasonMonth<=11?'autumn':'winter';
+function setForestSeason(season,replay=true){
+  forestSeason=season;
+  document.querySelector('.hero').dataset.season=season;
+  document.querySelectorAll('#seasonTabs button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.season===season)));
+  if(replay&&$('pineForest').classList.contains('is-visible')){
+    stopForestGrowth();
+    growForest([...$('forestTrees').children].filter(node=>!node.classList.contains('is-leaving')));
+  }
+}
+function forestDecorations(index){
+  // 나무 번호로 위치를 정해 설정을 바꿔도 꽃 배치가 유지된다.
+  const points=[[11,16],[22,22],[8,31],[23,35]],flowers=3+(index%2);
+  const spring=points.slice(0,flowers).map(([x,y],i)=>{
+    x+=((index*7+i*3)%5)-2;y+=((index*11+i)%3)-1;
+    return `<g transform="translate(${x} ${y})"><g class="season-detail" style="--detail-delay:${i*140}ms"><g fill="#ffc1db"><ellipse cy="-2.5" rx="1.7" ry="2.5"/><ellipse cx="2.5" rx="2.5" ry="1.7"/><ellipse cy="2.5" rx="1.7" ry="2.5"/><ellipse cx="-2.5" rx="2.5" ry="1.7"/></g><circle r="1.5" fill="#ffe16b"/></g></g>`;
+  }).join('');
+  const autumn=index%2===0
+    ?'<path d="M16 4l3 7 5-4-1 7 7 1-5 6 3 6-9-1-3 9-3-9-9 1 3-6-5-6 7-1-1-7 5 4z" fill="#f58b4c"/><path d="M16 9v23" stroke="#c45032" stroke-width="1"/>'
+    :'<path d="M16 33C11 27 2 25 3 14Q8 2 16 8Q24 2 29 14C30 25 21 27 16 33Z" fill="#f6d461"/><path d="M16 33 8 12m8 21V10m0 23 8-21" stroke="#d8a943" stroke-width=".8"/>';
+  const snow=[[16,10,8],[16,22,11],[16,34,14]].map(([x,y,w],i)=>`<path class="season-detail" style="--detail-delay:${i*170}ms" d="M${x-w} ${y}Q${x} ${y-7} ${x+w} ${y}q-2 4-5 1q-3 4-6 1q-3 3-6 0z" fill="#f4fbff"/>`).join('');
+  return `<g class="season-decoration spring-decoration">${spring}</g><g class="season-decoration winter-decoration">${snow}</g><g class="autumn-canopy"><g class="season-detail">${autumn}</g></g>`;
+}
+function setForestStage(node,stage){
+  node.dataset.stage=String(stage);
+  node.querySelectorAll('.forest-stage').forEach((layer,i)=>layer.classList.toggle('is-current',i===stage-1));
+}
+function stopForestGrowth(){
+  cancelAnimationFrame(forestFrame);
+  $('forestTrees').querySelectorAll('.forest-tree').forEach(node=>setForestStage(node,4));
+  $('forestTrain')?.setAttribute('hidden','');
+}
+function growForest(nodes){
+  if(!nodes.length)return;
+  cancelAnimationFrame(forestFrame);
+  const forest=$('pineForest');
+  if(reducedMotion.matches){nodes.forEach(node=>setForestStage(node,4));return;}
+  let train=$('forestTrain');
+  if(!train){
+    train=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    train.id='forestTrain';train.classList.add('forest-train');train.setAttribute('viewBox','0 0 144 32');
+    train.innerHTML='<path d="M25 20h90" stroke="#d6e9ec" stroke-width="2"/>'+Array.from({length:4},(_,i)=>`<g class="forest-car" transform="translate(${i*36} 0)">${i===3?'<path d="M2 6h19q6 0 10 8l4 6q3 4-3 4H2z" fill="#edf8ff"/>':'<rect x="2" y="6" width="31" height="18" rx="4" fill="#edf8ff"/>'}<path d="M3 20h29" stroke="#2580c4" stroke-width="3"/><path d="M6 10h5v5H6zm10 0h5v5h-5zm10 0h4v5h-4z" fill="#24618a"/><circle cx="9" cy="26" r="2.5" fill="#174365"/><circle cx="27" cy="26" r="2.5" fill="#174365"/></g>`).join('');
+    forest.append(train);
+  }
+  const rows=new Map(),positions=new Map(),forestRect=forest.getBoundingClientRect();
+  nodes.forEach(node=>{
+    const rect=node.getBoundingClientRect(),top=Math.round(rect.top-forestRect.top);
+    positions.set(node,rect.left-forestRect.left+rect.width/2);
+    if(!rows.has(top))rows.set(top,[]);
+    rows.get(top).push(node);
+    setForestStage(node,0);
+  });
+  const entries=[...rows.entries()],rowDuration=3200;
+  let start=null;
+  train.removeAttribute('hidden');
+  const tick=now=>{
+    if(start===null)start=now;
+    if(reducedMotion.matches){stopForestGrowth();return;}
+    const elapsed=now-start,rowIndex=Math.min(entries.length-1,Math.floor(elapsed/rowDuration));
+    const progress=Math.min(1,(elapsed-rowIndex*rowDuration)/rowDuration);
+    const [top,row]=entries[rowIndex],width=forest.clientWidth;
+    // 기차 꼬리가 나무 위치를 지난 뒤 새싹부터 네 단계로 성장한다.
+    const tailX=-149+progress*(width+264);
+    train.style.transform='translate('+tailX+'px,'+(top+14)+'px)';
+    entries.forEach(([,items],i)=>items.forEach(node=>{
+      const center=positions.get(node);
+      const stage=i<rowIndex?4:i>rowIndex?0:tailX<=center?0:Math.min(4,1+Math.floor((tailX-center)/27));
+      if(Number(node.dataset.stage)!==stage)setForestStage(node,stage);
+    }));
+    if(elapsed<entries.length*rowDuration)forestFrame=requestAnimationFrame(tick);
+    else{nodes.forEach(node=>setForestStage(node,4));train.setAttribute('hidden','');}
+  };
+  forestFrame=requestAnimationFrame(tick);
+}
+function updateForest(trees){
+  const forest=$('pineForest'),container=$('forestTrees'),count=Math.max(0,Math.round(trees)),visibleCount=Math.min(count,30);
+  const current=[...container.children].filter(node=>!node.classList.contains('is-leaving'));
+  if(current.length===visibleCount){
+    $('forestMore').hidden=count<=30;$('forestMore').textContent=count>30?'+'+numberFormat(count-30)+'그루':'';return;
+  }
+  stopForestGrowth();
+  if(!forestObserver){
+    forestObserver=new IntersectionObserver(entries=>{
+      if(!entries.some(entry=>entry.isIntersecting)){stopForestGrowth();return;}
+      forest.classList.add('is-visible');growForest([...container.children].filter(node=>!node.classList.contains('is-leaving')));
+    },{threshold:.2});
+    forestObserver.observe(forest);
+  }
+  current.slice(visibleCount).forEach(node=>{
+    node.classList.add('is-leaving');
+    if(reducedMotion.matches||!forest.classList.contains('is-visible')){node.remove();return;}
+    const animation=node.animate([{opacity:1,scale:'1 1'},{opacity:0,scale:'0.3 0.15'}],{duration:220,fill:'forwards'});
+    animation.finished.then(()=>node.remove(),()=>node.remove());
+  });
+  const added=[];
+  const shapes=[
+    '<path d="M16 45V34" stroke="#d8bd85" stroke-width="2"/><path d="M16 38Q3 37 7 29Q16 29 16 38Q29 37 25 29Q16 29 16 38" fill="#b1e895"/>',
+    '<path d="M14 30h4v15h-4z" fill="#d8bd85"/><path d="M16 19 5 36h22z" fill="#a3df87"/>',
+    '<path d="M14 26h4v19h-4z" fill="#d8bd85"/><path d="M16 10 7 25h5L3 39h26L20 25h5z" fill="#87d67e"/>',
+    '<ellipse cx="16" cy="45" rx="10" ry="2" fill="#064c36" opacity=".15"/><path d="M14 32h4v13h-4z" fill="#d8bd85"/><path d="M16 2 7 17h5L4 29h6L1 40h30L22 29h6L20 17h5z" fill="#84d889"/><path d="M16 2 7 17h5L4 29h6L1 40h15z" fill="#b1e895"/>'
+  ];
+  for(let i=current.length;i<visibleCount;i++){
+    const node=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    node.setAttribute('viewBox','0 0 32 48');node.classList.add('forest-tree');
+    node.innerHTML=shapes.map((shape,stage)=>'<g class="forest-stage">'+(stage===3?shape.replace('<path d="M16 2','<path class="pine-canopy" d="M16 2').replace('<path d="M16 2','<path class="pine-canopy" d="M16 2')+forestDecorations(i):shape)+'</g>').join('');
+    container.append(node);added.push(node);setForestStage(node,0);
+  }
+  if(forest.classList.contains('is-visible'))growForest(added);
+  $('forestMore').hidden=count<=30;
+  $('forestMore').textContent=count>30?'+'+numberFormat(count-30)+'그루':'';
+}
+
 function railEmission(trip){return routes[trip.key].rail*railEF/1000;}
 function alternative(trip, override){
   const setting=typeof override==='string'?{mode:override,people,fuel}:override||tripSetting(trip);
   const {mode,people:occupants,fuel:carFuel}=setting;
   const r=routes[trip.key];
-  if(mode==='default')return r.road*(r.carShare*carDefaultEF+(1-r.carShare)*busEF)/1000;
-  if(mode==='car')return r.road*(carFuel==='average'?fleetEF:fuels[carFuel].ef)/occupants/1000;
-  if(mode==='bus')return r.road*busEF/1000;
-  if(mode==='air'){const distance=airDistance(trip);return distance===null?alternative(trip,'default'):distance*airEF;}
+  if(mode==='default')return r.rail*(r.carShare*carDefaultEF+(1-r.carShare)*busEF)/1000;
+  if(mode==='car')return r.rail*(carFuel==='average'?fleetEF:fuels[carFuel].ef)/occupants/1000;
+  if(mode==='bus')return r.rail*busEF/1000;
+  if(mode==='air')return r.rail*airEF/1000;
   throw new Error('지원하지 않는 이동방식');
 }
 // trips의 편도 기록을 각각 계산한다. 왕복도 두 기록의 합이며 별도 두 배 보정은 없다.
@@ -729,34 +845,36 @@ function difference(trip,override){return alternative(trip,override)-railEmissio
 function totals(override){return trips.reduce((s,t)=>({rail:s.rail+railEmission(t),alt:s.alt+alternative(t,override),difference:s.difference+difference(t,override)}),{rail:0,alt:0,difference:0});}
 const defaultTotal=totals('default').difference;
 const campaignTonnes=defaultTotal/trips.length*20000/1000;
-const modeLabels={default:'자가용·버스 가중평균',car:'자가용',bus:'고속버스',air:'항공'};
+const modeLabels={default:'자가용·버스',car:'자가용',bus:'고속버스',air:'비행기'};
 const fuelLabels={average:'평균 승용차',gasoline:'휘발유',diesel:'경유',lpg:'LPG',hybrid:'하이브리드',electric:'전기차',hydrogen:'수소차'};
 function updateReport(){
   const t=totals();reportValue=t.difference;
   const magnitude=Math.abs(reportValue);
-  const trees=magnitude/6.6, litres=magnitude/2.35;
+  const trees=magnitude/treeAbsorptionPerYear, litres=magnitude/gasolineEmissionPerLitre;
   setNumber($('heroValue'),reportValue,{digits:1});
   setNumber($('distanceValue'),1284,{suffix:'km'});
   setNumber($('treeStat'),trees,{suffix:'그루'});
-  setNumber($('fuelStat'),litres,{suffix:'L'});
+  setNumber($('fuelStat'),litres,{digits:1,suffix:'L'});
   const label=comparisonLabel();
-  const comparison=`${label}과 비교했을 때`;
-  $('heroTitle').innerHTML=`${comparison}<br>${reportValue<0?'더':'적게'} 배출한 것으로 추정돼요`;
+  const mixed=hasMixedComparison();
+  const comparison=mixed?'여행별 교통수단과 비교해':tripSettings.every(s=>s.mode==='default')?'자가용·버스로 같은 거리를 이동할 때보다':tripSettings.every(s=>s.mode==='air')?'비행기로 같은 거리를 이동할 때보다':`${label} 기준으로 같은 거리를 비교하면`;
+  $('heroTitle').innerHTML=`${comparison}<br>탄소를 ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요`;
   const badgeModes=new Set(tripSettings.flatMap(setting=>setting.mode==='default'?['car','bus']:[setting.mode]));
   const badgeIcons=[['car','🚙'],['bus','🚌'],['air','✈️']].filter(([mode])=>badgeModes.has(mode)).map(([,icon])=>icon).join(' ');
-  $('basisBadge').textContent=`${badgeIcons} ${label} 기준`;
-  $('methodBasis').textContent=label;
-  const hasAir=tripSettings.some(setting=>setting.mode==='air');
+  $('basisBadge').textContent=mixed?`${badgeIcons} 여행별 설정 적용`:`${badgeIcons} ${label} 기준으로 비교`;
+  $('methodBasis').textContent=mixed?'여행별 설정 적용':label;
   const uniform=tripSettings.every(setting=>JSON.stringify(setting)===JSON.stringify(tripSettings[0]));
   const setting=tripSettings[0];
-  $('alternativeFactorLabel').textContent=hasAir?'항공 원단위':!uniform?'비교 원단위':setting.mode==='bus'?'고속버스 원단위':setting.mode==='car'?'승용차 원단위':'기본 승용차 원단위';
-  const factor=hasAir?airEF*1000:setting.mode==='bus'?busEF:setting.mode==='car'?(setting.fuel==='average'?fleetEF:fuels[setting.fuel].ef)/setting.people:carDefaultEF;
-  $('alternativeFactor').textContent=!uniform&&!hasAir?'여행별 설정 적용':`${numberFormat(factor,2)} gCO₂e/인·km`;
+  $('alternativeFactorLabel').textContent=!uniform?'비교 교통수단의 배출량':setting.mode==='air'?'비행기 1인·1km당 배출량':setting.mode==='bus'?'고속버스 1인·1km당 배출량':setting.mode==='car'?'승용차 1인·1km당 배출량':'기본 자가용 1인·1km당 배출량';
+  const factor=setting.mode==='air'?airEF:setting.mode==='bus'?busEF:setting.mode==='car'?(setting.fuel==='average'?fleetEF:fuels[setting.fuel].ef)/setting.people:carDefaultEF;
+  $('alternativeFactor').textContent=!uniform?'여행별 비교 기준 적용':numberFormat(factor,2)+' gCO₂e/인·km';
   const changed=tripSettings.filter(setting=>setting.mode!=='default').length;
-  $('resultNote').innerHTML=`<strong>${changed?`${changed}개 여행에 개별 비교 기준 적용`:'자가용·버스 가중평균 기준'}</strong><br>${settingsNotice||'전체 설정 또는 최근 이용 내역의 설정 버튼으로 비교 기준을 변경하세요.'}${changed?'<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">전체 기본값으로 돌아가기</button>':''}`;
+  $('resultNote').classList.toggle('show',Boolean(changed||settingsNotice));
+  $('resultNote').innerHTML=`${changed?`<strong>${changed}개 여행의 비교 기준을 바꿨어요.</strong>`:''}${settingsNotice?`${changed?'<br>':''}${settingsNotice}`:''}${changed?'<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">모든 여행을 기본 기준으로 바꾸기</button>':''}`;
   $('resetDefault')?.addEventListener('click',()=>{applyTravelSettings(null,{mode:'default',people:1,fuel:'average'});settingsNotice='';updateReport();});
-  $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 <strong id="treeCount">${numberFormat(trees)}그루</strong>가 1년간 흡수하는 양과 비슷해요${reportValue<0?' · 추가 배출 환산':''}`;
+  $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 약 <strong id="treeCount">${numberFormat(trees)}그루</strong>의<br>1년 탄소 흡수량에 해당해요${reportValue<0?' · 추가 배출량을 비교한 값이에요':''}`;
   setNumber($('treeCount'),trees,{suffix:'그루'});
+  updateForest(trees);
   renderTrips();renderChart();updateCertificate();
 }
 function syncChoices(){
@@ -764,39 +882,75 @@ function syncChoices(){
   $('passengerBox').classList.toggle('show',currentMode==='car');
   $('fuelChoice').value=fuel;
   document.querySelectorAll('.person').forEach(b=>{b.classList.toggle('active',Number(b.dataset.people)===people);b.setAttribute('aria-pressed',String(Number(b.dataset.people)===people));});
-  $('settingsFeedback').textContent=currentMode==='default'?'자가용·버스 이용 비중으로 계산해요.':currentMode==='air'?(settingsTarget!==null&&airDistance(trips[settingsTarget])===null?'이 구간은 비교할 항공편이 없어요':settingsTarget===null&&airCoverage()<trips.length?'항공 비교 가능한 구간만 반영했어요':''):'';
+  $('settingsFeedback').textContent=currentMode==='default'?'구간별 자가용·버스 이용 비중으로 계산해요.':currentMode==='air'?'비행기로 같은 거리를 이동한다고 가정해 비교해요.\n실제 항공편 유무와 관계없이 계산해요.':'';
 }
 function renderTrips(){
   $('tripList').innerHTML=trips.slice(0,allTrips?6:3).map((t,i)=>`<div class="trip"><div class="trip-date"><strong>${t.date}</strong><span>${t.day}</span></div><div class="trip-route"><strong>${t.route}</strong><span>KTX · ${routes[t.key].rail}km</span><button type="button" class="text-btn trip-setting" data-trip="${i}" aria-label="${t.route} 비교 기준 설정">${tripSetting(t).mode==='default'?'기본값':settingLabel(tripSetting(t))} · 설정</button></div><div class="trip-save"><strong class="trip-value" id="tripValue${i}"></strong><span>${difference(t)<0?'추가 배출':'예상 차이'}</span></div></div>`).join('');
   trips.slice(0,allTrips?6:3).forEach((t,i)=>setNumber($('tripValue'+i),difference(t),{digits:1,suffix:'kg',duration:1250+i*65}));
-  $('allTripsBtn').textContent=allTrips?'접기':'전체보기';$('allTripsBtn').setAttribute('aria-expanded',String(allTrips));
+  $('allTripsBtn').textContent=allTrips?'접기':'전체 보기';$('allTripsBtn').setAttribute('aria-expanded',String(allTrips));
 }
 
-// 월간은 기존 이용 내역 집계. 주간/과거 연간은 시연용 편도 기록을 재사용한다.
-// 각 막대에 포함된 기록으로 배출 차이와 이용 횟수를 함께 집계한다.
-// 기록 인덱스는 시연용 구성일 뿐 실제 과거 여행이나 항공 노선 데이터가 아니다.
-const demoWeekTrips=[[5],[],[],[],[3],[1,0],[]];
-const demoYearTrips=[[5,4,3],[5,4,3,2],[5,4,3,2,1],[5,4,1,0],[5,3,2,1,0],[5,4,3,2,1,0]];
+// 최신 여행이 있는 기간을 표시하고, 모든 기간을 같은 날짜별 이용 내역에서 집계한다.
+const chartAnchor=new Date(trips.reduce((latest,trip)=>trip.travelDate>latest?trip.travelDate:latest,trips[0].travelDate)+'T00:00:00Z');
+function chartBuckets(){
+  const year=chartAnchor.getUTCFullYear(),month=chartAnchor.getUTCMonth();
+  if(currentPeriod==='week'){
+    const monday=new Date(chartAnchor);
+    monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+    return ['월','화','수','목','금','토','일'].map((label,i)=>{
+      const date=new Date(monday);date.setUTCDate(date.getUTCDate()+i);
+      const end=new Date(date);end.setUTCDate(end.getUTCDate()+1);
+      return {label,start:date,end};
+    });
+  }
+  if(currentPeriod==='month')return Array.from({length:6},(_,i)=>{
+    const start=new Date(Date.UTC(year,month-5+i,1));
+    return {label:`${start.getUTCMonth()+1}월`,start,end:new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,1))};
+  });
+  return Array.from({length:6},(_,i)=>({label:String(year-5+i),start:new Date(Date.UTC(year-5+i,0,1)),end:new Date(Date.UTC(year-4+i,0,1))}));
+}
+function chartPeriodLabel(){
+  const buckets=chartBuckets(),start=buckets[0].start,end=new Date(buckets.at(-1).end);
+  end.setUTCDate(end.getUTCDate()-1);
+  const dayLabel=date=>`${date.getUTCFullYear()}년 ${date.getUTCMonth()+1}월 ${date.getUTCDate()}일`;
+  const monthLabel=date=>`${date.getUTCFullYear()}년 ${date.getUTCMonth()+1}월`;
+  if(currentPeriod==='week')return `${dayLabel(start)}~${dayLabel(end)}`;
+  if(currentPeriod==='month')return `${monthLabel(start)}~${monthLabel(end)}`;
+  return `${start.getUTCFullYear()}년~${end.getUTCFullYear()}년`;
+}
+// 시연용 기록은 실제 이용 내역과 구분한다. 짧은 주간 이동과 과거 연도 여행을
+// 같은 배출계수·여행별 설정으로 계산하며, 2026년 연간값은 실제 내역 합계다.
+const demoWeekRecords=[{trip:5,distance:35},null,{trip:3,distance:60},null,{trip:0,distance:100},{trip:1,distance:160},null];
+const demoPastYearTrips=[[5,3,1],[4,2,0,5],[3,1,4,2,0],[5,4,3,2],[5,3,1,0,2]];
 function chartData(){
-  const aggregate=(label,indices)=>({label,value:indices.reduce((sum,index)=>sum+difference(trips[index]),0),count:indices.length});
-  if(currentPeriod==='month')return ['4월','5월','6월','7월','8월','9월'].map((label,i)=>aggregate(label,[5-i]));
-  if(currentPeriod==='week')return ['월','화','수','목','금','토','일'].map((label,i)=>aggregate(label,demoWeekTrips[i]));
-  return ['2021','2022','2023','2024','2025','2026'].map((label,i)=>aggregate(label,demoYearTrips[i]));
+  return chartBuckets().map(({label,start,end},i)=>{
+    if(currentPeriod==='week'){
+      const record=demoWeekRecords[i];
+      return {label,value:record?difference(trips[record.trip])*record.distance/routes[trips[record.trip].key].rail:0,count:record?1:0};
+    }
+    if(currentPeriod==='year'&&i<5){
+      const indices=demoPastYearTrips[i];
+      return {label,value:indices.reduce((sum,index)=>sum+difference(trips[index]),0),count:indices.length};
+    }
+    const records=trips.filter(trip=>{const date=new Date(trip.travelDate+'T00:00:00Z');return date>=start&&date<end;});
+    return {label,value:records.reduce((sum,trip)=>sum+difference(trip),0),count:records.length};
+  });
 }
 let chartFrame=0,chartPending=false;
 const chartObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&chartPending)animateChart();},{threshold:.3});
 chartObserver.observe($('chart'));
 function renderChart(){
   cancelAnimationFrame(chartFrame);const data=chartData(), largest=Math.max(...data.map(d=>Math.abs(d.value))), max=Math.max(largest,1);
-  $('chart').setAttribute('aria-label',`${{week:'주간',month:'월간',year:'연간'}[currentPeriod]} 예상 배출 차이 그래프`);
-  $('chart').innerHTML=data.map((d,i)=>`<div class="bar-wrap" tabindex="0" data-index="${i}" aria-label="${d.label}, ${numberFormat(d.value,1)} kg CO₂e"><div class="bar${largest>0&&Math.abs(d.value)===largest?' is-max':''}" style="height:${Math.max(4,Math.abs(d.value)/max*160)}px;transform:scaleY(${reducedMotion.matches?1:0})"></div><div class="bar-label">${d.label}</div></div>`).join('')+'<div class="chart-tooltip" id="chartTooltip" role="tooltip" hidden></div>';
+  $('chartPeriod').textContent=chartPeriodLabel();
+  $('chart').setAttribute('aria-label',`${chartPeriodLabel()} 예상 배출 차이 그래프`);
+  $('chart').innerHTML=data.map((d,i)=>`<div class="bar-wrap" tabindex="0" data-index="${i}" aria-label="${d.label}, ${numberFormat(d.value,1)} kg CO₂e"><div class="bar${largest>0&&Math.abs(d.value)===largest?' is-max':''}" style="min-height:0;height:${Math.max(4,Math.abs(d.value)/max*160)}px;transform:scaleY(${reducedMotion.matches?1:0})"></div><div class="bar-label">${d.label}</div></div>`).join('')+'<div class="chart-tooltip" id="chartTooltip" role="tooltip" hidden></div>';
   $('chartSummary').textContent='기간 합계';
   const periodTotal=data.reduce((s,d)=>s+d.value,0);
   setNumber($('tripCount'),data.reduce((sum,bar)=>sum+bar.count,0),{suffix:'회'});
-  $('tripPeriod').textContent={week:'최근 7일',month:'최근 6개월',year:'최근 6년'}[currentPeriod];
+  $('tripPeriod').textContent='표시 기간';
   setNumber($('chartTotal'),periodTotal,{digits:1,suffix:' kg'});
-  setNumber($('treeStat'),Math.abs(periodTotal)/6.6,{suffix:'그루'});
-  setNumber($('fuelStat'),Math.abs(periodTotal)/2.35,{suffix:'L'});
+  setNumber($('treeStat'),Math.abs(periodTotal)/treeAbsorptionPerYear,{suffix:'그루'});
+  setNumber($('fuelStat'),Math.abs(periodTotal)/gasolineEmissionPerLitre,{digits:1,suffix:'L'});
   $('chart').querySelectorAll('.bar-wrap').forEach((wrap,i)=>{
     const show=()=>{
       const tip=$('chartTooltip');tip.textContent=`${numberFormat(data[i].value,1)} kg`;wrap.appendChild(tip);tip.hidden=false;
@@ -826,8 +980,8 @@ function openTravelSettings(target){
   settingsTarget=target;
   const setting=target===null?(tripSettings.every(s=>JSON.stringify(s)===JSON.stringify(tripSettings[0]))?tripSettings[0]:{mode:'default',people:1,fuel:'average'}):tripSettings[target];
   currentMode=setting.mode;people=setting.people;fuel=setting.fuel;
-  $('settingsTitle').textContent=target===null?'전체 비교 기준 설정':'이 여행의 비교 기준';
-  $('settingsDescription').textContent=target===null?'적용하면 기존 개별 설정도 모두 변경됩니다. 항공 비교가 불가능한 구간은 기본 추정을 사용합니다.':`${trips[target].date} ${trips[target].route} · 이 여행에만 적용됩니다.`;
+  $('settingsTitle').textContent=target===null?'모든 여행의 비교 기준':'이 여행의 비교 기준';
+  $('settingsDescription').textContent=target===null?'모든 여행에 같은 비교 기준을 적용해요.\n여행별로 바꾼 설정도 함께 바뀌어요.':`${trips[target].date} ${trips[target].route} · 이 여행에만 적용해요.`;
   syncChoices();$('travelSettings').showModal();
 }
 $('openAllSettings').addEventListener('click',()=>openTravelSettings(null));
@@ -835,7 +989,6 @@ $('tripList').addEventListener('click',e=>{const button=e.target.closest('[data-
 $('cancelSettings').addEventListener('click',()=>$('travelSettings').close());
 $('applySettings').addEventListener('click',()=>{
   settingsNotice=applyTravelSettings(settingsTarget,{mode:currentMode,people,fuel});
-  if(settingsTarget!==null&&currentMode==='air'&&airDistance(trips[settingsTarget])===null){$('settingsFeedback').textContent=settingsNotice;return;}
   $('travelSettings').close();updateReport();
 });
 document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{currentMode=btn.dataset.mode;syncChoices();}));
@@ -852,9 +1005,10 @@ $('methodBtn').addEventListener('click',()=>{
 });
 let previousFocus;
 function updateCertificate(){
-  const magnitude=Math.abs(reportValue),trees=magnitude/6.6;
+  const magnitude=Math.abs(reportValue),trees=magnitude/treeAbsorptionPerYear;
   setNumber($('certValue'),reportValue,{digits:1});
-  $('certCopy').innerHTML=`${$('methodBasis').textContent}과 비교해<br>${reportValue<0?'더':'적게'} 배출한 것으로 추정돼요.<br><br>소나무 약 <strong id="certTrees">${numberFormat(trees)}그루</strong>의<br>1년 흡수량과 비슷한 차이예요.`;
+  const comparison=hasMixedComparison()?'여행별 교통수단과 비교해':`${comparisonLabel()} 기준으로 같은 거리를 비교하면`;
+  $('certCopy').innerHTML=`${comparison}<br>탄소를 ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요.<br><br>30년생 소나무 약 <strong id="certTrees">${numberFormat(trees)}그루</strong>가<br>1년 동안 흡수하는 탄소량과 비슷해요.`;
   setNumber($('certTrees'),trees,{suffix:'그루'});
 }
 function closeCertificate(){ $('modal').classList.remove('show');document.body.style.overflow='';previousFocus?.focus(); }
@@ -866,54 +1020,46 @@ $('modal').addEventListener('keydown',e=>{
   if(e.key==='Tab'){const buttons=[...$('modal').querySelectorAll('button')],first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
 });
 document.querySelector('.share').addEventListener('click',async e=>{
-  const text=`나의 철도 탄소 리포트: 1,284km, ${$('methodBasis').textContent} 대비 예상 배출 차이 ${numberFormat(reportValue,1)}kg CO₂e (비교용 예시)`;
-  try{if(navigator.share)await navigator.share({title:'나의 철도 탄소 리포트',text});else if(navigator.clipboard){await navigator.clipboard.writeText(text);e.target.textContent='✓ 리포트 내용 복사됨';}else{e.target.textContent='브라우저에서 공유를 지원하지 않아요';}}catch(err){if(err.name!=='AbortError')e.target.textContent='공유를 완료하지 못했어요';}
+  const text=`나의 철도 탄소 리포트: 1,284km, ${comparisonLabel()} 대비 예상 배출 차이 ${numberFormat(reportValue,1)}kg CO₂e (동일 거리 가정)`;
+  try{if(navigator.share)await navigator.share({title:'나의 철도 탄소 리포트',text});else if(navigator.clipboard){await navigator.clipboard.writeText(text);e.target.textContent='✓ 리포트 내용을 복사했어요';}else{e.target.textContent='브라우저에서 공유를 지원하지 않아요';}}catch(err){if(err.name!=='AbortError')e.target.textContent='공유를 완료하지 못했어요';}
 });
-document.querySelector('[aria-label="도움말"]').addEventListener('click',()=>{if(!$('methodBody').classList.contains('show'))$('methodBtn').click();$('methodBtn').scrollIntoView({behavior:reducedMotion.matches?'instant':'smooth',block:'start'});});
-document.querySelector('[aria-label="뒤로가기"]').addEventListener('click',()=>{if($('modal').classList.contains('show'))closeCertificate();else if(history.length>1)history.back();else scrollTo({top:0,behavior:reducedMotion.matches?'instant':'smooth'});});
-syncChoices();updateReport();
-// 장식 전용: 실제 소나무 환산 수치 및 탄소 산정과 독립된 단일 시간축.
-const gardenSlotSpacing=52,gardenSlotCount=7,gardenStepMs=325,gardenTailStart=-144;
-function gardenStage(tailX,slotX){
-  return tailX<=slotX?0:Math.min(4,1+Math.floor((tailX-slotX)/gardenSlotSpacing));
+let shareStatusTimer;
+function showShareStatus(message){
+  clearTimeout(shareStatusTimer);$('shareStatus').textContent=message;$('shareStatus').hidden=false;
+  shareStatusTimer=setTimeout(()=>{$('shareStatus').hidden=true;},4500);
 }
-function startRailGarden(){
-  const area=$('railGarden'),train=$('gardenTrain'),plants=$('gardenPlants');
-  const shapes=[
-    '<path d="M0 0V-9" stroke="#cbeab6" stroke-width="2"/><path d="M0-6Q-10-5-8-12Q-1-13 0-6M0-6Q10-5 8-12Q1-13 0-6" fill="#b9ec96"/>',
-    '<path d="M0 0V-16" stroke="#dbc796" stroke-width="2.5"/><path d="M0-23Q-11-16-8-10H8Q11-16 0-23Z" fill="#a3df87"/>',
-    '<path d="M0 0V-25" stroke="#dbc796" stroke-width="3"/><path d="M0-32L-10-17H10ZM0-23L-13-8H13Z" fill="#87d67e"/><path d="M0-32L-10-17H0Z" fill="#b1e895"/>',
-    '<path d="M0 0V-32" stroke="#dbc796" stroke-width="3"/><path d="M0-39L-9-25H9ZM0-30L-12-16H12ZM0-21L-16-6H16Z" fill="#78ce7e"/><path d="M0-39L-9-25H0ZM0-30L-12-16H0ZM0-21L-16-6H0Z" fill="#b1e895"/>'
-  ];
-  plants.innerHTML=Array.from({length:gardenSlotCount},(_,i)=>`<g transform="translate(${24+i*gardenSlotSpacing} 52)">${shapes.map(shape=>`<g class="garden-stage">${shape}</g>`).join('')}</g>`).join('');
-  const slots=[...plants.children].map((node,i)=>({x:24+i*gardenSlotSpacing,layers:[...node.children],stage:0}));
-  function paint(tailX){
-    train.setAttribute('transform',`translate(${tailX} 26.5)`);
-    slots.forEach(slot=>{
-      const stage=gardenStage(tailX,slot.x);
-      if(stage===slot.stage)return;
-      slot.layers.forEach((layer,i)=>layer.classList.toggle('is-current',i===stage-1));
-      slot.stage=stage;
-    });
+async function shareReportToKakao(){
+  const distance=trips.reduce((sum,trip)=>sum+routes[trip.key].rail,0);
+  const text=`나의 철도 탄소 리포트\n기차로 ${numberFormat(distance)}km 이동했어요.\n${comparisonLabel()}와 같은 거리를 비교하면 탄소를 ${numberFormat(Math.abs(reportValue),1)}kg CO₂e ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요.\n30년생 소나무 약 ${numberFormat(Math.abs(reportValue)/treeAbsorptionPerYear)}그루의 1년 탄소 흡수량에 해당해요.`;
+  const key=document.querySelector('meta[name="kakao-javascript-key"]').content.trim();
+  const url=new URL(location.href);url.hash='';url.search='';
+  const webUrl=/^https?:$/.test(url.protocol)?url.href:null;
+  try{
+    if(key&&window.Kakao&&webUrl){
+      if(!window.Kakao.isInitialized())window.Kakao.init(key);
+      window.Kakao.Share.sendDefault({objectType:'text',text,link:{mobileWebUrl:webUrl,webUrl},buttonTitle:'탄소 리포트 보기'});
+      return;
+    }
+    if(navigator.share){
+      await navigator.share({title:'나의 철도 탄소 리포트',text,...(webUrl?{url:webUrl}:{})});
+    }else if(navigator.clipboard){
+      await navigator.clipboard.writeText(text+(webUrl?'\n'+webUrl:''));
+      showShareStatus('리포트를 복사했어요. 카카오톡에 붙여 넣어 공유해 주세요.');
+    }else{
+      showShareStatus('이 브라우저에서는 공유를 지원하지 않아요.');
+    }
+  }catch(error){
+    if(error.name!=='AbortError')showShareStatus('공유를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.');
   }
-  const finishX=slots.at(-1).x+3*gardenSlotSpacing+1;
-  if(reducedMotion.matches){train.style.display='none';paint(finishX);return;}
-  const observer=new IntersectionObserver(entries=>{
-    if(!entries.some(entry=>entry.isIntersecting))return;
-    observer.disconnect();
-    const start=performance.now();
-    const tick=now=>{
-      // tailXは最後尾車両の左端。各位置を完全に通過するまでは植物を表示しない。
-      if(reducedMotion.matches){train.style.display='none';paint(finishX);return;}
-      const tailX=Math.min(finishX,gardenTailStart+(now-start)/gardenStepMs*gardenSlotSpacing);
-      paint(tailX);
-      if(tailX<finishX)requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  },{threshold:.25});
-  observer.observe(area);
 }
-startRailGarden();
+$('reportShare').addEventListener('click',shareReportToKakao);
+document.querySelector('[aria-label="뒤로가기"]').addEventListener('click',()=>{if($('modal').classList.contains('show'))closeCertificate();else if(history.length>1)history.back();else scrollTo({top:0,behavior:reducedMotion.matches?'instant':'smooth'});});
+$('seasonTabs').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-season]');
+  if(button&&button.dataset.season!==forestSeason)setForestSeason(button.dataset.season);
+});
+setForestSeason(forestSeason,false);
+syncChoices();updateReport();
 setNumber($('campaignValue'),campaignTonnes,{digits:1,duration:1650});
 setNumber($('campaignRate'),campaignTonnes/600*100,{digits:1,suffix:'% 달성'});
 const progressObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){

@@ -349,6 +349,14 @@
   .lbHomeClose{background:none;border:none;color:var(--dim);font-size:16px;
     font-family:inherit;cursor:pointer;padding:4px 6px;line-height:1}
   .lbHomeSub{margin-top:4px;font-size:11.5px;color:var(--dim)}
+  .modeChoices{display:grid;gap:12px;margin-top:18px}
+  .modeChoice{padding:16px;text-align:left;border:1px solid #405487;border-radius:14px;background:var(--kp-card);color:var(--text);cursor:pointer;font:inherit}
+  .modeChoice strong{display:block;font-size:18px;margin-bottom:6px}
+  .modeChoice span{font-size:12px;color:var(--dim)}
+  .lbModeTabs{display:flex;gap:8px;margin-top:12px}
+  .lbModeTabs button{flex:1;padding:9px;border:1px solid #405487;border-radius:8px;background:var(--kp-card);color:var(--dim);cursor:pointer}
+  .lbModeTabs button[aria-pressed="true"]{background:var(--kp-primary);color:#fff}
+  .runTimer{margin-top:5px;color:#ffe568;font-size:14px;font-variant-numeric:tabular-nums}
   /* .lbList 가 뒤에서 max-height 를 다시 잡으므로 특이도를 한 단계 올린다 */
   .lbList.lbHomeList{margin-top:12px;max-height:46vh}
 
@@ -479,6 +487,7 @@
     <div class="km" id="kmWrap"><span id="km">0.0</span><small>km</small></div>
     <div class="next">다음 역 <b id="nextSt">광명</b> <span id="nextDist"></span></div>
     <div id="combo"></div>
+    <div class="runTimer hide" id="runTimer">00:00.000 · 부산 417km</div>
   </div>
   <div class="boost-ui" id="boostUI" aria-hidden="true">
     <div class="boost-ring">
@@ -513,6 +522,15 @@
 </div>
 
 <!-- 홈에서 여는 리더보드(상위 20위). 게임오버 화면의 리더보드와 스타일을 공유한다. -->
+<div class="lbHome hide" id="modeOv" role="dialog" aria-modal="true" aria-labelledby="modeTitle">
+  <div class="lbHomePanel">
+    <div class="lbHomeHead"><span class="lbHomeTitle" id="modeTitle">모드 선택</span><button class="lbHomeClose" id="modeCloseBtn" type="button" aria-label="닫기">✕</button></div>
+    <div class="modeChoices">
+      <button class="modeChoice" id="classicModeBtn" type="button"><strong>클래식 모드</strong><span>끝없이 달리며 최고 거리에 도전하세요</span></button>
+      <button class="modeChoice" id="timeAttackModeBtn" type="button"><strong>타임어택 모드</strong><span>서울 → 부산 417km · 가장 빠른 완주에 도전하세요</span></button>
+    </div>
+  </div>
+</div>
 <div class="lbHome hide" id="lbHomeOv" role="dialog" aria-modal="true" aria-label="리더보드">
   <div class="lbHomePanel">
     <div class="lbHomeHead">
@@ -520,6 +538,7 @@
       <button class="lbHomeClose" id="lbHomeCloseBtn" type="button" aria-label="닫기">✕</button>
     </div>
     <p class="lbHomeSub">전체 랭킹 · TOP 3와 내 순위 주변 기록</p>
+    <div class="lbModeTabs"><button id="lbClassicTab" type="button" aria-pressed="true">클래식</button><button id="lbTimeTab" type="button" aria-pressed="false">타임어택</button></div>
     <div class="lbList lbHomeList" id="lbHomeList"></div>
   </div>
 </div>
@@ -877,7 +896,15 @@ const boot = ()=> document.body.classList.add('booted');
 addEventListener('pageshow', boot);
 setTimeout(boot, 4000);
 
-const kmNow = ()=> pos*KM_PER_STEP + bonusKm;
+let gameMode = 'classic', homeLeaderboardMode = 'classic';
+const BUSAN_KM = 417;
+let runStartedAt = 0, runPausedMs = 0, runElapsedMs = 0, runCompleted = false;
+function elapsedRunMs(){ return Math.max(0,(paused ? pauseAt : performance.now())-runStartedAt-runPausedMs); }
+function formatRunTime(ms){
+  const value = Math.max(0,Math.round(ms));
+  return `${String(Math.floor(value/60000)).padStart(2,'0')}:${String(Math.floor(value/1000)%60).padStart(2,'0')}.${String(value%1000).padStart(3,'0')}`;
+}
+const kmNow = ()=> gameMode === 'timeAttack' ? Math.min(BUSAN_KM,pos*KM_PER_STEP+bonusKm) : pos*KM_PER_STEP+bonusKm;
 function stationAt(km){ let n=STATIONS[0][0]; for(const [a,d] of STATIONS) if(km>=d) n=a; return n; }
 function nextStation(km){ for(const [a,d] of STATIONS) if(d>km) return [a,d]; return null; }
 
@@ -950,6 +977,11 @@ function tap(dir){
       RRAudio.sfx(dir < 0 ? 'switch_L' : 'switch_R');   // 좌 G4 · 우 C5 — 엮으면 선율이 된다
     }
     checkMilestone(); updateHUD();
+    if(gameMode === 'timeAttack' && kmNow() >= BUSAN_KM){
+      runElapsedMs = Math.max(1,Math.round(elapsedRunMs()));
+      runCompleted = true;
+      endBoost(); playing = false; finishOver();
+    }
   } else {
     if(inBoostGrace()) return;   // 부스터 발동 직후 그레이스 타임: 충돌 판정 무시
     derail();
@@ -1117,6 +1149,7 @@ function resumeGame(){
   boostStart += d; boostEnd += d; cooldownEnd += d;
   chargeStart += d; rampStart += d; lastTapT += d;
   musicHoldUntil += d;
+  runPausedMs += d;
   paused = false;
 }
 
@@ -1247,12 +1280,16 @@ function showBanner(t, kind){
   clearTimeout(bannerTO); bannerTO=setTimeout(()=>b.classList.remove('show'), kind === 'tier' ? 1800 : 1400);
 }
 // 탈선: BGM 을 페이드 없이 끊고 40ms 정적 뒤 충돌음 — 음악이 사라지는 것 자체가 피드백
-function derail(){ playing=false; crashT=0; shake=26; RRAudio.crash(); }
+function derail(){ runElapsedMs = Math.max(1,Math.round(elapsedRunMs())); playing=false; crashT=0; shake=26; RRAudio.crash(); }
 function finishOver(){
   const km = kmNow();
-  showGameOver(scoreOfKm(km));
+  if(gameMode === 'timeAttack') showTimeAttackResult();
+  else showGameOver(scoreOfKm(km));
   const avgSpeedKmh = speedTimeAcc>0 ? speedSampleAcc/speedTimeAcc : 0;
-  saveRunAndShowLeaderboard(km, avgSpeedKmh);   // 리더보드는 기존대로 km 기준 저장
+  if(gameMode === 'timeAttack' && !runCompleted){
+    ++lbRunToken; resetLeaderboardUI(); lbShowStatus('부산 완주 기록만 랭킹에 등록돼요');
+    loadLeaderboard(null,km,lbRunToken);
+  }else saveRunAndShowLeaderboard(km, avgSpeedKmh);   // 리더보드는 기존대로 km 기준 저장
 }
 
 /* ══════════ 게임오버 결과 카드 ══════════ */
@@ -1302,7 +1339,28 @@ function openGameOverCard(){
   armBackGuard();
 }
 
+function showTimeAttackResult(){
+  const bestKey = 'railrun.timeAttack.bestMs';
+  const previous = Number(localStorage.getItem(bestKey)) || 0;
+  const best = runCompleted ? (previous ? Math.min(previous,runElapsedMs) : runElapsedMs) : previous;
+  if(runCompleted) localStorage.setItem(bestKey,String(best));
+  $('goHead').textContent = '타임어택 결과';
+  document.querySelector('#goScoreBlk .goLbl').textContent = runCompleted ? 'FINISH TIME' : '미완주';
+  $('goScoreBlk').classList.remove('hide');
+  $('goScore').textContent = formatRunTime(runElapsedMs);
+  const idx = tierIndexOf(scoreOfKm(kmNow()));
+  renderTier(idx,scoreOfKm(kmNow()),runCompleted ? '서울 → 부산 417km 완주!' : `부산까지 ${(BUSAN_KM-kmNow()).toFixed(1)}km · 다시 도전하세요`);
+  $('goBestV').textContent = best ? formatRunTime(best) : '—';
+  $('goRabbit').src = runCompleted ? TIERS[idx].rabbit : RABBIT_SAD;
+  $('goStatus').textContent = runCompleted ? (!previous || runElapsedMs < previous ? '부산 도착! 최단 시간 갱신!' : '부산 도착! 완주했어요!') : '탈선했어요. 완주 기록은 등록되지 않아요';
+  $('goStatus').classList.toggle('up',runCompleted);
+  $('overOv').classList.remove('promo'); $('goBurst').innerHTML = '';
+  if(runCompleted) RRAudio.sfx('record');
+  openGameOverCard();
+}
 function showGameOver(score){
+  $('goHead').textContent = '게임 결과';
+  document.querySelector('#goScoreBlk .goLbl').textContent = 'SCORE';
   const prevBest    = getBestScore();
   const prevTierIdx = tierIndexOf(prevBest);
   const isNewBest   = score > prevBest;
@@ -1368,6 +1426,8 @@ function closeGameOverCard(){
   $('lbResultOv').classList.add('hide');
 }
 function start(){
+  ++lbRunToken;
+  currentPlayer = null;
   // 홈 BGM 은 끊지 않고 이어간다(이미 재생 중이면 playBgm 은 무시됨). 탈선 뒤 재도전이면 다시 페이드인
   RRAudio.sfx('count_go');
   bgm(0.8);
@@ -1386,6 +1446,9 @@ function start(){
   $('startOv').classList.add('hidden');
   closeGameOverCard();
   hideExitConfirm();
+  runStartedAt = performance.now(); runPausedMs = 0; runElapsedMs = 0; runCompleted = false;
+  $('runTimer').classList.toggle('hide',gameMode !== 'timeAttack');
+  $('runTimer').textContent = '00:00.000 · 부산 417km';
   playing=true; updateHUD();
   armBackGuard();
 }
@@ -1400,7 +1463,14 @@ function attemptStart(){
   setChances(getChances()-1);
   start();
 }
-$('startBtn').addEventListener('click', attemptStart);
+function closeModePicker(){ $('modeOv').classList.add('hide'); $('startBtn').focus(); }
+$('startBtn').addEventListener('click',()=>{ $('modeOv').classList.remove('hide'); $('classicModeBtn').focus(); });
+$('modeCloseBtn').addEventListener('click',closeModePicker);
+$('modeOv').addEventListener('click',e=>{ if(e.target === $('modeOv')) closeModePicker(); });
+for(const [id,mode] of [['classicModeBtn','classic'],['timeAttackModeBtn','timeAttack']]){
+  $(id).addEventListener('click',()=>{ gameMode = mode; closeModePicker(); attemptStart(); });
+}
+document.addEventListener('keydown',e=>{ if(e.key === 'Escape' && !$('modeOv').classList.contains('hide')) closeModePicker(); });
 $('retryBtn').addEventListener('click', attemptStart);
 
 /* UI 버튼 효과음 — 일반 ui_tap · 확인/저장 ui_confirm · 닫기/뒤로 ui_back.
@@ -1502,8 +1572,9 @@ async function loadHomeLeaderboard(){
   const list = $('lbHomeList');
   list.innerHTML = '<div class="lbEmpty">불러오는 중…</div>';
   try{
-    const playerId = currentPlayer?.id || localStorage.getItem('railrun.lastPlayerId');
-    const rows = await fetchLeaderboardRows(playerId);
+    const mode = homeLeaderboardMode;
+    const playerId = (gameMode === mode ? currentPlayer?.id : null) || localStorage.getItem(mode === 'timeAttack' ? 'railrun.timeAttack.lastPlayerId' : 'railrun.lastPlayerId');
+    const rows = await fetchLeaderboardRows(playerId,mode);
     renderLeaderboardList(rows, playerId, list);
   }catch(e){
     console.error('home leaderboard load error', e);
@@ -1511,6 +1582,15 @@ async function loadHomeLeaderboard(){
   }finally{
     lbHomeLoading = false;
   }
+}
+for(const [id,mode] of [['lbClassicTab','classic'],['lbTimeTab','timeAttack']]){
+  $(id).addEventListener('click',()=>{
+    if(lbHomeLoading) return;
+    homeLeaderboardMode = mode;
+    $('lbClassicTab').setAttribute('aria-pressed',String(mode === 'classic'));
+    $('lbTimeTab').setAttribute('aria-pressed',String(mode === 'timeAttack'));
+    loadHomeLeaderboard();
+  });
 }
 function openHomeLeaderboard(){
   $('lbHomeOv').classList.remove('hide');
@@ -1881,7 +1961,7 @@ async function insertRun(playerId, distanceKm, avgSpeedKmh, trainGrade){
     avg_speed_kmh: Math.round(avgSpeedKmh),
     train_grade: trainGrade
   });
-  if(error) console.error('run insert error', error);
+  if(error) throw error;
 }
 function gradeFor(km){
   if(km>=417) return 'KTX-산천';
@@ -1911,32 +1991,37 @@ function resetLeaderboardUI(){
 }
 function renderMyNickname(nick){ $('lbMeNick').textContent = nick; }
 // listEl 생략 시 게임오버 화면의 리더보드(#lbList). 홈 리더보드는 #lbHomeList 를 넘긴다.
-function leaderboardQuery(){
-  return sb.from('runs').select('id, distance_km, avg_speed_kmh, player_id, players(nickname)')
-    .order('distance_km',{ascending:false}).order('id',{ascending:true});
+function leaderboardConfig(mode){
+  return mode === 'timeAttack' ? {table:'time_attack_runs',field:'elapsed_ms',ascending:true} : {table:'runs',field:'distance_km',ascending:false};
+}
+function leaderboardQuery(mode = gameMode){
+  const config = leaderboardConfig(mode);
+  return sb.from(config.table).select('id, distance_km, avg_speed_kmh, player_id, players(nickname)' + (mode === 'timeAttack' ? ',elapsed_ms' : ''))
+    .order(config.field,{ascending:config.ascending}).order('id',{ascending:true});
 }
 function leaderboardWindowStart(rank,total){
   return Math.max(3,Math.min((rank || 4)-6,Math.max(3,total-10)));
 }
-async function fetchLeaderboardRows(playerId){
-  const top = await leaderboardQuery().range(0,2);
+async function fetchLeaderboardRows(playerId,mode = gameMode){
+  const config = leaderboardConfig(mode);
+  const top = await leaderboardQuery(mode).range(0,2);
   if(top.error) throw top.error;
   let rank = null;
   if(playerId){
-    const mine = await leaderboardQuery().eq('player_id',playerId).limit(1);
+    const mine = await leaderboardQuery(mode).eq('player_id',playerId).limit(1);
     if(mine.error) throw mine.error;
     const row = mine.data?.[0];
     if(row){
-      const ahead = await sb.from('runs').select('id',{count:'exact',head:true})
-        .or(`distance_km.gt.${row.distance_km},and(distance_km.eq.${row.distance_km},id.lt.${row.id})`);
+      const ahead = await sb.from(config.table).select('id',{count:'exact',head:true})
+        .or(`${config.field}.${config.ascending?'lt':'gt'}.${row[config.field]},and(${config.field}.eq.${row[config.field]},id.lt.${row.id})`);
       if(ahead.error) throw ahead.error;
       rank = (ahead.count || 0)+1;
     }
   }
-  const total = await sb.from('runs').select('id',{count:'exact',head:true});
+  const total = await sb.from(config.table).select('id',{count:'exact',head:true});
   if(total.error) throw total.error;
   const start = leaderboardWindowStart(rank,total.count || 0);
-  const nearby = await leaderboardQuery().range(start,start+9);
+  const nearby = await leaderboardQuery(mode).range(start,start+9);
   if(nearby.error) throw nearby.error;
   return [...(top.data || []).map((r,i)=>({...r,rank:i+1})),
     ...(nearby.data || []).map((r,i)=>({...r,rank:start+i+1}))];
@@ -1955,7 +2040,7 @@ function renderLeaderboardList(rows,myPlayerId,listEl){
     return `${groupStart ? '<div class="lbGroupLabel">주변 순위 · 최대 10개 기록</div>' : ''}<div class="lbRow${podium?' podium':''}${mine?' me':''}${groupStart?' nearStart':''}"${mine?' aria-label="내 기록"':''}>
       <span class="lbRank">${r.rank}</span>${medal}${badge}
       <span class="lbNick" title="${escapeHtml(nick)}">${escapeHtml(nick)}</span>
-      <span class="lbKm">${Number(r.distance_km).toFixed(1)}km</span>
+      <span class="lbKm">${r.elapsed_ms != null ? formatRunTime(r.elapsed_ms) : Number(r.distance_km).toFixed(1)+'km'}</span>
     </div>`;
   }).join('');
   list.scrollTop = 0;
@@ -1982,8 +2067,16 @@ async function saveRunAndShowLeaderboard(km, avgSpeedKmh){
   if(token !== lbRunToken) return;
   if(!player){ lbShowStatus('기록 저장에 실패했어요'); return; }
   currentPlayer = player;
-  localStorage.setItem('railrun.lastPlayerId',player.id);
-  await insertRun(player.id, km, avgSpeedKmh, grade);
+  try{
+    if(gameMode === 'timeAttack'){
+      const {error} = await sb.from('time_attack_runs').insert({player_id:player.id,distance_km:BUSAN_KM,avg_speed_kmh:Math.round(avgSpeedKmh),elapsed_ms:runElapsedMs});
+      if(error) throw error;
+    }else await insertRun(player.id, km, avgSpeedKmh, grade);
+  }catch(error){
+    if(token !== lbRunToken) return;
+    console.error('record save error',error); lbShowStatus('기록 저장에 실패했어요. 서버 연결을 확인해주세요'); return;
+  }
+  localStorage.setItem(gameMode === 'timeAttack' ? 'railrun.timeAttack.lastPlayerId' : 'railrun.lastPlayerId',player.id);
   if(token !== lbRunToken) return;
   renderMyNickname(player.nickname);
   $('lbStatus').classList.add('hide');
@@ -2045,7 +2138,7 @@ function updateHUD(){
   w.classList.add('pop'); setTimeout(()=>w.classList.remove('pop'),80);
   const ns = nextStation(km);
   if(ns){ $('nextSt').textContent=ns[0]; $('nextDist').textContent=`까지 ${(ns[1]-km).toFixed(0)}km`; }
-  else { $('nextSt').textContent='종착 없음'; $('nextDist').textContent='— 무한 운행'; }
+  else { $('nextSt').textContent=gameMode === 'timeAttack' ? '부산 도착' : '종착 없음'; $('nextDist').textContent=gameMode === 'timeAttack' ? '완주!' : '— 무한 운행'; }
   const c = $('combo');
   if(combo>=5){ c.textContent = `${combo} 연속 · ${Math.round(speed)}km/h`; c.classList.add('show'); }
   else c.classList.remove('show');
@@ -2591,7 +2684,7 @@ function loop(t){
   tilt *= .82;
   speed *= .975;
   if(speed<0) speed=0;
-  if(playing){ speedTimeAcc += dt; speedSampleAcc += speed*dt; }
+  if(playing){ speedTimeAcc += dt; speedSampleAcc += speed*dt; if(gameMode === 'timeAttack') $('runTimer').textContent = `${formatRunTime(elapsedRunMs())} · 부산까지 ${(BUSAN_KM-kmNow()).toFixed(1)}km`; }
   if(playing && performance.now()-lastTapT>700 && combo){ combo=0; updateHUD(); }
   shake *= .86;
 

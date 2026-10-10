@@ -378,10 +378,16 @@
     font-weight:700;font-family:inherit;cursor:pointer}
   .lbReroll{background:var(--kp-card);border:1px solid #2c3766;color:var(--text)}
   .lbConfirm{background:var(--kp-primary);color:#fff}
-  .lbList{background:var(--kp-card);border:1px solid #2c3766;border-radius:14px;padding:6px 4px;max-height:210px;overflow-y:auto}
-  .lbRow{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12.5px;border-radius:8px}
-  .lbRow.me{background:rgba(1,86,208,.24)}
-  .lbRank{width:20px;flex:none;color:var(--dim);font-weight:700;text-align:center}
+  .lbList{background:var(--kp-card);border:1px solid #2c3766;border-radius:14px;padding:6px 4px;max-height:58vh;overflow-y:auto}
+  .lbRow{display:grid;grid-template-columns:32px 30px 30px minmax(0,1fr) auto;align-items:center;gap:5px;padding:10px 6px;font-size:12px;border-bottom:1px solid rgba(143,192,255,.16);min-height:48px}
+  .lbRow.podium{background:#eeeede;color:#17213c}
+  .lbRow.podium .lbRank,.lbRow.podium .lbNick,.lbRow.podium .lbKm{color:#17213c}
+  .lbRow.me{background:rgba(1,86,208,.24);box-shadow:inset 3px 0 #ffe568}
+  .lbRow.podium.me{background:#fff0b9}
+  .lbRow.nearStart{margin-top:12px;border-top:1px solid rgba(143,192,255,.3)}
+  .lbRank{color:var(--dim);font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+  .lbMedal,.lbBadge{width:30px;height:30px;object-fit:contain}
+  .lbGroupLabel{padding:10px 6px 4px;font-size:11px;color:var(--dim)}
   .lbNick{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
   .lbKm{flex:none;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)}
   .lbSpd{flex:none;width:60px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums;font-size:11px}
@@ -513,7 +519,7 @@
       <span class="lbHomeTitle">LEADERBOARD</span>
       <button class="lbHomeClose" id="lbHomeCloseBtn" type="button" aria-label="닫기">✕</button>
     </div>
-    <p class="lbHomeSub">최고 운행 거리 상위 20위</p>
+    <p class="lbHomeSub">전체 랭킹 · TOP 3와 내 순위 주변 기록</p>
     <div class="lbList lbHomeList" id="lbHomeList"></div>
   </div>
 </div>
@@ -592,7 +598,7 @@
       <span class="lbHomeTitle">LEADERBOARD</span>
       <button class="lbHomeClose" id="lbResultCloseBtn" type="button" aria-label="닫기">✕</button>
     </div>
-    <p class="lbHomeSub">최고 운행 거리 상위 20위</p>
+    <!-- <p class="lbHomeSub">전체 랭킹 · TOP 3와 내 순위 주변 기록</p> -->
   <div class="lbWrap hide" id="lbWrap" style="max-width:none;margin-top:12px">
     <div class="lbStatus" id="lbStatus">기록 저장 중…</div>
     <div class="lbMe hide" id="lbMe">
@@ -1496,12 +1502,9 @@ async function loadHomeLeaderboard(){
   const list = $('lbHomeList');
   list.innerHTML = '<div class="lbEmpty">불러오는 중…</div>';
   try{
-    const { data, error } = await sb.from('runs')
-      .select('distance_km, avg_speed_kmh, player_id, players(nickname)')
-      .order('distance_km', { ascending:false })
-      .limit(20);
-    if(error) throw error;
-    renderLeaderboardList(data || [], null, list);
+    const playerId = currentPlayer?.id || localStorage.getItem('railrun.lastPlayerId');
+    const rows = await fetchLeaderboardRows(playerId);
+    renderLeaderboardList(rows, playerId, list);
   }catch(e){
     console.error('home leaderboard load error', e);
     list.innerHTML = '<div class="lbEmpty">리더보드를 불러오지 못했어요</div>';
@@ -1908,44 +1911,67 @@ function resetLeaderboardUI(){
 }
 function renderMyNickname(nick){ $('lbMeNick').textContent = nick; }
 // listEl 생략 시 게임오버 화면의 리더보드(#lbList). 홈 리더보드는 #lbHomeList 를 넘긴다.
-function renderLeaderboardList(rows, myPlayerId, listEl){
+function leaderboardQuery(){
+  return sb.from('runs').select('id, distance_km, avg_speed_kmh, player_id, players(nickname)')
+    .order('distance_km',{ascending:false}).order('id',{ascending:true});
+}
+function leaderboardWindowStart(rank,total){
+  return Math.max(3,Math.min((rank || 4)-6,Math.max(3,total-10)));
+}
+async function fetchLeaderboardRows(playerId){
+  const top = await leaderboardQuery().range(0,2);
+  if(top.error) throw top.error;
+  let rank = null;
+  if(playerId){
+    const mine = await leaderboardQuery().eq('player_id',playerId).limit(1);
+    if(mine.error) throw mine.error;
+    const row = mine.data?.[0];
+    if(row){
+      const ahead = await sb.from('runs').select('id',{count:'exact',head:true})
+        .or(`distance_km.gt.${row.distance_km},and(distance_km.eq.${row.distance_km},id.lt.${row.id})`);
+      if(ahead.error) throw ahead.error;
+      rank = (ahead.count || 0)+1;
+    }
+  }
+  const total = await sb.from('runs').select('id',{count:'exact',head:true});
+  if(total.error) throw total.error;
+  const start = leaderboardWindowStart(rank,total.count || 0);
+  const nearby = await leaderboardQuery().range(start,start+9);
+  if(nearby.error) throw nearby.error;
+  return [...(top.data || []).map((r,i)=>({...r,rank:i+1})),
+    ...(nearby.data || []).map((r,i)=>({...r,rank:start+i+1}))];
+}
+function renderLeaderboardList(rows,myPlayerId,listEl){
   const list = listEl || $('lbList');
   if(!rows.length){ list.innerHTML = '<div class="lbEmpty">아직 기록이 없어요</div>'; return; }
   list.innerHTML = rows.map((r,i)=>{
-    const nick = (r.players && r.players.nickname) || '익명';
+    const nick = r.players?.nickname || '익명';
     const mine = r.player_id === myPlayerId;
-    return `<div class="lbRow${mine?' me':''}">
-      <span class="lbRank">${i+1}</span>
-      <span class="lbNick">${escapeHtml(nick)}</span>
+    const podium = r.rank <= 3;
+    const tier = tierOf(scoreOfKm(Number(r.distance_km)));
+    const medal = podium ? `<img class="lbMedal" src="asset/rank_badgespng/rank_${['1st','2nd','3rd'][r.rank-1]}.png" alt="${r.rank}위 명예훈장">` : '<span aria-hidden="true"></span>';
+    const badge = podium ? '<span aria-hidden="true"></span>' : `<img class="lbBadge" src="${tier.badge}" alt="${tier.name} 배지">`;
+    const groupStart = !podium && (i === 0 || rows[i-1].rank <= 3);
+    return `${groupStart ? '<div class="lbGroupLabel">주변 순위 · 최대 10개 기록</div>' : ''}<div class="lbRow${podium?' podium':''}${mine?' me':''}${groupStart?' nearStart':''}"${mine?' aria-label="내 기록"':''}>
+      <span class="lbRank">${r.rank}</span>${medal}${badge}
+      <span class="lbNick" title="${escapeHtml(nick)}">${escapeHtml(nick)}</span>
       <span class="lbKm">${Number(r.distance_km).toFixed(1)}km</span>
-      <span class="lbSpd">${Math.round(r.avg_speed_kmh)}km/h</span>
     </div>`;
   }).join('');
+  list.scrollTop = 0;
 }
-async function loadLeaderboard(myPlayerId, myKm, token){
-  const { data, error } = await sb.from('runs')
-    .select('distance_km, avg_speed_kmh, player_id, players(nickname)')
-    .order('distance_km', { ascending:false })
-    .limit(20);
-  if(token !== lbRunToken) return;
-  if(error){
-    console.error('leaderboard load error', error);
-    $('lbList').innerHTML = '<div class="lbEmpty">리더보드를 불러오지 못했어요</div>';
-    return;
-  }
-  const rows = data || [];
-  renderLeaderboardList(rows, myPlayerId);
-  if(rows.some(r=>r.player_id===myPlayerId)){
-    $('lbMyRank').classList.add('hide');
-    return;
-  }
-  const { count, error: rankErr } = await sb.from('runs')
-    .select('id', { count:'exact', head:true })
-    .gt('distance_km', myKm);
-  if(token !== lbRunToken) return;
-  if(!rankErr){
-    $('lbMyRank').textContent = `내 순위: ${(count||0)+1}위`;
+async function loadLeaderboard(myPlayerId,myKm,token){
+  try{
+    const rows = await fetchLeaderboardRows(myPlayerId);
+    if(token !== lbRunToken) return;
+    renderLeaderboardList(rows,myPlayerId);
+    const mine = rows.find(r=>r.player_id === myPlayerId);
+    $('lbMyRank').textContent = mine ? `내 순위: ${mine.rank}위` : '저장된 내 기록이 없어요';
     $('lbMyRank').classList.remove('hide');
+  }catch(error){
+    if(token !== lbRunToken) return;
+    console.error('leaderboard load error',error);
+    $('lbList').innerHTML = '<div class="lbEmpty">리더보드를 불러오지 못했어요</div>';
   }
 }
 async function saveRunAndShowLeaderboard(km, avgSpeedKmh){
@@ -1956,6 +1982,7 @@ async function saveRunAndShowLeaderboard(km, avgSpeedKmh){
   if(token !== lbRunToken) return;
   if(!player){ lbShowStatus('기록 저장에 실패했어요'); return; }
   currentPlayer = player;
+  localStorage.setItem('railrun.lastPlayerId',player.id);
   await insertRun(player.id, km, avgSpeedKmh, grade);
   if(token !== lbRunToken) return;
   renderMyNickname(player.nickname);

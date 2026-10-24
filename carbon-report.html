@@ -461,15 +461,15 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="distance">기차를 타고 <strong id="distanceValue">1,284km</strong> 이동했어요</div>
 
       <div class="hero-main">
-        <div class="hero-number" id="heroValue">132.8</div>
+      <div class="hero-number" id="heroValue">259.0</div>
         <div class="hero-unit">kg CO₂e</div>
       </div>
-      <div class="hero-title" id="heroTitle">자가용·버스로 같은 거리를 이동할 때보다<br>탄소를 적게 배출한 것으로 추정해요</div>
-      <div class="badge" id="basisBadge">🚙 🚌 자가용·버스와 비교</div>
+      <div class="hero-title" id="heroTitle">휘발유차 1인 기준으로 같은 거리를 이동할 때보다<br>탄소를 적게 배출한 것으로 추정해요</div>
+      <div class="badge" id="basisBadge">🚙 휘발유차 · 1인 기준으로 비교</div>
 
       <div class="tree-row">
         <div class="tree-icon">🌲</div>
-        <span>30년생 소나무 약 <strong id="treeCount">20그루</strong>의<br>1년 탄소 흡수량에 해당해요</span>
+        <span>30년생 소나무 약 <strong id="treeCount">39그루</strong>의<br>1년 탄소 흡수량에 해당해요</span>
       </div>
       <div class="season-tabs" id="seasonTabs" role="group" aria-label="숲의 계절">
         <button type="button" data-season="spring" aria-pressed="false">봄</button>
@@ -499,17 +499,17 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
 
         <p class="section-sub" id="chartPeriod" aria-live="polite">2026년 4월~9월</p>
         <div class="chart" id="chart" role="group" aria-label="월간 예상 배출 차이 그래프"></div>
-        <div class="chart-total"><span id="chartSummary">기간 합계</span><strong id="chartTotal">132.8 kg</strong></div>
+        <div class="chart-total"><span id="chartSummary">기간 합계</span><strong id="chartTotal">259.0 kg</strong></div>
 
     <div class="stats">
       <div class="stat">
         <div class="emoji">⛽</div>
-        <strong id="fuelStat">56.5L</strong>
+        <strong id="fuelStat">110.2L</strong>
         <span>휘발유 연소 배출량으로<br>환산한 양</span>
       </div>
       <div class="stat">
         <div class="emoji">🌲</div>
-        <strong id="treeStat">20그루</strong>
+        <strong id="treeStat">39그루</strong>
         <span>30년생 소나무의<br>1년 탄소 흡수량과 비교</span>
       </div>
       <div class="stat">
@@ -524,11 +524,13 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
     <section class="accuracy">
       <span class="mini-badge">비교 기준 바꾸기</span>
       <div class="question">어떤 교통수단과<br>비교할까요?</div>
-      <div class="q-desc">처음에는 자가용·버스 이용 비중으로 계산해요.<br>여행마다 비교할 교통수단을 바꿀 수 있어요.</div>
+      <div class="q-desc">처음에는 휘발유차에 1명이 탄 경우와 비교해요.<br>여행마다 비교할 교통수단을 바꿀 수 있어요.</div>
       <button class="text-btn" id="openAllSettings" style="margin-top:12px">모든 여행의 비교 기준 바꾸기</button>
 
       <div class="choice-grid" id="modeChoices">
+        <!-- 복원하려면 아래 버튼의 주석을 해제하세요. 가중평균 계산 로직은 유지합니다.
         <button class="choice" data-mode="default">자가용·버스 기준</button>
+        -->
         <button class="choice" data-mode="car">🚙 자가용</button>
         <button class="choice" data-mode="bus">🚌 고속버스</button>
         <button class="choice" data-mode="air">✈️ 비행기</button>
@@ -536,7 +538,12 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
 
       <div class="passenger" id="passengerBox">
         <label class="fuel-picker">자동차 종류
-          <select id="fuelChoice" aria-label="자동차 종류"><option value="average">차종 평균</option><option value="gasoline">휘발유</option><option value="electric">전기차</option><option value="hybrid">하이브리드</option><option value="diesel">경유</option><option value="lpg">LPG</option><option value="hydrogen">수소차</option></select>
+          <select id="fuelChoice" aria-label="자동차 종류">
+            <!-- 복원하려면 아래 option의 주석을 해제하세요. 차종 평균 계산 로직은 유지합니다.
+            <option value="average">차종 평균</option>
+            -->
+            <option value="gasoline">휘발유</option><option value="electric">전기차</option><option value="hybrid">하이브리드</option><option value="diesel">경유</option><option value="lpg">LPG</option><option value="hydrogen">수소차</option>
+          </select>
         </label>
         <div class="passenger-label">나를 포함해 몇 명이 탔을까요?</div>
         <div class="person-row">
@@ -609,16 +616,16 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       </button>
       <div class="method-body" id="methodBody">
         <div class="method-table">
-          <div class="method-row"><span>비교 기준</span><strong id="methodBasis">자가용·버스</strong></div>
+          <div class="method-row"><span>비교 기준</span><strong id="methodBasis">휘발유차 · 1인</strong></div>
           <div class="method-row"><span>KTX 1인·1km당 배출량</span><strong>23.28 gCO₂e/인·km</strong></div>
-          <div class="method-row"><span id="alternativeFactorLabel">기본 자가용 1인·1km당 배출량</span><strong id="alternativeFactor">143.28 gCO₂e/인·km</strong></div>
+          <div class="method-row"><span id="alternativeFactorLabel">승용차 1인·1km당 배출량</span><strong id="alternativeFactor">225.00 gCO₂e/인·km</strong></div>
           <div class="method-row"><span>고속버스 1인·1km당 배출량</span><strong>46.04 gCO₂e/인·km</strong></div>
           <div class="method-row"><span>휘발유 환산 기준</span><strong>2.35 kgCO₂e/L</strong></div>
           <div class="method-row"><span>나무 환산 기준</span><strong>6.6 kgCO₂/년·그루</strong></div>
         </div>
         <div class="notice">
           다른 교통수단도 기차와 같은 거리를<br>이동한다고 가정해 계산해요.<br><br>
-          기본 비교에는 구간별 자가용·버스 이용 비중을 반영해요.
+          처음에는 휘발유차에 1명이 탑승한 기준으로 비교해요.
         </div>
         <div class="source">
           계산에 참고한 자료: 국가교통DB · 교통수단 배출량 연구 · 정부 온실가스 환산계수
@@ -637,11 +644,11 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="cert-korail">KORAIL CARBON REPORT</div>
       <h2>나의 철도 탄소 리포트</h2>
       <div class="cert-distance">2026년 누적 철도 이용 1,284km</div>
-      <div class="cert-number"><span id="certValue">132.8</span><span style="font-size:17px;letter-spacing:-.2px"> kg CO₂e</span></div>
+      <div class="cert-number"><span id="certValue">259.0</span><span style="font-size:17px;letter-spacing:-.2px"> kg CO₂e</span></div>
       <div class="cert-copy" id="certCopy">
-        자가용·버스와 비교한<br>
+        휘발유차 1인 기준으로 비교한<br>
         예상 탄소 배출량 차이예요.<br><br>
-        30년생 소나무 약 <strong id="certTrees">20그루</strong>가<br>
+        30년생 소나무 약 <strong id="certTrees">39그루</strong>가<br>
         1년 동안 흡수하는 탄소량과 비슷해요.
       </div>
       <div class="cert-user">고유한 님 · 2026.10.05<br>평균 배출량을 기준으로 계산한 추정치예요.</div>
@@ -728,11 +735,14 @@ const trips=[
   {travelDate:'2026-05-10',route:'천안아산 → 서울',key:'cheonan'},
   {travelDate:'2026-04-19',route:'서울 → 천안아산',key:'cheonan'}
 ].map(trip=>({...trip,date:trip.travelDate.slice(5).replace('-','.'),day:['일','월','화','수','목','금','토'][new Date(trip.travelDate+'T00:00:00Z').getUTCDay()]}));
-let currentMode='default', people=1, fuel='average', currentPeriod='month', allTrips=false;
+// 기본값을 바꾸려면 이 설정만 수정한다. 숨긴 평균 옵션의 계산 로직은 유지한다.
+const DEFAULT_TRAVEL_SETTING=Object.freeze({mode:'car',people:1,fuel:'gasoline'});
+function isDefaultTravelSetting(setting){return setting.mode===DEFAULT_TRAVEL_SETTING.mode&&setting.people===DEFAULT_TRAVEL_SETTING.people&&setting.fuel===DEFAULT_TRAVEL_SETTING.fuel;}
+let currentMode=DEFAULT_TRAVEL_SETTING.mode, people=DEFAULT_TRAVEL_SETTING.people, fuel=DEFAULT_TRAVEL_SETTING.fuel, currentPeriod='month', allTrips=false;
 // 편도 여행마다 독립된 비교 설정. 팝업의 currentMode/people/fuel은 적용 전 임시값이다.
-const tripSettings=trips.map(()=>({mode:'default',people:1,fuel:'average'}));
+const tripSettings=trips.map(()=>({...DEFAULT_TRAVEL_SETTING}));
 let settingsTarget=null,settingsNotice='';
-function tripSetting(trip){return tripSettings[trips.indexOf(trip)]||{mode:'default',people:1,fuel:'average'};}
+function tripSetting(trip){return tripSettings[trips.indexOf(trip)]||{...DEFAULT_TRAVEL_SETTING};}
 function settingLabel(setting){return setting.mode==='default'?'자가용·버스':setting.mode==='car'?`${carLabels[setting.fuel]} · ${setting.people}인`:modeLabels[setting.mode];}
 function comparisonLead(){
   if(hasMixedComparison())return '여행별 교통수단과 비교해';
@@ -912,8 +922,9 @@ function alternative(trip, override){
 // trips의 편도 기록을 각각 계산한다. 왕복도 두 기록의 합이며 별도 두 배 보정은 없다.
 function difference(trip,override){return alternative(trip,override)-railEmission(trip);}
 function totals(override){return trips.reduce((s,t)=>({rail:s.rail+railEmission(t),alt:s.alt+alternative(t,override),difference:s.difference+difference(t,override)}),{rail:0,alt:0,difference:0});}
-const defaultTotal=totals('default').difference;
-const campaignTonnes=defaultTotal/trips.length*20000/1000;
+// 캠페인은 개인 비교 설정과 독립된 자가용·버스 가중평균 집계를 유지한다.
+const campaignBaselineTotal=totals('default').difference;
+const campaignTonnes=campaignBaselineTotal/trips.length*20000/1000;
 const modeLabels={default:'자가용·버스',car:'자가용',bus:'고속버스',air:'비행기'};
 const fuelLabels={average:'차종 평균',gasoline:'휘발유',diesel:'경유',lpg:'LPG',hybrid:'하이브리드',electric:'전기차',hydrogen:'수소차'};
 const carLabels={average:'차종 평균',gasoline:'휘발유차',diesel:'경유차',lpg:'LPG차',hybrid:'하이브리드차',electric:'전기차',hydrogen:'수소차'};
@@ -938,10 +949,10 @@ function updateReport({replayForest=false}={}){
   $('alternativeFactorLabel').textContent=!uniform?'비교 교통수단의 배출량':setting.mode==='air'?'비행기 1인·1km당 배출량':setting.mode==='bus'?'고속버스 1인·1km당 배출량':setting.mode==='car'?'승용차 1인·1km당 배출량':'기본 자가용 1인·1km당 배출량';
   const factor=setting.mode==='air'?airEF:setting.mode==='bus'?busEF:setting.mode==='car'?(setting.fuel==='average'?fleetEF:fuels[setting.fuel].ef)/setting.people:carDefaultEF;
   $('alternativeFactor').textContent=!uniform?'여행별 비교 기준 적용':numberFormat(factor,2)+' gCO₂e/인·km';
-  const changed=tripSettings.filter(setting=>setting.mode!=='default').length;
+  const changed=tripSettings.filter(setting=>!isDefaultTravelSetting(setting)).length;
   $('resultNote').classList.toggle('show',Boolean(changed||settingsNotice));
   $('resultNote').innerHTML=`${changed?`<strong>${changed}개 여행의 비교 기준을 바꿨어요.</strong>`:''}${settingsNotice?`${changed?'<br>':''}${settingsNotice}`:''}${changed?'<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">모든 여행을 기본 기준으로 바꾸기</button>':''}`;
-  $('resetDefault')?.addEventListener('click',()=>{applyTravelSettings(null,{mode:'default',people:1,fuel:'average'});settingsNotice='';updateReport({replayForest:true});});
+  $('resetDefault')?.addEventListener('click',()=>{applyTravelSettings(null,{...DEFAULT_TRAVEL_SETTING});settingsNotice='';updateReport({replayForest:true});});
   $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 약 <strong id="treeCount">${numberFormat(trees)}그루</strong>의<br>1년 탄소 흡수량에 해당해요${reportValue<0?' · 추가 배출량을 비교한 값이에요':''}`;
   setNumber($('treeCount'),trees,{suffix:'그루'});
   updateForest(trees);
@@ -1049,7 +1060,7 @@ function animateChart(){
 $('settingsControls').append($('modeChoices'),$('passengerBox'));
 function openTravelSettings(target){
   settingsTarget=target;
-  const setting=target===null?(tripSettings.every(s=>JSON.stringify(s)===JSON.stringify(tripSettings[0]))?tripSettings[0]:{mode:'default',people:1,fuel:'average'}):tripSettings[target];
+  const setting=target===null?(tripSettings.every(s=>JSON.stringify(s)===JSON.stringify(tripSettings[0]))?tripSettings[0]:{...DEFAULT_TRAVEL_SETTING}):tripSettings[target];
   currentMode=setting.mode;people=setting.people;fuel=setting.fuel;
   $('settingsTitle').textContent=target===null?'모든 여행의 비교 기준':'이 여행의 비교 기준';
   $('settingsDescription').textContent=target===null?'모든 여행에 같은 비교 기준을 적용해요.\n여행별로 바꾼 설정도 함께 바뀌어요.':`${trips[target].date} ${trips[target].route} · 이 여행에만 적용해요.`;

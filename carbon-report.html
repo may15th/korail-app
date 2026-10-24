@@ -584,12 +584,13 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       const month=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',month:'numeric'}).format(new Date()));
       const current=month>=3&&month<=5?'spring':month>=6&&month<=8?'summer':month>=9&&month<=11?'autumn':'winter';
       const names={spring:'봄',summer:'여름',autumn:'가을',winter:'겨울'};
+      const periods={spring:'3월~5월까지',summer:'6월~8월까지',autumn:'9월~11월까지',winter:'12월~다음 해 2월까지'};
       function updateCampaign(season){
         if(!names[season])return;
         const name=names[season];
         document.getElementById('campaignTag').textContent=`${name} 캠페인`;
         document.getElementById('campaignSeason').textContent=name;
-        document.getElementById('campaignDescription').textContent=`${name}에 코레일 고객이 함께 만든 감축량입니다.`;
+        document.getElementById('campaignDescription').textContent=`${periods[season]} 코레일 고객이 함께 만든 감축량입니다.`;
         document.getElementById('campaignProgressTrack').setAttribute('aria-label',`${name} 캠페인 목표 달성률`);
       }
       updateCampaign(current);

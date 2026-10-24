@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="120" viewBox="0 0 480 120" role="img" aria-labelledby="title">
+  <title id="title">가을 — 파란 앞머리 윗부분과 은색 차체의 유선형 열차 측면</title>
+  <g stroke="#344553" stroke-width="2" stroke-linejoin="round">
+    <path d="M220 78h26v8h-26z" fill="#59636d"/>
+    <g fill="#344553"><circle cx="52" cy="96" r="8"/><circle cx="194" cy="96" r="8"/><circle cx="276" cy="96" r="8"/><circle cx="396" cy="96" r="8"/></g>
+    <rect x="16" y="32" width="212" height="62" rx="9" fill="#e1e8ed"/>
+    <path d="M240 32h113q33 0 57 22l46 29q11 11-8 11H240Z" fill="#e1e8ed"/>
+    <path d="M240 32h113q33 0 57 22l31 20q-40-2-73-10H240Z" fill="#326fae"/>
+    <path d="M17 77h210v9q0 7-8 7H25q-8 0-8-7Z" fill="#acbac7" stroke="#acbac7"/>
+    <path d="M241 77h130q35 0 73 8l13 1q0 7-10 7H241Z" fill="#acbac7" stroke="#acbac7"/>
+    <g fill="#264256" stroke="#b4c8d6">
+      <rect x="33" y="44" width="29" height="19" rx="4"/><rect x="72" y="44" width="29" height="19" rx="4"/>
+      <rect x="111" y="44" width="29" height="19" rx="4"/><rect x="150" y="44" width="29" height="19" rx="4"/>
+      <rect x="256" y="43" width="29" height="18" rx="4"/><rect x="295" y="43" width="29" height="18" rx="4"/>
+    </g>
+    <rect x="192" y="41" width="21" height="44" rx="4" fill="#d0dbe3"/>
+    <rect x="197" y="47" width="11" height="16" rx="3" fill="#264256"/>
+    <path d="M362 40q23 5 40 20l10 7-32-7q-7-2-10-8Z" fill="#203d56"/>
+    <path d="M438 78h9" fill="none" stroke="#fff4bb" stroke-linecap="round"/>
+  </g>
+</svg>

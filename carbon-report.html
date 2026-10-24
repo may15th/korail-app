@@ -117,7 +117,8 @@ button{font:inherit}
 .forest-tree{width:100%;height:44px;display:block;transform-origin:50% 100%}
 .forest-stage{opacity:0;transition:opacity 140ms ease}
 .forest-stage.is-current{opacity:1}
-.forest-train{position:absolute;left:0;top:0;width:144px;height:32px;pointer-events:none;z-index:2}
+.forest-train{position:absolute;left:0;top:0;width:320px;aspect-ratio:7.5;overflow:hidden;pointer-events:none;z-index:2}
+.forest-train img{position:absolute;left:0;top:-80%;display:block;width:100%;height:auto;max-width:none}
 .forest-train[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.forest-stage{transition:none}}
 .forest-more{text-align:right;margin-top:9px;font-size:12px;font-weight:700;color:#ddfff1}
@@ -715,7 +716,15 @@ function applyTravelSettings(target,setting){
   return setting.mode==='air'?'비행기로 같은 거리를 이동한다고 가정한 비교예요.':'';
 }
 let reportValue=0;
-let forestObserver=null,forestFrame=0;
+let forestObserver=null,forestFrame=0,forestVersion=0;
+const forestTrainModels=[
+  {name:'ITX-마음',file:'itx_maum.png'},
+  {name:'KTX-청룡',file:'ktx_cheongRyong.png'},
+  {name:'KTX-산천',file:'ktx_sancheon.png'},
+  {name:'광역전철',file:'jeondong.png'},
+  {name:'KTX',file:'ktx.png'}
+];
+forestTrainModels.forEach(model=>{const image=new Image();image.src='asset/train_model/'+model.file;});
 const seasonMonth=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',month:'numeric'}).format(new Date()));
 let forestSeason=seasonMonth>=3&&seasonMonth<=5?'spring':seasonMonth>=6&&seasonMonth<=8?'summer':seasonMonth>=9&&seasonMonth<=11?'autumn':'winter';
 function setForestSeason(season,replay=true){
@@ -745,21 +754,39 @@ function setForestStage(node,stage){
   node.querySelectorAll('.forest-stage').forEach((layer,i)=>layer.classList.toggle('is-current',i===stage-1));
 }
 function stopForestGrowth(){
+  forestVersion++;
   cancelAnimationFrame(forestFrame);
   $('forestTrees').querySelectorAll('.forest-tree').forEach(node=>setForestStage(node,4));
   $('forestTrain')?.setAttribute('hidden','');
 }
-function growForest(nodes){
-  if(!nodes.length)return;
-  cancelAnimationFrame(forestFrame);
-  const forest=$('pineForest');
-  if(reducedMotion.matches){nodes.forEach(node=>setForestStage(node,4));return;}
+function getForestTrain(){
   let train=$('forestTrain');
   if(!train){
-    train=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    train.id='forestTrain';train.classList.add('forest-train');train.setAttribute('viewBox','0 0 144 32');
-    train.innerHTML='<path d="M25 20h90" stroke="#d6e9ec" stroke-width="2"/>'+Array.from({length:4},(_,i)=>`<g class="forest-car" transform="translate(${i*36} 0)">${i===3?'<path d="M2 6h19q6 0 10 8l4 6q3 4-3 4H2z" fill="#edf8ff"/>':'<rect x="2" y="6" width="31" height="18" rx="4" fill="#edf8ff"/>'}<path d="M3 20h29" stroke="#2580c4" stroke-width="3"/><path d="M6 10h5v5H6zm10 0h5v5h-5zm10 0h4v5h-4z" fill="#24618a"/><circle cx="9" cy="26" r="2.5" fill="#174365"/><circle cx="27" cy="26" r="2.5" fill="#174365"/></g>`).join('');
-    forest.append(train);
+    train=document.createElement('div');train.id='forestTrain';train.className='forest-train';train.hidden=true;
+    train.append(new Image());
+    $('pineForest').append(train);
+  }
+  return train;
+}
+async function growForest(nodes){
+  if(!nodes.length)return;
+  cancelAnimationFrame(forestFrame);
+  const version=++forestVersion;
+  const forest=$('pineForest');
+  const train=getForestTrain();
+  const model=forestTrainModels[Math.floor(Math.random()*forestTrainModels.length)];
+  const image=train.querySelector('img');
+  train.hidden=true;
+  image.src='asset/train_model/'+model.file;
+  image.alt=model.name+' 측면 일러스트';
+  const trainWidth=Math.min(320,forest.clientWidth);
+  train.style.width=trainWidth+'px';
+  try{await image.decode();}catch{if(version===forestVersion)nodes.forEach(node=>setForestStage(node,4));return;}
+  if(version!==forestVersion)return;
+  if(reducedMotion.matches){
+    nodes.forEach(node=>setForestStage(node,4));
+    train.style.transform=`translate(${Math.max(0,(forest.clientWidth-trainWidth)/2)}px,4px)`;
+    train.hidden=false;return;
   }
   const rows=new Map(),positions=new Map(),forestRect=forest.getBoundingClientRect();
   nodes.forEach(node=>{
@@ -769,18 +796,19 @@ function growForest(nodes){
     rows.get(top).push(node);
     setForestStage(node,0);
   });
-  const entries=[...rows.entries()],rowDuration=3200;
+  const entries=[...rows.entries()],rowDuration=3000;
   let start=null;
   train.removeAttribute('hidden');
   const tick=now=>{
+    if(version!==forestVersion)return;
     if(start===null)start=now;
     if(reducedMotion.matches){stopForestGrowth();return;}
     const elapsed=now-start,rowIndex=Math.min(entries.length-1,Math.floor(elapsed/rowDuration));
     const progress=Math.min(1,(elapsed-rowIndex*rowDuration)/rowDuration);
     const [top,row]=entries[rowIndex],width=forest.clientWidth;
     // 기차 꼬리가 나무 위치를 지난 뒤 새싹부터 네 단계로 성장한다.
-    const tailX=-149+progress*(width+264);
-    train.style.transform='translate('+tailX+'px,'+(top+14)+'px)';
+    const tailX=-(trainWidth+5)+progress*(width+trainWidth+120);
+    train.style.transform='translate('+tailX+'px,'+(top+6)+'px)';
     entries.forEach(([,items],i)=>items.forEach(node=>{
       const center=positions.get(node);
       const stage=i<rowIndex?4:i>rowIndex?0:tailX<=center?0:Math.min(4,1+Math.floor((tailX-center)/27));

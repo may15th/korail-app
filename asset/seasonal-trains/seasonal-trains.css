@@ -1,0 +1,25 @@
+.seasonal-train-demo{width:100%;box-sizing:border-box;padding:16px;border-radius:20px;color:#fff;background:linear-gradient(135deg,#287fa5,#79bdd0);text-align:left}
+.seasonal-train-demo[data-train-season="summer"]{background:linear-gradient(135deg,#0f8e65,#39bd8f)}
+.seasonal-train-demo[data-train-season="autumn"]{background:linear-gradient(135deg,#8b472c,#ce9454)}
+.seasonal-train-demo[data-train-season="winter"]{background:linear-gradient(135deg,#244867,#7097ac)}
+.seasonal-train-demo .train-season-tabs{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
+.seasonal-train-demo .train-season-tabs button{font:inherit;font-size:13px;font-weight:700;min-height:40px;padding:8px 16px;border:1px solid transparent;border-radius:99px;background:transparent;color:#fff;cursor:pointer}
+.seasonal-train-demo .train-season-tabs button[aria-pressed="true"]{background:#ffffff29;border-color:#ffffff50}
+.seasonal-train-demo .train-season-tabs button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.seasonal-train-demo .train-lane{position:relative;overflow:hidden;height:64px;margin-top:12px}
+.seasonal-train-demo .train-runner{position:absolute;top:12px;left:0;width:100%;transform:translateX(calc(-1 * var(--train-width,160px)));will-change:transform}
+.seasonal-train-demo .train-runner img{display:block;width:160px;height:40px;max-width:none}
+.seasonal-train-demo .train-runner.is-running{animation:seasonal-train-pass 3s linear both}
+.seasonal-train-demo.uses-train-model{--train-width:360px}
+.seasonal-train-demo .train-model-picker{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:#fff}
+.seasonal-train-demo .train-model-picker select{font:inherit;font-weight:600;color:#fff;background:#173e5066;border:1px solid #ffffff60;border-radius:10px;padding:7px 30px 7px 10px;cursor:pointer}
+.seasonal-train-demo .train-model-picker option{background:#fff;color:#223348}
+.seasonal-train-demo .train-model-picker select:focus-visible{outline:2px solid white;outline-offset:3px}
+.seasonal-train-demo .train-sprite{position:relative;width:var(--train-width);aspect-ratio:7.5;overflow:hidden}
+.seasonal-train-demo .train-sprite img{position:absolute;top:-80%;left:0;width:100%;height:auto}
+.seasonal-train-demo.uses-train-model .train-lane{height:76px}
+@keyframes seasonal-train-pass{from{transform:translateX(calc(-1 * var(--train-width,160px)))}to{transform:translateX(100%)}}
+@media(prefers-reduced-motion:reduce){
+  .seasonal-train-demo .train-runner,.seasonal-train-demo .train-runner.is-running{animation:none;transform:none;will-change:auto;display:flex;justify-content:center}
+  .seasonal-train-demo .train-sprite{width:min(var(--train-width),100%)}
+}

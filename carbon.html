@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>나의 탄소 리포트 — 코레일 앱 시안</title>
+<link rel="stylesheet" href="asset/seasonal-trains/seasonal-trains.css?v=png-models-1">
+<script defer src="asset/seasonal-trains/seasonal-trains.js?v=png-models-1"></script>
 <style>
 :root{
   --bg:#0d1117;
@@ -68,6 +70,15 @@ body[data-demo="on"] .share.cue::after{
 .hero .caption{font-size:14px;color:var(--dim);line-height:1.6}
 .hero .caption b{color:var(--text)}
 .hero .caption.small{font-size:13px}
+.hero.seasonal-train-demo{padding:24px 20px;border-radius:24px}
+.hero.seasonal-train-demo .eyebrow,
+.hero.seasonal-train-demo .eyebrow b,
+.hero.seasonal-train-demo .caption,
+.hero.seasonal-train-demo .caption b{color:#fff!important}
+.hero.seasonal-train-demo .big{background:none;-webkit-text-fill-color:#fff;color:#fff}
+.hero.seasonal-train-demo .bigunit{color:#e4fff1}
+.hero.seasonal-train-demo .train-season-tabs,
+.hero.seasonal-train-demo .train-lane{width:100%}
 
 /* 나무 시각화 (시그니처) */
 .forest{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:260px}
@@ -284,7 +295,7 @@ body[data-demo="on"] .share.cue::after{
   </div>
 
   <!-- 히어로: 누적 절감량 -->
-  <div class="hero">
+  <div class="hero seasonal-train-demo" data-seasonal-train data-train-model-base="asset/train_model/">
     <div class="eyebrow">기차를 타고 <b style="color:var(--text)">1,284km</b> 이동하며</div>
     <div class="bigwrap">
       <span class="big" id="bigNum">235</span><span class="bigunit">kg</span>
@@ -292,6 +303,8 @@ body[data-demo="on"] .share.cue::after{
     <div class="caption">자가용 대신 기차를 선택해<br>이산화탄소 <b>235kg</b>을 줄였어요</div>
     <div class="forest" id="forest"></div>
     <div class="caption small">소나무 <b>36그루</b>가 1년간 흡수하는 양</div>
+    <div class="train-season-tabs" role="group" aria-label="열차 계절 선택"></div>
+    <div class="train-lane"><div class="train-runner"><div class="train-sprite"><img src="asset/train_model/itx_maum.png" alt="ITX-마음 측면 일러스트"></div></div></div>
   </div>
 
   <!-- 그래프 카드: 기간 탭 + 막대그래프 + 기간합계 + 환산지표 3종 -->

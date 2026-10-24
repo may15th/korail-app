@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>계절별 열차 SVG 미리보기</title>
+<link rel="stylesheet" href="seasonal-trains.css">
+<style>
+:root{color-scheme:light;--bg:#f4f6fa;--panel:#fff;--ink:#223348;--muted:#5d6d7e;--line:#dce3eb}
+:root[data-preview-theme="dark"]{color-scheme:dark;--bg:#111824;--panel:#1c293b;--ink:#f1f5fa;--muted:#b2c1d3;--line:#36465a}
+*{box-sizing:border-box}body{margin:0;padding:36px 24px 60px;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,'Malgun Gothic',sans-serif}main{max-width:1200px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:20px}h1{font-size:26px;margin:0}p{color:var(--muted)}.theme{border:1px solid var(--line);border-radius:99px;padding:10px 18px;background:var(--panel);color:var(--ink);font:inherit;white-space:nowrap;cursor:pointer}.gallery-scroll{overflow-x:auto}.gallery{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:16px;min-width:864px;margin:24px 0}.tile{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 14px}.tile h2{font-size:17px;margin:0}.tile p{font-size:12px;margin:4px 0 18px}.full{display:block;width:100%;height:auto;margin-bottom:26px}.small{display:block;width:160px;height:40px}.caption{display:block;margin-top:10px;font-size:12px;color:var(--muted)}.demo-wrap{max-width:600px;margin:32px auto 0}h2{font-size:20px}a{color:inherit}button:focus-visible{outline:3px solid #428cf0;outline-offset:3px}@media(max-width:600px){body{padding:24px 16px}h1{font-size:20px}}
+</style>
+<script defer src="seasonal-trains.js"></script>
+</head>
+<body><main>
+<header><h1>사계절을 달리는 열차</h1><button class="theme" id="theme" type="button" aria-pressed="false">어두운 배경</button></header>
+<p>같은 크기와 바닥선으로 맞춘 투명 SVG · 오른쪽 진행 · 로고 없음</p>
+<div class="gallery-scroll"><div class="gallery">
+<article class="tile"><h2>봄 · ITX-마음</h2><p>빨간 차체와 둥근 앞머리</p><img class="full" src="train-spring.svg" alt="빨간 ITX-마음 측면"><img class="small" src="train-spring.svg" alt="높이 40픽셀 ITX-마음"><span class="caption">아래: 실제 높이 40px</span></article>
+<article class="tile"><h2>여름 · KTX-청룡</h2><p>하늘색 차체와 노란 물결</p><img class="full" src="train-summer.svg" alt="하늘색 KTX-청룡 측면"><img class="small" src="train-summer.svg" alt="높이 40픽셀 KTX-청룡"><span class="caption">아래: 실제 높이 40px</span></article>
+<article class="tile"><h2>가을 · KTX-산천</h2><p>은색 차체와 파란 유선형 앞머리</p><img class="full" src="train-autumn.svg" alt="은색 KTX-산천 측면"><img class="small" src="train-autumn.svg" alt="높이 40픽셀 KTX-산천"><span class="caption">아래: 실제 높이 40px</span></article>
+<article class="tile"><h2>겨울 · 광역전철</h2><p>각진 차체와 파란 출입문</p><img class="full" src="train-winter.svg" alt="파란 출입문의 광역전철 측면"><img class="small" src="train-winter.svg" alt="높이 40픽셀 광역전철"><span class="caption">아래: 실제 높이 40px</span></article>
+</div></div>
+<section class="demo-wrap"><h2>계절 탭 · 3초 이동</h2><p>같은 계절을 다시 누르면 재생해요. 기기의 움직임 줄이기를 켜면 열차가 가운데에 정지해요.</p>
+<div class="seasonal-train-demo" data-seasonal-train data-train-base="./">
+  <div class="train-season-tabs" role="group" aria-label="열차 계절 선택"></div>
+  <div class="train-lane"><div class="train-runner"><img src="train-spring.svg" width="160" height="40" alt="봄 열차"></div></div>
+</div></section>
+</main><script>
+if(new URLSearchParams(location.search).get('theme')==='dark'){
+  document.documentElement.dataset.previewTheme='dark';
+  document.getElementById('theme').setAttribute('aria-pressed','true');
+  document.getElementById('theme').textContent='밝은 배경';
+}
+document.getElementById('theme').addEventListener('click',event=>{
+  const dark=document.documentElement.dataset.previewTheme!=='dark';
+  document.documentElement.dataset.previewTheme=dark?'dark':'light';
+  event.currentTarget.setAttribute('aria-pressed',String(dark));
+  event.currentTarget.textContent=dark?'밝은 배경':'어두운 배경';
+});
+</script></body></html>

@@ -117,8 +117,8 @@ button{font:inherit}
 .forest-tree{width:100%;height:44px;display:block;transform-origin:50% 100%}
 .forest-stage{opacity:0;transition:opacity 140ms ease}
 .forest-stage.is-current{opacity:1}
-.forest-train{position:absolute;left:0;top:0;width:320px;aspect-ratio:1600/260;overflow:hidden;pointer-events:none;z-index:2}
-.forest-train img{display:block;width:100%;height:auto;max-width:none}
+.forest-train{position:absolute;left:0;top:0;width:320px;aspect-ratio:7.5;overflow:hidden;pointer-events:none;z-index:2}
+.forest-train img{position:absolute;left:0;top:-80%;display:block;width:100%;height:auto;max-width:none}
 .forest-train[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.forest-stage{transition:none}}
 .forest-more{text-align:right;margin-top:9px;font-size:12px;font-weight:700;color:#ddfff1}
@@ -717,14 +717,14 @@ function applyTravelSettings(target,setting){
   return setting.mode==='air'?'비행기로 같은 거리를 이동한다고 가정한 비교예요.':'';
 }
 let reportValue=0;
-let forestObserver=null,forestFrame=0,forestVersion=0;
+let forestObserver=null,forestFrame=0,forestVersion=0,forestEntered=false;
 const forestTrainModels={
   spring:{name:'KTX-청룡',file:'ktx_cheongryong.png'},
   summer:{name:'KTX-산천',file:'ktx_sancheon.png'},
   autumn:{name:'ITX-마음',file:'itx_maum.png'},
-  winter:{name:'무궁화호',file:'mugunghwa.png'}
+  winter:{name:'무궁화호',file:'mugunhwa.png'}
 };
-Object.values(forestTrainModels).forEach(model=>{const image=new Image();image.src='asset/train_model_ver2/'+model.file;});
+Object.values(forestTrainModels).forEach(model=>{const image=new Image();image.src='asset/train_model_minimal/'+model.file;});
 const seasonMonth=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',month:'numeric'}).format(new Date()));
 let forestSeason=seasonMonth>=3&&seasonMonth<=5?'spring':seasonMonth>=6&&seasonMonth<=8?'summer':seasonMonth>=9&&seasonMonth<=11?'autumn':'winter';
 function setForestSeason(season,replay=true){
@@ -777,7 +777,7 @@ async function growForest(nodes){
   const model=forestTrainModels[forestSeason]||forestTrainModels.autumn;
   const image=train.querySelector('img');
   train.hidden=true;
-  image.src='asset/train_model_ver2/'+model.file;
+  image.src='asset/train_model_minimal/'+model.file;
   image.alt=model.name+' 측면 일러스트';
   const trainWidth=Math.min(320,forest.clientWidth);
   train.style.width=trainWidth+'px';
@@ -828,7 +828,9 @@ function updateForest(trees){
   stopForestGrowth();
   if(!forestObserver){
     forestObserver=new IntersectionObserver(entries=>{
-      if(!entries.some(entry=>entry.isIntersecting)){stopForestGrowth();return;}
+      if(forestEntered||!entries.some(entry=>entry.isIntersecting))return;
+      forestEntered=true;
+      forestObserver.disconnect();
       forest.classList.add('is-visible');growForest([...container.children].filter(node=>!node.classList.contains('is-leaving')));
     },{threshold:.2});
     forestObserver.observe(forest);
@@ -839,7 +841,6 @@ function updateForest(trees){
     const animation=node.animate([{opacity:1,scale:'1 1'},{opacity:0,scale:'0.3 0.15'}],{duration:220,fill:'forwards'});
     animation.finished.then(()=>node.remove(),()=>node.remove());
   });
-  const added=[];
   const shapes=[
     '<path d="M16 45V34" stroke="#d8bd85" stroke-width="2"/><path d="M16 38Q3 37 7 29Q16 29 16 38Q29 37 25 29Q16 29 16 38" fill="#b1e895"/>',
     '<path d="M14 30h4v15h-4z" fill="#d8bd85"/><path d="M16 19 5 36h22z" fill="#a3df87"/>',
@@ -850,9 +851,8 @@ function updateForest(trees){
     const node=document.createElementNS('http://www.w3.org/2000/svg','svg');
     node.setAttribute('viewBox','0 0 32 48');node.classList.add('forest-tree');
     node.innerHTML=shapes.map((shape,stage)=>'<g class="forest-stage">'+(stage===3?shape.replace('<path d="M16 2','<path class="pine-canopy" d="M16 2').replace('<path d="M16 2','<path class="pine-canopy" d="M16 2')+forestDecorations(i):shape)+'</g>').join('');
-    container.append(node);added.push(node);setForestStage(node,0);
+    container.append(node);setForestStage(node,forestEntered?4:0);
   }
-  if(forest.classList.contains('is-visible'))growForest(added);
   $('forestMore').hidden=count<=30;
   $('forestMore').textContent=count>30?'+'+numberFormat(count-30)+'그루':'';
 }
@@ -1084,7 +1084,7 @@ $('reportShare').addEventListener('click',shareReportToKakao);
 document.querySelector('[aria-label="뒤로가기"]').addEventListener('click',()=>{if($('modal').classList.contains('show'))closeCertificate();else if(history.length>1)history.back();else scrollTo({top:0,behavior:reducedMotion.matches?'instant':'smooth'});});
 $('seasonTabs').addEventListener('click',event=>{
   const button=event.target.closest('button[data-season]');
-  if(button&&button.dataset.season!==forestSeason)setForestSeason(button.dataset.season);
+  if(button)setForestSeason(button.dataset.season);
 });
 setForestSeason(forestSeason,false);
 syncChoices();updateReport();

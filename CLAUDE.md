@@ -244,7 +244,7 @@ adb devices                  # device 로 떠야 함
 
 ## carbon-report.html
 - 주/월/연 탄소 기록, 교통수단별 동일 거리 비교, 소나무 환산 및 계절별 숲 애니메이션
-- 열차 이미지는 `asset/train_model_ver2` 사용: 봄 청룡, 여름 산천, 가을 ITX-마음, 겨울 무궁화호
+- 열차 이미지는 `asset/train_model_minimal` 사용: 봄 청룡, 여름 산천, 가을 ITX-마음, 겨울 무궁화호
 - prefers-reduced-motion 대응
 
 ## index.html — 미니게임 진입 UX

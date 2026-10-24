@@ -24,7 +24,7 @@ const INCLUDE = [
   'index.html', 'allmenu.html', 'mypage.html', 'carbon-report.html',
   'app.css', 'fit.js', 'transition.js', 'theme.js', '_headers',
   'fonts', 'img',
-  'asset/train_model_ver2',
+  'asset/train_model_minimal',
 ];
 
 // img/ 안에서 게임만 쓰는 에셋

@@ -464,7 +464,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       <div class="hero-number" id="heroValue">259.0</div>
         <div class="hero-unit">kg CO₂e</div>
       </div>
-      <div class="hero-title" id="heroTitle">휘발유차 1인 기준으로 같은 거리를 이동할 때보다<br>탄소를 적게 배출한 것으로 추정해요</div>
+      <div class="hero-title" id="heroTitle">휘발유차 1인 기준으로<br> 같은 거리를 이동할 때보다<br>탄소를 적게 배출한 것으로 추정해요</div>
       <div class="badge" id="basisBadge">🚙 휘발유차 · 1인 기준으로 비교</div>
 
       <div class="tree-row">
@@ -747,7 +747,7 @@ function settingLabel(setting){return setting.mode==='default'?'자가용·버�
 function comparisonLead(){
   if(hasMixedComparison())return '여행별 교통수단과 비교해';
   const setting=tripSettings[0];
-  if(setting.mode==='car')return `${carLabels[setting.fuel]} ${setting.people}인 기준으로 같은 거리를 이동할 때보다`;
+  if(setting.mode==='car')return `${carLabels[setting.fuel]} ${setting.people}인 기준으로 <br>같은 거리를 이동할 때보다`;
   const transport=setting.mode==='default'?'자가용·버스':modeLabels[setting.mode];
   const finalConsonant=(transport.charCodeAt(transport.length-1)-0xac00)%28;
   const particle=finalConsonant>0&&finalConsonant!==8?'으로':'로';

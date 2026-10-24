@@ -24,6 +24,7 @@ const INCLUDE = [
   'index.html', 'allmenu.html', 'mypage.html', 'carbon.html', 'carbon-report.html',
   'app.css', 'fit.js', 'transition.js', 'theme.js', '_headers',
   'fonts', 'img',
+  'asset/train_model', 'asset/seasonal-trains',
 ];
 
 // img/ 안에서 게임만 쓰는 에셋
@@ -36,12 +37,14 @@ const GAME_ASSET_PREFIXES = ['badge_', 'rabbit_'];
 
 const MARKER = /[ \t]*<!-- minigame:start[\s\S]*?<!-- minigame:end -->[ \t]*\r?\n?/g;
 
+if (relative(ROOT, OUT) !== 'dist') throw new Error('빌드 출력 경로가 dist 폴더가 아닙니다.');
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
 
 for (const name of INCLUDE) {
   const src = join(ROOT, name);
   if (!existsSync(src)) throw new Error(`INCLUDE 항목이 없음: ${name}`);
+  mkdirSync(dirname(join(OUT, name)), { recursive: true });
   cpSync(src, join(OUT, name), { recursive: true });
 }
 for (const f of GAME_ASSETS) rmSync(join(OUT, f), { force: true });

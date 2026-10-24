@@ -733,7 +733,16 @@ let currentMode='default', people=1, fuel='average', currentPeriod='month', allT
 const tripSettings=trips.map(()=>({mode:'default',people:1,fuel:'average'}));
 let settingsTarget=null,settingsNotice='';
 function tripSetting(trip){return tripSettings[trips.indexOf(trip)]||{mode:'default',people:1,fuel:'average'};}
-function settingLabel(setting){return setting.mode==='default'?'자가용·버스':setting.mode==='car'?`${fuelLabels[setting.fuel]} · ${setting.people}인`:modeLabels[setting.mode];}
+function settingLabel(setting){return setting.mode==='default'?'자가용·버스':setting.mode==='car'?`${carLabels[setting.fuel]} · ${setting.people}인`:modeLabels[setting.mode];}
+function comparisonLead(){
+  if(hasMixedComparison())return '여행별 교통수단과 비교해';
+  const setting=tripSettings[0];
+  if(setting.mode==='car')return `${carLabels[setting.fuel]} ${setting.people}인 기준으로 같은 거리를 이동할 때보다`;
+  const transport=setting.mode==='default'?'자가용·버스':modeLabels[setting.mode];
+  const finalConsonant=(transport.charCodeAt(transport.length-1)-0xac00)%28;
+  const particle=finalConsonant>0&&finalConsonant!==8?'으로':'로';
+  return `${transport}${particle} 같은 거리를 이동할 때보다`;
+}
 function applyTravelSettings(target,setting){
   const indices=target===null?trips.map((_,i)=>i):[target];
   indices.forEach(index=>{tripSettings[index]={...setting};});
@@ -907,6 +916,7 @@ const defaultTotal=totals('default').difference;
 const campaignTonnes=defaultTotal/trips.length*20000/1000;
 const modeLabels={default:'자가용·버스',car:'자가용',bus:'고속버스',air:'비행기'};
 const fuelLabels={average:'차종 평균',gasoline:'휘발유',diesel:'경유',lpg:'LPG',hybrid:'하이브리드',electric:'전기차',hydrogen:'수소차'};
+const carLabels={average:'차종 평균',gasoline:'휘발유차',diesel:'경유차',lpg:'LPG차',hybrid:'하이브리드차',electric:'전기차',hydrogen:'수소차'};
 function updateReport({replayForest=false}={}){
   const t=totals();reportValue=t.difference;
   const magnitude=Math.abs(reportValue);
@@ -917,7 +927,7 @@ function updateReport({replayForest=false}={}){
   setNumber($('fuelStat'),litres,{digits:1,suffix:'L'});
   const label=comparisonLabel();
   const mixed=hasMixedComparison();
-  const comparison=mixed?'여행별 교통수단과 비교해':tripSettings.every(s=>s.mode==='default')?'자가용·버스로 같은 거리를 이동할 때보다':tripSettings.every(s=>s.mode==='air')?'비행기로 같은 거리를 이동할 때보다':`${label} 기준으로 같은 거리를 비교하면`;
+  const comparison=comparisonLead();
   $('heroTitle').innerHTML=`${comparison}<br>탄소를 ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요`;
   const badgeModes=new Set(tripSettings.flatMap(setting=>setting.mode==='default'?['car','bus']:[setting.mode]));
   const badgeIcons=[['car','🚙'],['bus','🚌'],['air','✈️']].filter(([mode])=>badgeModes.has(mode)).map(([,icon])=>icon).join(' ');
@@ -1068,7 +1078,7 @@ let previousFocus;
 function updateCertificate(){
   const magnitude=Math.abs(reportValue),trees=magnitude/treeAbsorptionPerYear;
   setNumber($('certValue'),reportValue,{digits:1});
-  const comparison=hasMixedComparison()?'여행별 교통수단과 비교해':`${comparisonLabel()} 기준으로 같은 거리를 비교하면`;
+  const comparison=comparisonLead();
   $('certCopy').innerHTML=`${comparison}<br>탄소를 ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요.<br><br>30년생 소나무 약 <strong id="certTrees">${numberFormat(trees)}그루</strong>가<br>1년 동안 흡수하는 탄소량과 비슷해요.`;
   setNumber($('certTrees'),trees,{suffix:'그루'});
 }
@@ -1091,7 +1101,7 @@ function showShareStatus(message){
 }
 async function shareReportToKakao(){
   const distance=trips.reduce((sum,trip)=>sum+routes[trip.key].rail,0);
-  const text=`나의 철도 탄소 리포트\n기차로 ${numberFormat(distance)}km 이동했어요.\n${comparisonLabel()}와 같은 거리를 비교하면 탄소를 ${numberFormat(Math.abs(reportValue),1)}kg CO₂e ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요.\n30년생 소나무 약 ${numberFormat(Math.abs(reportValue)/treeAbsorptionPerYear)}그루의 1년 탄소 흡수량에 해당해요.`;
+  const text=`나의 철도 탄소 리포트\n기차로 ${numberFormat(distance)}km 이동했어요.\n${comparisonLead()} 탄소를 ${numberFormat(Math.abs(reportValue),1)}kg CO₂e ${reportValue<0?'더':'적게'} 배출한 것으로 추정해요.\n30년생 소나무 약 ${numberFormat(Math.abs(reportValue)/treeAbsorptionPerYear)}그루의 1년 탄소 흡수량에 해당해요.`;
   const key=document.querySelector('meta[name="kakao-javascript-key"]').content.trim();
   const url=new URL(location.href);url.hash='';url.search='';
   const webUrl=/^https?:$/.test(url.protocol)?url.href:null;

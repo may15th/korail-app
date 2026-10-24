@@ -584,7 +584,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
       const month=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',month:'numeric'}).format(new Date()));
       const current=month>=3&&month<=5?'spring':month>=6&&month<=8?'summer':month>=9&&month<=11?'autumn':'winter';
       const names={spring:'봄',summer:'여름',autumn:'가을',winter:'겨울'};
-      const periods={spring:'3월~5월까지',summer:'6월~8월까지',autumn:'9월~11월까지',winter:'12월~다음 해 2월까지'};
+      const periods={spring:'3월~5월',summer:'6월~8월',autumn:'9월~11월',winter:'12월~2월'};
       function updateCampaign(season){
         if(!names[season])return;
         const name=names[season];

@@ -21,12 +21,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
 
 const INCLUDE = [
-  'index.html', 'allmenu.html', 'mypage.html', 'carbon.html', 'carbon-report.html',
+  'index.html', 'allmenu.html', 'mypage.html', 'carbon-report.html',
   'app.css', 'fit.js', 'transition.js', 'theme.js', '_headers',
   'fonts', 'img',
-  'asset/train_model', 'asset/seasonal-trains',
   'asset/train_model_ver2',
-  'asset/korail_carbon_test_assets',
 ];
 
 // img/ 안에서 게임만 쓰는 에셋

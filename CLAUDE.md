@@ -50,7 +50,7 @@ build/
 ├ index.html      홈 (전체 스크롤)
 ├ allmenu.html    전체메뉴 (전체 스크롤)
 ├ mypage.html     마이페이지 — 탄소리포트 삽입
-├ carbon.html     탄소리포트 (자체 스타일, app.css 미사용)
+├ carbon-report.html     탄소리포트 (자체 스타일, app.css 미사용)
 ├ game.html       레일런 미니게임 (자체 스타일, canvas)
 ├ app.css         공통 스타일 — index/allmenu/mypage 가 공유
 ├ fit.js          기기별 배율 계산
@@ -82,7 +82,7 @@ build/
 ### 라이트 모드 (theme.js)
 `<html data-theme="dark|light">` 로 전환. 기본 다크. 홈·전체메뉴·마이페이지·탄소리포트에만 적용(게임 제외).
 - 최상단 우측 전환 버튼 하나, 선택은 localStorage `korail_theme` 에 저장
-- 색: `app.css` · `carbon.html` 의 `[data-theme="light"]` 블록. 레이아웃 값은 다크와 동일, 색·배경만 다름
+- 색: `app.css` · `carbon-report.html` 의 `[data-theme="light"]` 블록. 레이아웃 값은 다크와 동일, 색·배경만 다름
 - 라이트 실측 원본: `asset/light_mode/` (P3 JPG → sRGB 변환 후 측정). **회원 정보가 찍혀 있어 커밋 금지**
 - 라이트용 이미지는 `img/light/` 같은 파일명. `theme.js` 의 `LIGHT_IMGS` 목록에 있는 것만 교체된다
 - 탄소리포트는 원본 라이트가 없어 앱 라이트 팔레트를 가져다 씀
@@ -242,9 +242,9 @@ adb devices                  # device 로 떠야 함
 - 버그 수정: "운행 시작"이 기회(chances) 차감 없이 새로고침만 하면 무제한 플레이되던 문제 →
   시작/재도전을 attemptStart() 하나로 통합, 기회 0일 때 페이지 로드 시점에도 곧장 광고 유도 화면으로 전환
 
-## carbon.html
-- 숫자 카운트업(235kg, 12,847톤) easeInOutCubic + 완료 시 바운스(scale 1→1.08→1)
-- 상단 진행바 0→68% 애니메이션, 주/월/연 막대그래프 스크롤 진입 시 애니메이션(IntersectionObserver, 탭 전환마다 재생)
+## carbon-report.html
+- 주/월/연 탄소 기록, 교통수단별 동일 거리 비교, 소나무 환산 및 계절별 숲 애니메이션
+- 열차 이미지는 `asset/train_model_ver2` 사용: 봄 청룡, 여름 산천, 가을 ITX-마음, 겨울 무궁화호
 - prefers-reduced-motion 대응
 
 ## index.html — 미니게임 진입 UX

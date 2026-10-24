@@ -13,7 +13,7 @@
 - `allmenu.html` — 전체메뉴
 - `mypage.html` — 마이페이지
 - `game.html` — 레일런 미니게임
-- `carbon.html` — 탄소리포트
+- `carbon-report.html` — 탄소리포트
 
 ## 시연 동선
 홈 → 전체메뉴 → 마이페이지 → 탄소리포트

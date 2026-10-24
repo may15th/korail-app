@@ -6,7 +6,7 @@
    · 테마는 <html data-theme="dark|light"> 하나로 결정. 기본값 다크(실측 원본).
      <head> 에서 즉시 실행돼 첫 페인트 전에 붙으므로 깜빡임이 없다.
    · 선택은 localStorage 에 저장 → 페이지를 이동해도 유지.
-   · 색은 각 CSS 의 [data-theme="light"] 블록이 담당(app.css / carbon.html).
+   · 색은 각 CSS 의 테마 블록이 담당(app.css / carbon-report.html).
      라이트 색은 asset/light_mode/ 실제 앱 스크린샷 실측값.
    · 다크 배경에 맞춰 추출된 이미지 중 라이트에서 안 보이거나 얼룩지는 것만
      img/light/ 에 같은 파일명으로 따로 두고, 여기서 src 를 바꿔 끼운다.

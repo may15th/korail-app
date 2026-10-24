@@ -2,10 +2,21 @@
 .seasonal-train-demo[data-train-season="summer"]{background:linear-gradient(135deg,#0f8e65,#39bd8f)}
 .seasonal-train-demo[data-train-season="autumn"]{background:linear-gradient(135deg,#8b472c,#ce9454)}
 .seasonal-train-demo[data-train-season="winter"]{background:linear-gradient(135deg,#244867,#7097ac)}
+.seasonal-train-demo[data-train-season="test"]{background:linear-gradient(135deg,#236a58,#499e79)}
+.seasonal-train-demo .forest[hidden],.seasonal-train-demo .train-model-picker[hidden],.seasonal-train-demo .train-lane[hidden],.seasonal-train-demo .carbon-test-forest[hidden]{display:none}
+.carbon-test-forest{position:relative;width:100%;margin-top:8px;padding:8px 0;overflow:hidden}
+.carbon-test-forest[hidden]{display:none}
+.carbon-test-forest .test-tree-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px 0}
+.carbon-test-forest .test-tree{display:block;width:100%;aspect-ratio:450/430;object-fit:contain}
+.carbon-test-forest .test-tree[data-stage="0"]{opacity:0}
+.carbon-test-forest .test-asset-train{position:absolute;left:0;top:0;width:300px;height:auto;max-width:none;z-index:2;pointer-events:none}
+.carbon-test-forest .test-asset-train[hidden]{display:none}
 .seasonal-train-demo .train-season-tabs{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
 .seasonal-train-demo .train-season-tabs button{font:inherit;font-size:13px;font-weight:700;min-height:40px;padding:8px 16px;border:1px solid transparent;border-radius:99px;background:transparent;color:#fff;cursor:pointer}
 .seasonal-train-demo .train-season-tabs button[aria-pressed="true"]{background:#ffffff29;border-color:#ffffff50}
 .seasonal-train-demo .train-season-tabs button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.seasonal-train-demo[data-train-test-base] .train-season-tabs{gap:2px;flex-wrap:nowrap}
+.seasonal-train-demo[data-train-test-base] .train-season-tabs button{padding:8px 10px}
 .seasonal-train-demo .train-lane{position:relative;overflow:hidden;height:64px;margin-top:12px}
 .seasonal-train-demo .train-runner{position:absolute;top:12px;left:0;width:100%;transform:translateX(calc(-1 * var(--train-width,160px)));will-change:transform}
 .seasonal-train-demo .train-runner img{display:block;width:160px;height:40px;max-width:none}

@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="theme.js"></script>
+<link rel="stylesheet" href="asset/seasonal-trains/seasonal-trains.css?v=test-assets-2">
+<script src="asset/seasonal-trains/test-forest.js?v=2"></script>
 <!-- 카카오 Developers JavaScript 키를 입력하고 SDK 도메인 및 제품 링크 도메인을 등록한다. -->
 <meta name="kakao-javascript-key" content="" />
 <script defer src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.3/kakao.min.js" crossorigin="anonymous"></script>
@@ -117,8 +119,8 @@ button{font:inherit}
 .forest-tree{width:100%;height:44px;display:block;transform-origin:50% 100%}
 .forest-stage{opacity:0;transition:opacity 140ms ease}
 .forest-stage.is-current{opacity:1}
-.forest-train{position:absolute;left:0;top:0;width:320px;aspect-ratio:7.5;overflow:hidden;pointer-events:none;z-index:2}
-.forest-train img{position:absolute;left:0;top:-80%;display:block;width:100%;height:auto;max-width:none}
+.forest-train{position:absolute;left:0;top:0;width:320px;aspect-ratio:1600/260;overflow:hidden;pointer-events:none;z-index:2}
+.forest-train img{display:block;width:100%;height:auto;max-width:none}
 .forest-train[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.forest-stage{transition:none}}
 .forest-more{text-align:right;margin-top:9px;font-size:12px;font-weight:700;color:#ddfff1}
@@ -132,6 +134,9 @@ button{font:inherit}
 .season-tabs button{border:0;border-radius:999px;padding:8px 14px;background:transparent;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer;min-height:36px}
 .season-tabs button[aria-pressed="true"]{background:rgba(255,255,255,.24);box-shadow:inset 0 0 0 1px #ffffff30}
 .season-tabs button:hover{background:rgba(255,255,255,.16)}
+.hero[data-season="test"]{background:linear-gradient(145deg,#236a58,#499e79)}
+.hero .pine-forest[hidden]{display:none}
+@media(max-width:380px){.season-tabs{gap:2px}.season-tabs button{padding:8px 10px}}
 .season-decoration,.autumn-canopy{display:none}
 .hero[data-season="spring"] .spring-decoration,.hero[data-season="winter"] .winter-decoration{display:block}
 .hero[data-season="autumn"] .autumn-canopy{display:block}
@@ -475,6 +480,7 @@ button:focus-visible,select:focus-visible{outline:2px solid #2779d7;outline-offs
         <button type="button" data-season="summer" aria-pressed="true">여름</button>
         <button type="button" data-season="autumn" aria-pressed="false">가을</button>
         <button type="button" data-season="winter" aria-pressed="false">겨울</button>
+        <button type="button" data-season="test" aria-pressed="false">test</button>
       </div>
       <div class="pine-forest" id="pineForest" aria-hidden="true">
         <div class="forest-trees" id="forestTrees"></div>
@@ -717,20 +723,32 @@ function applyTravelSettings(target,setting){
 }
 let reportValue=0;
 let forestObserver=null,forestFrame=0,forestVersion=0;
-const forestTrainModels=[
-  {name:'ITX-마음',file:'itx_maum.png'},
-  {name:'KTX-청룡',file:'ktx_cheongRyong.png'},
-  {name:'KTX-산천',file:'ktx_sancheon.png'},
-  {name:'광역전철',file:'jeondong.png'},
-  {name:'KTX',file:'ktx.png'}
-];
-forestTrainModels.forEach(model=>{const image=new Image();image.src='asset/train_model/'+model.file;});
+let reportTestForest=null,reportTestCount=-1;
+function showReportTestForest(){
+  const count=Math.max(0,Math.round(Math.abs(reportValue)/treeAbsorptionPerYear));
+  if(reportTestForest&&reportTestCount===count){reportTestForest.play();return;}
+  reportTestForest?.destroy();reportTestCount=count;
+  reportTestForest=window.createCarbonTestForest(document.querySelector('.hero'),'asset/korail_carbon_test_assets/',count);
+  reportTestForest.play();
+}
+const forestTrainModels={
+  spring:{name:'KTX-청룡',file:'ktx_cheongryong.png'},
+  summer:{name:'KTX-산천',file:'ktx_sancheon.png'},
+  autumn:{name:'ITX-마음',file:'itx_maum.png'},
+  winter:{name:'무궁화호',file:'mugunghwa.png'}
+};
+Object.values(forestTrainModels).forEach(model=>{const image=new Image();image.src='asset/train_model_ver2/'+model.file;});
 const seasonMonth=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',month:'numeric'}).format(new Date()));
 let forestSeason=seasonMonth>=3&&seasonMonth<=5?'spring':seasonMonth>=6&&seasonMonth<=8?'summer':seasonMonth>=9&&seasonMonth<=11?'autumn':'winter';
 function setForestSeason(season,replay=true){
   forestSeason=season;
   document.querySelector('.hero').dataset.season=season;
   document.querySelectorAll('#seasonTabs button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.season===season)));
+  reportTestForest?.stop();
+  $('pineForest').hidden=season==='test';
+  if(season==='test'){
+    stopForestGrowth();showReportTestForest();return;
+  }
   if(replay&&$('pineForest').classList.contains('is-visible')){
     stopForestGrowth();
     growForest([...$('forestTrees').children].filter(node=>!node.classList.contains('is-leaving')));
@@ -774,10 +792,10 @@ async function growForest(nodes){
   const version=++forestVersion;
   const forest=$('pineForest');
   const train=getForestTrain();
-  const model=forestTrainModels[Math.floor(Math.random()*forestTrainModels.length)];
+  const model=forestTrainModels[forestSeason]||forestTrainModels.autumn;
   const image=train.querySelector('img');
   train.hidden=true;
-  image.src='asset/train_model/'+model.file;
+  image.src='asset/train_model_ver2/'+model.file;
   image.alt=model.name+' 측면 일러스트';
   const trainWidth=Math.min(320,forest.clientWidth);
   train.style.width=trainWidth+'px';
@@ -808,7 +826,7 @@ async function growForest(nodes){
     const [top,row]=entries[rowIndex],width=forest.clientWidth;
     // 기차 꼬리가 나무 위치를 지난 뒤 새싹부터 네 단계로 성장한다.
     const tailX=-(trainWidth+5)+progress*(width+trainWidth+120);
-    train.style.transform='translate('+tailX+'px,'+(top+6)+'px)';
+    train.style.transform='translate('+tailX+'px,'+(top+2)+'px)';
     entries.forEach(([,items],i)=>items.forEach(node=>{
       const center=positions.get(node);
       const stage=i<rowIndex?4:i>rowIndex?0:tailX<=center?0:Math.min(4,1+Math.floor((tailX-center)/27));
@@ -828,6 +846,7 @@ function updateForest(trees){
   stopForestGrowth();
   if(!forestObserver){
     forestObserver=new IntersectionObserver(entries=>{
+      if(forestSeason==='test')return;
       if(!entries.some(entry=>entry.isIntersecting)){stopForestGrowth();return;}
       forest.classList.add('is-visible');growForest([...container.children].filter(node=>!node.classList.contains('is-leaving')));
     },{threshold:.2});
@@ -903,6 +922,7 @@ function updateReport(){
   $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 약 <strong id="treeCount">${numberFormat(trees)}그루</strong>의<br>1년 탄소 흡수량에 해당해요${reportValue<0?' · 추가 배출량을 비교한 값이에요':''}`;
   setNumber($('treeCount'),trees,{suffix:'그루'});
   updateForest(trees);
+  if(forestSeason==='test')showReportTestForest();
   renderTrips();renderChart();updateCertificate();
 }
 function syncChoices(){

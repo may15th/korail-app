@@ -6,6 +6,7 @@
   document.querySelectorAll('[data-seasonal-train]').forEach(card=>{
     const base=card.dataset.trainBase||'asset/seasonal-trains/';
     const modelBase=card.dataset.trainModelBase;
+    const testBase=card.dataset.trainTestBase;
     const models={maum:['ITX-마음','itx_maum.png'],cheongryong:['KTX-청룡','ktx_cheongRyong.png'],sancheon:['KTX-산천','ktx_sancheon.png'],metro:['광역전철','jeondong.png'],ktx:['KTX','ktx.png']};
     const seasonalModels={spring:'maum',summer:'cheongryong',autumn:'sancheon',winter:'metro'};
     const tabs=card.querySelector('.train-season-tabs'),lane=card.querySelector('.train-lane');
@@ -22,15 +23,22 @@
       label.append(modelSelect);tabs.after(label);
       modelSelect.addEventListener('change',()=>play(selectedSeason,modelSelect.value));
     }
-    tabs.innerHTML=Object.entries(trains).map(([season,[name]])=>`<button type="button" data-train-pick="${season}" aria-pressed="false">${name}</button>`).join('');
+    tabs.innerHTML=Object.entries(trains).map(([season,[name]])=>`<button type="button" data-train-pick="${season}" aria-pressed="false">${name}</button>`).join('')+(testBase?'<button type="button" data-train-pick="test" aria-pressed="false">test</button>':'');
+    const testForest=testBase?window.createCarbonTestForest(card,testBase):null;
     const sources=modelBase?Object.values(models).map(([,file])=>modelBase+file):Object.keys(trains).map(season=>base+'train-'+season+'.svg');
     sources.forEach(src=>{const image=new Image();image.src=src;});
     async function play(season,model=seasonalModels[season]){
       const version=++revision;
       selectedSeason=season;
       card.dataset.trainSeason=season;
-      if(modelSelect)modelSelect.value=model;
+      const isTest=season==='test';
+      if(modelSelect){modelSelect.parentElement.hidden=isTest;if(!isTest)modelSelect.value=model;}
+      const originalForest=card.querySelector('.forest');
+      if(originalForest)originalForest.hidden=isTest;
+      lane.hidden=isTest;
+      if(testForest)testForest.stop();
       tabs.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.trainPick===season)));
+      if(isTest){lane.replaceChildren();await testForest.play();return;}
       const runner=document.createElement('div');runner.className='train-runner';
       const image=new Image();image.alt=(modelBase?models[model][0]:trains[season][1])+' 측면 일러스트';
       image.src=modelBase?modelBase+models[model][1]:base+'train-'+season+'.svg';

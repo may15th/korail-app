@@ -782,6 +782,15 @@ function stopForestGrowth(){
   $('forestTrees').querySelectorAll('.forest-tree').forEach(node=>setForestStage(node,4));
   $('forestTrain')?.setAttribute('hidden','');
 }
+function replayForestGrowth(){
+  stopForestGrowth();
+  forestEntered=true;
+  forestObserver?.disconnect();
+  $('pineForest').classList.add('is-visible');
+  const container=$('forestTrees');
+  container.querySelectorAll('.is-leaving').forEach(node=>node.remove());
+  growForest([...container.children]);
+}
 function getForestTrain(){
   let train=$('forestTrain');
   if(!train){
@@ -898,7 +907,7 @@ const defaultTotal=totals('default').difference;
 const campaignTonnes=defaultTotal/trips.length*20000/1000;
 const modeLabels={default:'자가용·버스',car:'자가용',bus:'고속버스',air:'비행기'};
 const fuelLabels={average:'차종 평균',gasoline:'휘발유',diesel:'경유',lpg:'LPG',hybrid:'하이브리드',electric:'전기차',hydrogen:'수소차'};
-function updateReport(){
+function updateReport({replayForest=false}={}){
   const t=totals();reportValue=t.difference;
   const magnitude=Math.abs(reportValue);
   const trees=magnitude/treeAbsorptionPerYear, litres=magnitude/gasolineEmissionPerLitre;
@@ -922,10 +931,11 @@ function updateReport(){
   const changed=tripSettings.filter(setting=>setting.mode!=='default').length;
   $('resultNote').classList.toggle('show',Boolean(changed||settingsNotice));
   $('resultNote').innerHTML=`${changed?`<strong>${changed}개 여행의 비교 기준을 바꿨어요.</strong>`:''}${settingsNotice?`${changed?'<br>':''}${settingsNotice}`:''}${changed?'<br><button type="button" class="text-btn" id="resetDefault" style="margin-top:7px">모든 여행을 기본 기준으로 바꾸기</button>':''}`;
-  $('resetDefault')?.addEventListener('click',()=>{applyTravelSettings(null,{mode:'default',people:1,fuel:'average'});settingsNotice='';updateReport();});
+  $('resetDefault')?.addEventListener('click',()=>{applyTravelSettings(null,{mode:'default',people:1,fuel:'average'});settingsNotice='';updateReport({replayForest:true});});
   $('treeCount').closest('.tree-row').querySelector('span').innerHTML=`30년생 소나무 약 <strong id="treeCount">${numberFormat(trees)}그루</strong>의<br>1년 탄소 흡수량에 해당해요${reportValue<0?' · 추가 배출량을 비교한 값이에요':''}`;
   setNumber($('treeCount'),trees,{suffix:'그루'});
   updateForest(trees);
+  if(replayForest)replayForestGrowth();
   renderTrips();renderChart();updateCertificate();
 }
 function syncChoices(){
@@ -1040,7 +1050,7 @@ $('tripList').addEventListener('click',e=>{const button=e.target.closest('[data-
 $('cancelSettings').addEventListener('click',()=>$('travelSettings').close());
 $('applySettings').addEventListener('click',()=>{
   settingsNotice=applyTravelSettings(settingsTarget,{mode:currentMode,people,fuel});
-  $('travelSettings').close();updateReport();
+  $('travelSettings').close();updateReport({replayForest:true});
 });
 document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{currentMode=btn.dataset.mode;syncChoices();}));
 document.querySelectorAll('.person').forEach(btn=>btn.addEventListener('click',()=>{
